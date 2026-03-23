@@ -1,0 +1,31 @@
+### Build Outputs ###
+target/
+bin/
+out/
+build/
+
+### IntelliJ IDEA ###
+.idea/
+*.iws
+*.iml
+*.ipr
+# If you want to share project-wide run configurations, uncomment the line below:
+# !.idea/runConfigurations/ 
+
+### Java & OS ###
+*.class
+*.log
+*.tmp
+*.swp
+.DS_Store
+Thumbs.db
+
+### Maven Wrapper ###
+!.mvn/wrapper/maven-wrapper.jar
+!**/src/main/**/target/
+!**/src/test/**/target/
+
+### Database / Environment (Important for MySQL) ###
+.env
+*.sql
+# Only ignore .sql if you don't want to version control your DB dumps.

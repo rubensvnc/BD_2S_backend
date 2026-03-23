@@ -1,0 +1,4 @@
+.root {
+    /* Define a variável que a biblioteca está procurando mas não acha */
+    -fx-text-background-color: white;
+}
