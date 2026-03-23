@@ -1,4 +1,75 @@
+/* Configurações Globais */
 .root {
-    /* Define a variável que a biblioteca está procurando mas não acha */
-    -fx-text-background-color: white;
+    -fx-font-family: "Segoe UI", Helvetica, Arial, sans-serif;
+    -fx-font-size: 14px;
+    -fx-background-color: #f4f4f9; /* Um cinza bem claro para o fundo */
+}
+
+/* Títulos e Labels */
+.label {
+    -fx-text-fill: #333333;
+}
+
+/* Arredondando e Estilizando as Tabelas (Legacy TableView) */
+.mfx-legacy-table-view {
+    -fx-background-radius: 8;
+    -fx-border-radius: 8;
+    -fx-border-color: #dddddd;
+    -fx-background-color: white;
+    -fx-padding: 5;
+}
+
+.mfx-legacy-table-view .column-header {
+    -fx-background-color: #f8f9fa;
+    -fx-border-color: transparent transparent #eeeeee transparent;
+}
+
+/* Centraliza o texto de todas as colunas */
+.mfx-legacy-table-view .table-cell {
+    -fx-alignment: CENTER;
+    -fx-text-fill: #333333;
+}
+
+/* Se quiser centralizar também o texto do cabeçalho */
+.mfx-legacy-table-view .column-header .label {
+    -fx-alignment: CENTER;
+    -fx-text-fill: #555555;
+    -fx-font-weight: bold;
+}
+
+/* Botões MaterialFX (Caso queira forçar mais arredondamento) */
+.mfx-button {
+    -fx-background-radius: 8;
+    -fx-cursor: hand;
+}
+
+/* Efeito de foco para campos de entrada */
+.mfx-legacy-combo-box:focused, .mfx-legacy-table-view:focused {
+    -fx-border-color: #0078d4; /* Azul moderno */
+    -fx-border-width: 1.5;
+}
+
+/* Botão de Editar (Verde moderno) */
+.btn-edit {
+    -fx-background-color: #ffffff;
+    -fx-text-fill: #000000;
+    -fx-background-radius: 8;
+}
+.btn-edit:hover {
+    -fx-background-color: #fff56a;
+}
+
+/* Botão de Excluir (Vermelho coral) */
+.btn-delete {
+    -fx-background-color: #ffffff;
+    -fx-text-fill: #000000;
+    -fx-background-radius: 8;
+}
+.btn-delete:hover {
+    -fx-background-color: #fab0b0;
+}
+
+/* Garante que o ícone (ImageView) não fique estranho */
+.mfx-button .image-view {
+    -fx-smooth: true;
 }

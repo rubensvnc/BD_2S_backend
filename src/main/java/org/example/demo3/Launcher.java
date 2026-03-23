@@ -9,6 +9,7 @@ import javafx.stage.Stage;
 
 import java.io.IOException;
 
+
 public class Launcher extends Application{
     public static void main(String args[]){
         launch(args);
@@ -16,13 +17,15 @@ public class Launcher extends Application{
 
     @Override
     public void start(Stage stage) throws IOException {
-        Application.setUserAgentStylesheet(new PrimerLight().getUserAgentStylesheet());
+        //Application.setUserAgentStylesheet(new PrimerLight().getUserAgentStylesheet());
         //Application.setUserAgentStylesheet(new PrimerDark().getUserAgentStylesheet());
 
         FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource("teste.fxml"));
         Scene scene = new Scene(fxmlLoader.load(), 955, 654);
 
-        scene.getStylesheets().add(getClass().getResource("/style.css").toExternalForm());
+        String customCss = getClass().getResource("/style.css").toExternalForm();
+        scene.getStylesheets().add(customCss);
+
         stage.setTitle("TelaProfessor");
         stage.setScene(scene);
         stage.show();

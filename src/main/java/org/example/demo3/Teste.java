@@ -45,7 +45,17 @@ public class Teste {
 
         // Limpa seleção ao perder foco ou clicar no vazio da tabela
         mfxTableView.focusedProperty().addListener((obs, wasFocused, isFocused) -> {
-            if (!isFocused) mfxTableView.getSelectionModel().clearSelection();
+            if (!isFocused) {
+                // Aguarda um "pulo" de frame para verificar qual componente ganhou o foco
+                javafx.application.Platform.runLater(() -> {
+                    var novoFoco = mfxTableView.getScene().getFocusOwner();
+
+                    // Se o novo foco NÃO for o botão de editar nem o de excluir, limpamos
+                    if (novoFoco != editRow && novoFoco != deleteRow) {
+                        mfxTableView.getSelectionModel().clearSelection();
+                    }
+                });
+            }
         });
 
         mfxTableView.setOnMouseClicked(event -> {
@@ -65,6 +75,20 @@ public class Teste {
         comboSemestre.getSelectionModel().selectedItemProperty().addListener((obs, oldVal, semestre) -> {
             if (semestre != null && curso_atual != null) {
                 mfxTableView.setItems(getCronogramaItens(2, semestre, curso_atual));
+            }
+        });
+
+        editRow.setOnAction(event -> {
+            PlanejamentoDia selecionado = mfxTableView.getSelectionModel().getSelectedItem();
+            if (selecionado != null) {
+                System.out.println("O botão EDITAR foi selecionado para a linha ID: " + selecionado.getId());
+            }
+        });
+
+        deleteRow.setOnAction(event -> {
+            PlanejamentoDia selecionado = mfxTableView.getSelectionModel().getSelectedItem();
+            if (selecionado != null) {
+                System.out.println("O botão EXCLUIR foi selecionado para a linha ID: " + selecionado.getId());
             }
         });
 
