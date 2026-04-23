@@ -20,6 +20,10 @@ build/
 .DS_Store
 Thumbs.db
 
+# Crash logs
+hs_err_pid*
+replay_pid*
+
 ### Maven Wrapper ###
 !.mvn/wrapper/maven-wrapper.jar
 !**/src/main/**/target/
