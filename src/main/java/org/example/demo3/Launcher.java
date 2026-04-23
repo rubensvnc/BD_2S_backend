@@ -17,10 +17,10 @@ public class Launcher extends Application{
 
     @Override
     public void start(Stage stage) throws IOException {
-        //Application.setUserAgentStylesheet(new PrimerLight().getUserAgentStylesheet());
+        Application.setUserAgentStylesheet(new PrimerLight().getUserAgentStylesheet());
         //Application.setUserAgentStylesheet(new PrimerDark().getUserAgentStylesheet());
 
-        FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource("teste.fxml"));
+        FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource("tela_v_planjmnto_prof.fxml"));
         Scene scene = new Scene(fxmlLoader.load(), 955, 654);
 
         String customCss = getClass().getResource("/style.css").toExternalForm();

@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import io.github.palexdev.materialfx.controls.MFXButton?>
+<?import io.github.palexdev.materialfx.controls.MFXTextField?>
+<?import io.github.palexdev.materialfx.controls.legacy.MFXLegacyComboBox?>
+<?import io.github.palexdev.materialfx.controls.legacy.MFXLegacyTableView?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.TableColumn?>
+<?import javafx.scene.image.Image?>
+<?import javafx.scene.image.ImageView?>
+<?import javafx.scene.layout.AnchorPane?>
+<?import javafx.scene.text.Font?>
+
+<AnchorPane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="654.0" prefWidth="955.0" xmlns="http://javafx.com/javafx/25" xmlns:fx="http://javafx.com/fxml/1">
+   <children>
+      <Label id="LblProfessores" layoutX="371.0" layoutY="10.0" text="Professores " underline="true">
+         <font>
+            <Font name="System Bold" size="45.0" />
+         </font>
+      </Label>
+      <MFXTextField id="MFXtxtNome" layoutX="319.0" layoutY="91.0" minHeight="-Infinity" minWidth="-Infinity" prefHeight="30.0" prefWidth="298.0" promptText="Digite o nome do professor..." />
+      <MFXButton id="BtnProcurar" buttonType="RAISED" layoutX="626.0" layoutY="94.0" text="Procurar" />
+      <AnchorPane layoutX="16.0" layoutY="190.0" maxHeight="-Infinity" maxWidth="-Infinity" prefHeight="450.0" prefWidth="925.0">
+         <children>
+            <MFXLegacyTableView fixedCellSize="50.0" prefHeight="450.0" prefWidth="925.0">
+               <columns>
+                  <TableColumn prefWidth="67.0" text="Cad. único" />
+                  <TableColumn prefWidth="84.0" style="-fx-alignment: CENTER;" text="Foto" />
+                  <TableColumn prefWidth="386.0" text="Nome" />
+                  <TableColumn prefWidth="387.0" text="E-mail" />
+               </columns>
+            </MFXLegacyTableView>
+         </children>
+      </AnchorPane>
+      <ImageView fitHeight="40.0" fitWidth="41.0" layoutX="33.0" layoutY="18.0" pickOnBounds="true" preserveRatio="true">
+         <image>
+            <Image url="@../../../../../../../../Downloads/pedro/pedro/src/main/resources/icon_img/menu_hamburguer.png" />
+         </image>
+      </ImageView>
+      <MFXButton buttonType="RAISED" layoutX="33.0" layoutY="18.0" prefHeight="40.0" prefWidth="41.0" style="-fx-background-color: transparent;" text=" " />
+      <MFXLegacyComboBox layoutX="429.0" layoutY="142.0" maxHeight="-Infinity" maxWidth="-Infinity" prefHeight="20.0" prefWidth="100.0" />
+      <Label layoutX="371.0" layoutY="145.0" text="Semestre:">
+         <font>
+            <Font name="System Bold" size="12.0" />
+         </font>
+      </Label>
+      <MFXButton alignment="BOTTOM_RIGHT" buttonType="RAISED" layoutX="16.0" layoutY="150.0" prefHeight="30.0" prefWidth="90.0" rippleColor="#ffbdbd" text="Acessar" />
+      <ImageView fitHeight="23.0" fitWidth="27.0" layoutX="18.0" layoutY="154.0" pickOnBounds="true" preserveRatio="true">
+         <image>
+            <Image url="@../../../../../../../../Downloads/pedro/pedro/src/main/resources/icon_img/acessar.png" />
+         </image>
+      </ImageView>
+      <MFXButton alignment="BOTTOM_RIGHT" buttonType="RAISED" layoutX="851.0" layoutY="151.0" prefHeight="30.0" prefWidth="90.0" rippleColor="#ffbdbd" text="Excluir" />
+      <ImageView fitHeight="23.0" fitWidth="27.0" layoutX="855.0" layoutY="155.0" pickOnBounds="true" preserveRatio="true">
+         <image>
+            <Image url="@../../../../../../../../Downloads/pedro/pedro/src/main/resources/icon_img/trash_red4_1.png" />
+         </image>
+      </ImageView>
+   </children>
+</AnchorPane>
