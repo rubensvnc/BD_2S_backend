@@ -1,22 +1,21 @@
 package org.example.demo3.dao;
 
-import org.example.demo3.DatabaseConnection;
 import org.example.demo3.entity.Curso;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
+import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 
 public class CursoDao {
+    public static Connection getConnection(String database, String user, String password) throws SQLException {
+        return DriverManager.getConnection("jdbc:mysql://localhost:3306/"+database, user, password);
+    }
 
     public static List<Curso> atualizarCursos(){
         List<Curso> cursos = new ArrayList<Curso>();
         Connection con = null;
         try {
-            con = DatabaseConnection.getConnection("organizacao_aulas_fatec", "root", "root");
+            con = getConnection("organizacao_aulas_fatec", "root", "root");
             String select_query = "SELECT * FROM curso";
             PreparedStatement pstm;
             pstm = con.prepareStatement(select_query);

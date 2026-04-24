@@ -1,23 +1,22 @@
 package org.example.demo3.dao;
 
-import org.example.demo3.DatabaseConnection;
 import org.example.demo3.entity.PlanejamentoDia;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
+import java.sql.*;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
 public class PlanejamentoDiaDao {
+    public static Connection getConnection(String database, String user, String password) throws SQLException {
+        return DriverManager.getConnection("jdbc:mysql://localhost:3306/"+database, user, password);
+    }
 
     public static List<PlanejamentoDia> atualizarPlanejamentoDia(Integer curso_id, Integer semestre) {
         List<PlanejamentoDia> planejamentos = new ArrayList<>();
         Connection con = null;
         try {
-            con = DatabaseConnection.getConnection("organizacao_aulas_fatec", "root", "root");
+            con = getConnection("organizacao_aulas_fatec", "root", "root");
 
             String select_query = "SELECT c_i.id_cronograma_i, c_i.data_evento, d.nome, t.nome, " +
                     "c_i.observacao, c_i.qtd_aulas, (DAYOFWEEK(c_i.data_evento) - 1) AS dia_semana_indice" +
@@ -78,7 +77,7 @@ public class PlanejamentoDiaDao {
                 "JOIN curso c ON cr.curso_id = c.id_curso " + // Correção: cr.curso_id referencia c.id_curso
                 "WHERE c.id_curso = ? AND cr.semestre = ? ORDER BY ci.data_evento";
 
-        try (Connection con = DatabaseConnection.getConnection("organizacao_aulas_fatec", "root", "root")) {
+        try (Connection con = getConnection("organizacao_aulas_fatec", "root", "root")) {
             List<LocalDate> feriados = carregarFeriados(con);
             PreparedStatement pstm = con.prepareStatement(sql);
             pstm.setInt(1, cursoId);
