@@ -1,17 +1,17 @@
 package org.example.demo3.entity;
 
-import java.time.LocalDate;
+import java.sql.Date;
 
 public class CronogramaFinal {
     private Long id_item;
     private Long id_atribuicao;
-    private LocalDate data_aula;
+    private Date data_aula;
     private Long id_tema;
     private String status;
     private String motivo_cancelamento;
     private Boolean is_sabado_letivo;
 
-    public CronogramaFinal(Long id_item, Long id_atribuicao, LocalDate data_aula, Long id_tema, String status, String motivo_cancelamento, Boolean is_sabado_letivo) {
+    public CronogramaFinal(Long id_item, Long id_atribuicao, Date data_aula, Long id_tema, String status, String motivo_cancelamento, Boolean is_sabado_letivo) {
         this.id_item = id_item;
         this.id_atribuicao = id_atribuicao;
         this.data_aula = data_aula;
@@ -29,7 +29,7 @@ public class CronogramaFinal {
         return id_atribuicao;
     }
 
-    public LocalDate getData_aula() {
+    public Date getData_aula() {
         return data_aula;
     }
 
