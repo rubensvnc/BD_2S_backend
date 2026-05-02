@@ -14,17 +14,15 @@ import java.util.List;
 
 public class CronogramaDAO {
 
-    public List<CronogramaExibicaoDTO> listarCronogramaCompleto(int idProfessor, int idSemestre, int idCurso) throws SQLException{
-        String sql = "SELECT c.data_aula, d.nome AS disciplina_nome, t.nome AS tema_nome, " +
-                "a.quantidade_aulas, c.status, c.motivo_cancelamento, t.is_avaliacao " +
-                "FROM cronograma_final c " +
-                "JOIN atribuicao a ON c.id_atribuicao = a.id_atribuicao " +
-                "JOIN disciplina d ON a.id_disciplina = d.id_disciplina " +
-                "JOIN tema t ON c.id_tema = t.id_tema " +
-                "WHERE a.id_usuario = ? " +
-                "AND a.id_semestre = ? " +
-                "AND d.id_curso = ? " +
-                "ORDER BY c.data_aula ASC";
+    public List<CronogramaExibicaoDTO> listarCronogramaCursoSemestre(int idProfessor, int idCurso, int idSemestre) throws SQLException{
+        String sql = "SELECT ci.data_prevista, d.nome, t.nome, ci.qtd_aulas, ci.status_aula, dc.descricao, t.eh_avaliacao " +
+                "FROM cronograma_item ci " +
+                "JOIN cronograma c ON ci.cronograma_id = c.id_cronograma " +
+                "JOIN tema t ON ci.tema_id = t.id_tema " +
+                "JOIN disciplina d ON t.disciplina_id = d.id_disciplina " +
+                "LEFT JOIN data_cancelada dc ON ci.id_data_cancelada = dc.id_data_cancelada " +
+                "WHERE c.usuario_id = ? AND c.curso_id = ? AND c.grade_semestre = ? " +
+                "ORDER BY ci.data_prevista ASC";
 
         Connection conn = null;
         PreparedStatement ps = null;
@@ -35,22 +33,21 @@ public class CronogramaDAO {
             conn = DatabaseConnection.getConnection();
             ps = conn.prepareStatement(sql);
             ps.setInt(1, idProfessor);
-            ps.setInt(2, idSemestre);
-            ps.setInt(3, idCurso);
+            ps.setInt(2, idCurso);
+            ps.setInt(3, idSemestre);
 
             rs = ps.executeQuery();
-            while (rs.next()){
+            while (rs.next()) {
                 CronogramaExibicaoDTO dto = new CronogramaExibicaoDTO();
-                dto.setData(rs.getDate("data_aula"));
-                dto.setNomeDisciplina(rs.getString("disciplina_nome"));
-                dto.setNomeTema(rs.getString("tema_nome"));
-                dto.setQtdAulas(rs.getInt("quantidade_aulas"));
-                dto.setStatus(rs.getString("status"));
-                dto.setMotivo(rs.getString("motivo_cancelamento"));
-                dto.setAvaliacao(rs.getBoolean("is_avaliacao"));
+                dto.setData(rs.getDate("data_prevista"));
+                dto.setNomeDisciplina(rs.getString("d.nome"));
+                dto.setNomeTema(rs.getString("t.nome"));
+                dto.setQtdAulas(rs.getInt("qtd_aulas"));
+                dto.setStatus(rs.getString("status_aula"));
+                dto.setMotivo(rs.getString("descricao")); // Pode vir nulo devido ao LEFT JOIN
+                dto.setAvaliacao(rs.getBoolean("eh_avaliacao"));
 
                 lista_cf.add(dto);
-
             }
         } catch (SQLException e) {
             System.err.println("Erro ao listar cronograma: " + e.getMessage());
@@ -60,34 +57,4 @@ public class CronogramaDAO {
         }
         return lista_cf;
     }
-
-    public void inserirItemCronograma(CronogramaFinal item) throws SQLException {
-        String sql = "INSERT INTO cronograma_final " +
-                "(id_atribuicao, data_aula, id_tema, status, motivo_cancelamento, is_sabado_letivo) " +
-                "VALUES (?,?,?,?,?,?)";
-
-        Connection conn = null;
-        PreparedStatement ps = null;
-
-        try {
-            conn = DatabaseConnection.getConnection();
-
-            ps = conn.prepareStatement(sql);
-            ps.setLong(1, item.getId_atribuicao());
-            ps.setDate(2, item.getData_aula());
-            ps.setLong(3, item.getId_tema());
-            ps.setString(4, item.getStatus());
-            ps.setString(5, item.getMotivo_cancelamento());
-            ps.setBoolean(6, item.getIs_sabado_letivo());
-
-            ps.executeUpdate();
-
-        } catch (SQLException e){
-            System.err.println("Erro ao inserir linha: " + e.getMessage());
-            throw e;
-        } finally {
-            DatabaseConnection.closeConnection();
-        }
-    }
-
 }
