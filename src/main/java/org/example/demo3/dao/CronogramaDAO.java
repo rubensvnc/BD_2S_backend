@@ -12,15 +12,15 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
-public class CronogramaFinalDAO {
+public class CronogramaDAO {
 
     public List<CronogramaExibicaoDTO> listarCronogramaCompleto(int idProfessor, int idSemestre, int idCurso) throws SQLException{
         String sql = "SELECT c.data_aula, d.nome AS disciplina_nome, t.nome AS tema_nome, " +
                 "a.quantidade_aulas, c.status, c.motivo_cancelamento, t.is_avaliacao " +
                 "FROM cronograma_final c " +
-                "JOIN atribuicoes a ON c.id_atribuicao = a.id_atribuicao " +
-                "JOIN disciplinas d ON a.id_disciplina = d.id_disciplina " +
-                "JOIN temas t ON c.id_tema = t.id_tema " +
+                "JOIN atribuicao a ON c.id_atribuicao = a.id_atribuicao " +
+                "JOIN disciplina d ON a.id_disciplina = d.id_disciplina " +
+                "JOIN tema t ON c.id_tema = t.id_tema " +
                 "WHERE a.id_usuario = ? " +
                 "AND a.id_semestre = ? " +
                 "AND d.id_curso = ? " +
