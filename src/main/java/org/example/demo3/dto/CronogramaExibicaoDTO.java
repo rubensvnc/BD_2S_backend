@@ -38,11 +38,11 @@ public class CronogramaExibicaoDTO {
     }
 
     public String getNomeTema() {
-        return nomeTema;
+        return nomeTemaOriginal;
     }
 
     public void setNomeTema(String nomeTema) {
-        this.nomeTema = nomeTema;
+        this.nomeTemaOriginal = nomeTema;
     }
 
     public int getQtdAulas() {
