@@ -1,19 +1,36 @@
 package org.example.demo3.entity;
 
 public class Curso {
-    private Integer id;
+    private Integer id_curso;
     private String nome;
-    private Integer coordenador_id;
+    private Boolean ativo;
 
-    public void setId(Integer id) {
-        this.id = id;
+    @Override
+    public String toString() {
+        return this.nome; // Agora o ComboBox vai ler o nome do curso
+    }
+
+    public Integer getId_curso() {
+        return id_curso;
+    }
+
+    public void setId_curso(Integer id_curso) {
+        this.id_curso = id_curso;
+    }
+
+    public String getNome() {
+        return nome;
     }
 
     public void setNome(String nome) {
         this.nome = nome;
     }
 
-    public void setCoordenador_id(Integer coordenador_id) {
-        this.coordenador_id = coordenador_id;
+    public Boolean getAtivo() {
+        return ativo;
+    }
+
+    public void setAtivo(Boolean ativo) {
+        this.ativo = ativo;
     }
 }
