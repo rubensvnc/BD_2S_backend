@@ -5,21 +5,11 @@ import java.util.Date;
 public class CronogramaExibicaoDTO {
     private Date data;
     private String nomeDisciplina;
-    private String nomeTemaOriginal;
+    private String nomeTema;
     private int qtdAulas;
     private String status;
     private String motivo;
     private boolean isAvaliacao;
-
-    public String getExibirTema() {
-        // Se NÃO for avaliação, mostra o nome. Se for, mostra vazio.
-        return !isAvaliacao ? nomeTemaOriginal : "";
-    }
-
-    public String getExibirAvaliacao() {
-        // Se FOR avaliação, mostra o nome. Se não for, mostra vazio.
-        return isAvaliacao ? nomeTemaOriginal : "";
-    }
 
     public Date getData() {
         return data;
@@ -38,11 +28,11 @@ public class CronogramaExibicaoDTO {
     }
 
     public String getNomeTema() {
-        return nomeTemaOriginal;
+        return nomeTema;
     }
 
     public void setNomeTema(String nomeTema) {
-        this.nomeTemaOriginal = nomeTema;
+        this.nomeTema = nomeTema;
     }
 
     public int getQtdAulas() {
