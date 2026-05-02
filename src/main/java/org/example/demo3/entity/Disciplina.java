@@ -8,6 +8,11 @@ public class Disciplina {
     private Integer semestre_grade;
     private Boolean ativo;
 
+    @Override
+    public String toString() {
+        return this.nome; // Para quando você carregar o combo de disciplinas
+    }
+
     public Long getId_disciplina() {
         return id_disciplina;
     }

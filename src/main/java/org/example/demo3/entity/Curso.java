@@ -1,15 +1,20 @@
 package org.example.demo3.entity;
 
 public class Curso {
-    private Long id_curso;
+    private Integer id_curso;
     private String nome;
     private Boolean ativo;
 
-    public Long getId_curso() {
+    @Override
+    public String toString() {
+        return this.nome; // Agora o ComboBox vai ler o nome do curso
+    }
+
+    public Integer getId_curso() {
         return id_curso;
     }
 
-    public void setId_curso(Long id_curso) {
+    public void setId_curso(Integer id_curso) {
         this.id_curso = id_curso;
     }
 
