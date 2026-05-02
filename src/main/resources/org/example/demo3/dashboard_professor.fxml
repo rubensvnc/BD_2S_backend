@@ -21,7 +21,7 @@
 <?import javafx.scene.layout.RowConstraints?>
 <?import javafx.scene.layout.VBox?>
 
-<BorderPane prefHeight="820.0" prefWidth="1440.0" style="-fx-background-color: #f6f8fb;" xmlns="http://javafx.com/javafx/26" xmlns:fx="http://javafx.com/fxml/1">
+<BorderPane prefHeight="820.0" prefWidth="1440.0" style="-fx-background-color: #f6f8fb;" xmlns="http://javafx.com/javafx/26" xmlns:fx="http://javafx.com/fxml/1" fx:controller="org.example.demo3.controller.DashboardProfessorController">
    <top>
       <VBox spacing="8.0" BorderPane.alignment="CENTER">
          <children>
@@ -73,18 +73,18 @@
 
                               <Label text="Opcional" GridPane.rowIndex="3" />
                               <CheckBox fx:id="chkTemaOpcional" text="Tema opcional" GridPane.columnIndex="1" GridPane.rowIndex="3" />
-			      <Label text="É avaliação" GridPane.rowIndex="4" />
+                              <Label text="É avaliação" GridPane.rowIndex="4" />
                               <CheckBox fx:id="chkTemaOpcional1" text="Sim/Não" GridPane.columnIndex="1" GridPane.rowIndex="4" />
 
-			      <Label prefHeight="17.0" prefWidth="97.0" text="Dependencias:" GridPane.rowIndex="6" />
-			      <Label text="Tema:" GridPane.rowIndex="7" />
-		              <ComboBox fx:id="cbDisciplinaTema1" prefWidth="220.0" promptText="Selecione um tema" GridPane.columnIndex="1" GridPane.rowIndex="7" />
-			      <Button fx:id="btnSalvarTema1" defaultButton="true" mnemonicParsing="false" text="Adicionar dependencia" GridPane.columnIndex="2" GridPane.rowIndex="7" />
+                              <Label prefHeight="17.0" prefWidth="97.0" text="Dependencias:" GridPane.rowIndex="6" />
+                              <Label text="Tema:" GridPane.rowIndex="7" />
+                              <ComboBox fx:id="cbDisciplinaTema1" prefWidth="220.0" promptText="Selecione um tema" GridPane.columnIndex="1" GridPane.rowIndex="7" />
+                              <Button fx:id="btnSalvarTema1" defaultButton="true" mnemonicParsing="false" text="Adicionar dependencia" GridPane.columnIndex="2" GridPane.rowIndex="7" />
 
                               <Button fx:id="btnSalvarTema" defaultButton="true" mnemonicParsing="false" text="Salvar tema" GridPane.rowIndex="9" />
-                              
-                              
-                              
+
+
+
                            </children>
                            <rowConstraints>
                               <RowConstraints />
@@ -117,8 +117,8 @@
                   <Label style="-fx-font-size: 16px; -fx-font-weight: bold;" text="Lista de temas cadastrados" />
                   <HBox prefWidth="200.0">
                      <children>
-                        <ComboBox prefWidth="150.0" promptText="Selecione o curso" />
-                        <ComboBox prefHeight="25.0" prefWidth="169.0" promptText="Selecione o semestre" />
+                        <ComboBox fx:id="cbFiltroCurso" onAction="#selecionarCurso" prefWidth="150.0" promptText="Selecione o curso" />
+                        <ComboBox fx:id="cbFiltroSemestre" onAction="#selecionarSemestre" prefHeight="25.0" prefWidth="169.0" promptText="Selecione o semestre" />
                      </children>
                   </HBox>
                   <TableView fx:id="tbTemas" prefHeight="150.0" VBox.vgrow="NEVER">
@@ -179,19 +179,19 @@
                   <HBox prefWidth="200.0">
                      <children>
                         <Label prefHeight="19.0" prefWidth="94.0" style="-fx-font-size: 16px; -fx-font-weight: bold;" text="Cronograma" />
-                        <Button mnemonicParsing="false" text="Gerar Cronograma" />
+                        <Button fx:id="btnGerarCronograma" mnemonicParsing="false" onAction="#gerarCronograma" text="Gerar Cronograma" />
                      </children>
                   </HBox>
-                  <TableView prefHeight="200.0" prefWidth="200.0">
-                    <columns>
-                      <TableColumn prefWidth="75.0" text="Data" />
-                      <TableColumn prefWidth="75.0" text="Disciplina" />
-                        <TableColumn prefWidth="75.0" text="Avaliacao" />
-                        <TableColumn prefWidth="75.0" text="Tema" />
-                        <TableColumn prefWidth="75.0" text="Qtd. Aulas" />
-                        <TableColumn prefWidth="88.0" text="Status" />
-                        <TableColumn prefWidth="154.0" text="Motivo cancelamento" />
-                    </columns>
+                  <TableView fx:id="tvCronograma" prefHeight="200.0" prefWidth="200.0">
+                     <columns>
+                        <TableColumn fx:id="colData" prefWidth="75.0" text="Data" />
+                        <TableColumn fx:id="colDisciplina" prefWidth="75.0" text="Disciplina" />
+                        <TableColumn fx:id="colAvaliacao" prefWidth="75.0" text="Avaliacao" />
+                        <TableColumn fx:id="colTema" prefWidth="75.0" text="Tema" />
+                        <TableColumn fx:id="colQtdAulas" prefWidth="75.0" text="Qtd. Aulas" />
+                        <TableColumn fx:id="colStatus" prefWidth="88.0" text="Status" />
+                        <TableColumn fx:id="colMotivo" prefWidth="154.0" text="Motivo cancelamento" />
+                     </columns>
                      <columnResizePolicy>
                         <TableView fx:constant="CONSTRAINED_RESIZE_POLICY" />
                      </columnResizePolicy>
@@ -200,17 +200,17 @@
                   <HBox prefWidth="200.0">
                      <children>
                         <Label text="Data:" />
-                        <DatePicker disable="true" prefHeight="25.0" prefWidth="93.0" />
+                        <DatePicker fx:id="dpEdicaoData" disable="true" prefHeight="25.0" prefWidth="93.0" />
                         <Label text="Tema:" />
-                        <ComboBox disable="true" prefWidth="150.0" promptText="Selecione o tema" />
+                        <ComboBox fx:id="cbEdicaoTema" disable="true" prefWidth="150.0" promptText="Selecione o tema" />
                         <Label text="Qtd. Aulas:" />
-                        <Spinner disable="true" />
+                        <Spinner fx:id="spEdicaoQtdAulas" disable="true" />
                      </children>
                   </HBox>
                   <HBox prefWidth="200.0">
                      <children>
                         <Label text="Motivo cancelamento:" />
-                        <TextField disable="true" prefHeight="25.0" prefWidth="285.0" promptText="Qual o motivo?" />
+                        <TextField fx:id="txtEdicaoMotivo" disable="true" prefHeight="25.0" prefWidth="285.0" promptText="Qual o motivo?" />
                      </children>
                   </HBox>
                   <HBox prefWidth="200.0">
