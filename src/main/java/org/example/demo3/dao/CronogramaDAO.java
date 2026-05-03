@@ -3,7 +3,8 @@ package org.example.demo3.dao;
 
 import org.example.demo3.DatabaseConnection;
 import org.example.demo3.dto.CronogramaExibicaoDTO;
-import org.example.demo3.entity.CronogramaFinal;
+import org.example.demo3.entity.Cronograma;
+import org.example.demo3.entity.CronogramaItem;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -57,4 +58,67 @@ public class CronogramaDAO {
         }
         return lista_cf;
     }
+
+    public Cronograma buscarCronograma(int profId, int cursoId, int semestreId) throws SQLException {
+        String sql = "SELECT * FROM cronograma WHERE usuario_id = ? AND curso_id = ? AND grade_semestre = ?";
+        Connection conn = null;
+        PreparedStatement ps = null;
+        ResultSet rs = null;
+
+        try {
+            conn = DatabaseConnection.getConnection();
+            ps = conn.prepareStatement(sql);
+            ps.setInt(1, profId);
+            ps.setInt(2, cursoId);
+            ps.setInt(3, semestreId);
+
+            rs = ps.executeQuery();
+            if (rs.next()) {
+                return new Cronograma(
+                        rs.getInt("id_cronograma"),
+                        rs.getInt("usuario_id"),
+                        rs.getInt("curso_id"),
+                        rs.getInt("semestre_id"),
+                        rs.getInt("grade_semestre")
+                );
+            }
+        } catch (SQLException e) {
+            System.err.println("Erro ao buscar cronograma: " + e.getMessage());
+            throw e;
+        } finally {
+            DatabaseConnection.closeConnection();
+        }
+        return null;
+    }
+
+    public int inserirCronograma(Cronograma c) throws SQLException {
+        String sql = "INSERT INTO cronograma (usuario_id, curso_id, semestre_id, grade_semestre) VALUES (?, ?, ?, ?)";
+        Connection conn = null;
+        PreparedStatement ps = null;
+        ResultSet rs = null;
+
+        try {
+            conn = DatabaseConnection.getConnection();
+
+            ps = conn.prepareStatement(sql, PreparedStatement.RETURN_GENERATED_KEYS);
+            ps.setInt(1, c.getUsuario_id());
+            ps.setInt(2, c.getCurso_id());
+            ps.setInt(3, c.getSemestre_id());
+            ps.setInt(4, c.getGrade_semestre());
+
+            ps.executeUpdate();
+
+            rs = ps.getGeneratedKeys();
+            if (rs.next()) {
+                return rs.getInt(1);
+            }
+        } catch (SQLException e) {
+            System.err.println("Erro ao inserir cronograma: " + e.getMessage());
+            throw e;
+        } finally {
+            DatabaseConnection.closeConnection();
+        }
+        return -1;
+    }
+
 }

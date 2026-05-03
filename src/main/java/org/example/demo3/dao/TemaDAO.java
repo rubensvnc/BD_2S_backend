@@ -93,27 +93,36 @@ public class TemaDAO {
         }
     }
 
-    public List<Disciplina> buscarTodasDisciplinas() throws SQLException {
+    public List<Disciplina> buscarTodasDisciplinasPorProfessor(int idProfessor) throws SQLException {
         List<Disciplina> lista = new ArrayList<>();
-        // Melhorado: Traz o nome do curso junto para facilitar a identificação no ComboBox
-        String sql = "SELECT d.*, c.nome AS nome_curso FROM disciplina d " +
-                "JOIN curso c ON d.curso_id = c.id_curso";
+
+        // SQL filtrando pela tabela de atribuição para garantir que só venham disciplinas do professor
+        // Usamos DISTINCT porque um professor pode ter várias atribuições (dias diferentes) para a mesma disciplina
+        String sql = "SELECT DISTINCT d.*, c.nome AS nome_curso " +
+                "FROM disciplina d " +
+                "INNER JOIN curso c ON d.curso_id = c.id_curso " +
+                "INNER JOIN atribuicao a ON d.id_disciplina = a.disciplina_id " +
+                "WHERE a.usuario_id = ?";
 
         try (Connection conn = getConn();
-             PreparedStatement ps = conn.prepareStatement(sql);
-             ResultSet rs = ps.executeQuery()) {
+             PreparedStatement ps = conn.prepareStatement(sql)) {
 
-            while (rs.next()) {
-                Disciplina d = new Disciplina(
-                        rs.getInt("id_disciplina"),
-                        rs.getInt("curso_id"),
-                        rs.getString("nome"),
-                        rs.getInt("carga_horaria"),
-                        rs.getInt("semestre")
-                );
-                // Se sua entidade Disciplina tiver esse campo, seria útil:
-                // d.setNomeCurso(rs.getString("nome_curso"));
-                lista.add(d);
+            // Definindo o ID do professor no parâmetro do PreparedStatement
+            ps.setInt(1, idProfessor);
+
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    Disciplina d = new Disciplina(
+                            rs.getInt("id_disciplina"),
+                            rs.getInt("curso_id"),
+                            rs.getString("nome"),
+                            rs.getInt("carga_horaria"),
+                            rs.getInt("semestre")
+                    );
+                    // Se sua entidade tiver o campo nomeCurso, você pode preenchê-lo aqui:
+                    // d.setNomeCurso(rs.getString("nome_curso"));
+                    lista.add(d);
+                }
             }
         }
         return lista;
@@ -161,6 +170,62 @@ public class TemaDAO {
                 conn.rollback();
                 throw e;
             }
+        }
+    }
+
+    public List<Tema> listarPorDisciplina(int discId) throws SQLException {
+        String sql = "SELECT * FROM tema WHERE disciplina_id = ? ORDER BY prioridade ASC";
+        Connection conn = null;
+        PreparedStatement ps = null;
+        ResultSet rs = null;
+        List<Tema> lista = new ArrayList<>();
+
+        try {
+            conn = DatabaseConnection.getConnection();
+            ps = conn.prepareStatement(sql);
+            ps.setInt(1, discId);
+            rs = ps.executeQuery();
+
+            while (rs.next()) {
+                Tema tema = new Tema();
+                tema.setId(rs.getInt("id_tema"));
+                tema.setDisciplinaId(rs.getInt("disciplina_id"));
+                tema.setNome(rs.getString("nome"));
+                tema.setPrioridade(rs.getInt("prioridade"));
+                tema.setQtdMinAulas(rs.getInt("qtd_min_aulas"));
+                tema.setQtdMaxAulas(rs.getInt("qtd_max_aulas"));
+                tema.setEhAvaliacao(rs.getBoolean("eh_avaliacao"));
+                tema.setEhOpcional(rs.getBoolean("eh_opcional"));
+                lista.add(tema);
+            }
+        } catch (SQLException e) {
+            System.err.println("Erro ao listar temas: " + e.getMessage());
+            throw e;
+        } finally {
+            DatabaseConnection.closeConnection();
+        }
+        return lista;
+    }
+
+    public boolean verificarDependencia(int temaId) throws SQLException {
+        // Verifica se existe algum tema anterior na tabela tema_dependencia para o tema_posterior informado
+        String sql = "SELECT 1 FROM tema_dependencia WHERE tema_posterior = ? LIMIT 1";
+        Connection conn = null;
+        PreparedStatement ps = null;
+        ResultSet rs = null;
+
+        try {
+            conn = DatabaseConnection.getConnection();
+            ps = conn.prepareStatement(sql);
+            ps.setInt(1, temaId);
+            rs = ps.executeQuery();
+
+            return rs.next(); // Retorna true se houver dependência cadastrada
+        } catch (SQLException e) {
+            System.err.println("Erro ao verificar dependência do tema: " + e.getMessage());
+            throw e;
+        } finally {
+            DatabaseConnection.closeConnection();
         }
     }
 }
