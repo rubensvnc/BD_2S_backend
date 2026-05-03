@@ -59,4 +59,35 @@ public class DataRestritaTodosDAO {
             stmt.executeUpdate();
         }
     }
+
+    public List<DataRestritaTodos> listarTodas() throws SQLException {
+        String sql = "SELECT id_data_restrita, adm_id, data_bloqueio, descricao FROM data_restrita_todos";
+
+        Connection conn = null;
+        PreparedStatement ps = null;
+        ResultSet rs = null;
+        List<DataRestritaTodos> lista = new ArrayList<>();
+
+        try {
+            conn = DatabaseConnection.getConnection();
+            ps = conn.prepareStatement(sql);
+            rs = ps.executeQuery();
+
+            while (rs.next()) {
+                DataRestritaTodos data = new DataRestritaTodos(
+                        rs.getInt("id_data_restrita"),
+                        rs.getInt("adm_id"),
+                        rs.getDate("data_bloqueio").toLocalDate(),
+                        rs.getString("descricao")
+                );
+                lista.add(data);
+            }
+        } catch (SQLException e) {
+            System.err.println("Erro ao listar datas restritas: " + e.getMessage());
+            throw e;
+        } finally {
+            DatabaseConnection.closeConnection();
+        }
+        return lista;
+    }
 }

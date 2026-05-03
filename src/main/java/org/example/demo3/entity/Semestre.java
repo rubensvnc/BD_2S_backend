@@ -2,7 +2,7 @@ package org.example.demo3.entity;
 
 import java.time.LocalDate;
 
-public class SemestreLetivo {
+public class Semestre {
     private int id;
     private int ano;
     private String numeroSemestre; // Corresponde ao ENUM '1' ou '2'
@@ -10,7 +10,7 @@ public class SemestreLetivo {
     private LocalDate dataFim;
 
     //CONSTRUTOR
-    public SemestreLetivo(int id, int ano, String numeroSemestre, LocalDate dataInicio, LocalDate dataFim) {
+    public Semestre(int id, int ano, String numeroSemestre, LocalDate dataInicio, LocalDate dataFim) {
         this.id = id;
         this.ano = ano;
         this.numeroSemestre = numeroSemestre;
