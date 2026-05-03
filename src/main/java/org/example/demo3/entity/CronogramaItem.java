@@ -11,15 +11,31 @@ public class CronogramaItem {
     private Integer qtd_aulas;
     private String status_aula;
 
-    public CronogramaItem(Integer id_item, Integer cronograma_id, Integer tema_id,
-                          Integer id_data_cancelada, LocalDate data_prevista,
-                          Integer qtd_aulas, String status_aula) {
+    public void setId_item(Integer id_item) {
         this.id_item = id_item;
+    }
+
+    public void setCronograma_id(Integer cronograma_id) {
         this.cronograma_id = cronograma_id;
+    }
+
+    public void setTema_id(Integer tema_id) {
         this.tema_id = tema_id;
+    }
+
+    public void setId_data_cancelada(Integer id_data_cancelada) {
         this.id_data_cancelada = id_data_cancelada;
+    }
+
+    public void setData_prevista(LocalDate data_prevista) {
         this.data_prevista = data_prevista;
+    }
+
+    public void setQtd_aulas(Integer qtd_aulas) {
         this.qtd_aulas = qtd_aulas;
+    }
+
+    public void setStatus_aula(String status_aula) {
         this.status_aula = status_aula;
     }
 
