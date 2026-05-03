@@ -1,51 +1,38 @@
 package org.example.demo3.entity;
 
-import java.sql.Date;
+public class Cronograma {
+    private Integer id_cronograma;
+    private Integer usuario_id;
+    private Integer curso_id;
+    private Integer semestre_id;
+    private Integer grade_semestre;
 
-public class CronogramaFinal {
-    private Long id_item;
-    private Long id_atribuicao;
-    private Date data_aula;
-    private Long id_tema;
-    private String status;
-    private String motivo_cancelamento;
-    private Boolean is_sabado_letivo;
-
-    public CronogramaFinal(Long id_item, Long id_atribuicao, Date data_aula, Long id_tema, String status, String motivo_cancelamento, Boolean is_sabado_letivo) {
-        this.id_item = id_item;
-        this.id_atribuicao = id_atribuicao;
-        this.data_aula = data_aula;
-        this.id_tema = id_tema;
-        this.status = status;
-        this.motivo_cancelamento = motivo_cancelamento;
-        this.is_sabado_letivo = is_sabado_letivo;
+    public Cronograma(Integer id_cronograma, Integer usuario_id, Integer curso_id,
+                      Integer semestre_id, Integer grade_semestre) {
+        this.id_cronograma = id_cronograma;
+        this.usuario_id = usuario_id;
+        this.curso_id = curso_id;
+        this.semestre_id = semestre_id;
+        this.grade_semestre = grade_semestre;
     }
 
-    public Long getId_item() {
-        return id_item;
+    public Integer getId_cronograma() {
+        return id_cronograma;
     }
 
-    public Long getId_atribuicao() {
-        return id_atribuicao;
+    public Integer getUsuario_id() {
+        return usuario_id;
     }
 
-    public Date getData_aula() {
-        return data_aula;
+    public Integer getCurso_id() {
+        return curso_id;
     }
 
-    public Long getId_tema() {
-        return id_tema;
+    public Integer getSemestre_id() {
+        return semestre_id;
     }
 
-    public String getStatus() {
-        return status;
-    }
-
-    public String getMotivo_cancelamento() {
-        return motivo_cancelamento;
-    }
-
-    public Boolean getIs_sabado_letivo() {
-        return is_sabado_letivo;
+    public Integer getGrade_semestre() {
+        return grade_semestre;
     }
 }
