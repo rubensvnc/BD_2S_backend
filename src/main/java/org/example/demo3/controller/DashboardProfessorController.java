@@ -37,9 +37,10 @@ public class DashboardProfessorController {
     @FXML private TableColumn<CronogramaExibicaoDTO, String> colMotivo;
 
     // Mock ID
-    private final Integer MOCK_ID_PROFESSOR = 2;
+    private final Integer MOCK_ID_PROFESSOR = 5;
     private Integer idCursoAtual = null;
     private Integer idSemestreAtual = null;
+
 
     //TEMAS E DEPENDENCIAS AQUI
     @FXML private ComboBox<Disciplina> cbDisciplinaTema;
@@ -61,7 +62,7 @@ public class DashboardProfessorController {
     private final ObservableList<Tema> listaComboDependencias = FXCollections.observableArrayList();
     private final ObservableList<Tema> dependenciasPendentes = FXCollections.observableArrayList();
 
-
+    private GeradorCronograma gerador = new GeradorCronograma();
 
     @FXML
     public void initialize() {
@@ -135,6 +136,14 @@ public class DashboardProfessorController {
     public void selecionarSemestre(){
         if (cbFiltroSemestre.getValue() != null){
             idSemestreAtual = Integer.parseInt(cbFiltroSemestre.getValue());
+
+            DisciplinaDAO disciplinaDAO = new DisciplinaDAO();
+
+            List<Tema> dadosBanco = disciplinaDAO.listarTemasPorProfessorECurso
+                    (MOCK_ID_PROFESSOR, idCursoAtual, idSemestreAtual);
+            ObservableList<Tema> listaObservable = FXCollections.observableArrayList(dadosBanco);
+            tbTemas.setItems(listaObservable);
+
         }
     }
 
@@ -152,7 +161,13 @@ public class DashboardProfessorController {
     }
 
     public void gerarCronograma(){
-        preencherCronograma();
+        try {
+            gerador.gerarCronograma(MOCK_ID_PROFESSOR, idCursoAtual, idSemestreAtual);
+            preencherCronograma();
+        } catch (SQLException e){
+
+        }
+
     }
 
 
@@ -213,7 +228,7 @@ public class DashboardProfessorController {
             return new SimpleStringProperty(deps.stream().map(Tema::getNome).collect(Collectors.joining(", ")));
         });
 
-        tbTemas.setItems(listaTemas);
+        tbTemas.setItems(null);
         cbTemaDependencia.setItems(listaComboDependencias);
     }
 
@@ -364,12 +379,12 @@ public class DashboardProfessorController {
     // --- CARREGAMENTO DE DADOS (DAO) ---
 
     private void carregarDadosIniciais() {
-        carregarDisciplinas();
+            carregarDisciplinas();
         carregarTodosOsTemas();
     }
 
     private void carregarDisciplinas() {
-        try { cbDisciplinaTema.setItems(FXCollections.observableArrayList(temaDAO.buscarTodasDisciplinas())); }
+        try { cbDisciplinaTema.setItems(FXCollections.observableArrayList(temaDAO.buscarTodasDisciplinasPorProfessor(MOCK_ID_PROFESSOR))); }
         catch (SQLException e) { mostrarAlerta("Erro", e.getMessage()); }
     }
 
