@@ -1,0 +1,160 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.CheckBox?>
+<?import javafx.scene.control.ComboBox?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.ListView?>
+<?import javafx.scene.control.ScrollPane?>
+<?import javafx.scene.control.Separator?>
+<?import javafx.scene.control.Spinner?>
+<?import javafx.scene.control.SplitPane?>
+<?import javafx.scene.control.TableColumn?>
+<?import javafx.scene.control.TableView?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Region?>
+<?import javafx.scene.layout.VBox?>
+
+<BorderPane fx:id="BorderPane_Temas" xmlns="http://javafx.com/javafx/25" xmlns:fx="http://javafx.com/fxml/1" fx:controller="org.example.demo3.controller.ProfTemasController">
+
+    <top>
+        <VBox spacing="6">
+            <padding><Insets bottom="8" left="16" right="16" top="12" /></padding>
+            <HBox alignment="CENTER_LEFT" spacing="16">
+                <Label style="-fx-font-size: 16px; -fx-font-weight: bold;" text="Temas" />
+                <Label text="Disciplina:" />
+                <!-- Filtrado pelas disciplinas atribuídas ao professor no contexto global -->
+                <ComboBox fx:id="cbDisciplinaTema" onAction="#handleDisciplinaChange" prefWidth="260" promptText="Selecione a disciplina" />
+            </HBox>
+        </VBox>
+    </top>
+
+    <!-- SplitPane vertical:
+         Superior → Tabela de temas + formulário de tema (SplitPane horizontal)
+         Inferior → Editor de dependências do tema selecionado               -->
+    <center>
+        <SplitPane dividerPositions="0.52" orientation="VERTICAL">
+
+            <!-- ══════════════════════════════════════
+                 PAINEL SUPERIOR (horizontal interno)
+            ═══════════════════════════════════════ -->
+            <SplitPane dividerPositions="0.53">
+
+                <!-- Lista de temas da disciplina selecionada -->
+                <VBox spacing="8">
+                    <padding><Insets bottom="8" left="14" right="8" top="8" /></padding>
+                    <HBox alignment="CENTER_LEFT" spacing="8">
+                        <Label style="-fx-font-weight: bold;" text="Temas Cadastrados" HBox.hgrow="ALWAYS" />
+                        <Button onAction="#handleNovoTema" style="-fx-background-color: #27ae60; -fx-text-fill: white;" text="+ Novo Tema" />
+                    </HBox>
+                    <TableView fx:id="tabelaTemas" onMouseClicked="#handleSelecionarTema" VBox.vgrow="ALWAYS">
+                        <columns>
+                            <TableColumn fx:id="colTemaPrior" prefWidth="52" text="Prior." />
+                            <TableColumn fx:id="colTemaNome" prefWidth="190" text="Nome" />
+                            <TableColumn fx:id="colTemaMin" prefWidth="45" text="Mín" />
+                            <TableColumn fx:id="colTemaMax" prefWidth="45" text="Máx" />
+                            <TableColumn fx:id="colTemaAval" prefWidth="50" text="Aval?" />
+                            <TableColumn fx:id="colTemaOpc" prefWidth="45" text="Opc?" />
+                            <TableColumn fx:id="colTemaAcoes" prefWidth="65" text="Ações" />
+                        </columns>
+                        <placeholder>
+                            <Label text="Selecione uma disciplina e adicione temas." />
+                        </placeholder>
+                    </TableView>
+                </VBox>
+
+                <!-- Formulário de tema (novo / editar) -->
+                <ScrollPane fitToWidth="true">
+                    <VBox spacing="10">
+                        <padding><Insets bottom="8" left="8" right="14" top="8" /></padding>
+                        <Label fx:id="lblTituloFormTema" style="-fx-font-weight: bold; -fx-font-size: 13px;" text="Novo Tema" />
+
+                        <VBox spacing="3">
+                            <Label text="Nome do Tema *" />
+                            <TextField fx:id="tfTemaNome" promptText="Ex.: Introdução ao Java" />
+                            <Label fx:id="errTemaNome" managed="false" styleClass="error-label" visible="false" />
+                        </VBox>
+
+                        <HBox spacing="10">
+                            <VBox spacing="3" HBox.hgrow="ALWAYS">
+                                <Label text="Mín. Aulas *" />
+                                <Spinner fx:id="spTemaMin" initialValue="1" max="99" min="1" prefWidth="80" />
+                            </VBox>
+                            <VBox spacing="3" HBox.hgrow="ALWAYS">
+                                <Label text="Máx. Aulas *" />
+                                <Spinner fx:id="spTemaMax" initialValue="2" max="99" min="1" prefWidth="80" />
+                            </VBox>
+                            <VBox spacing="3" HBox.hgrow="ALWAYS">
+                                <Label text="Prioridade *" />
+                                <Spinner fx:id="spTemaPrioridade" initialValue="1" max="9999" min="1" prefWidth="80" />
+                            </VBox>
+                        </HBox>
+
+                        <HBox spacing="20">
+                            <CheckBox fx:id="cbTemaAvaliacao" text="É Avaliação?" />
+                            <CheckBox fx:id="cbTemaOpcional" text="É Opcional?" />
+                        </HBox>
+
+                        <HBox alignment="CENTER_RIGHT" spacing="8">
+                            <Button onAction="#handleLimparTema" text="Limpar" />
+                            <Button onAction="#handleSalvarTema" style="-fx-background-color: #2980b9; -fx-text-fill: white;" text="Salvar Tema" />
+                        </HBox>
+                        <Label fx:id="lblFeedbackTema" managed="false" styleClass="feedback-label" visible="false" />
+                    </VBox>
+                </ScrollPane>
+            </SplitPane>
+
+            <!-- ══════════════════════════════════════
+                 PAINEL INFERIOR — Dependências do Tema
+                 Cobre: 8.2.2 (dependências ordenadas, detecção circular)
+            ═══════════════════════════════════════ -->
+            <VBox spacing="8">
+                <padding><Insets bottom="10" left="14" right="14" top="8" /></padding>
+
+                <HBox alignment="CENTER_LEFT" spacing="10">
+                    <Label style="-fx-font-weight: bold;" text="Dependências do tema:" />
+                    <Label fx:id="lblTemaSelecionadoDep" style="-fx-text-fill: #7f8c8d;" text="(selecione um tema acima)" />
+                    <Region HBox.hgrow="ALWAYS" />
+                    <!-- Alerta de dependência circular — exibido pelo controller quando detectado -->
+                    <Label fx:id="lblErrCircular" managed="false" style="-fx-text-fill: #e74c3c; -fx-font-weight: bold;" text="⚠ Dependência circular detectada! Corrija antes de salvar." visible="false" />
+                </HBox>
+
+                <Label style="-fx-text-fill: #7f8c8d; -fx-font-size: 11px;" text="Use → ← para adicionar/remover e ↑ ↓ para reordenar. A ordem indica a sequência de precedência." wrapText="true" />
+
+                <HBox spacing="8" VBox.vgrow="ALWAYS">
+
+                    <!-- Temas disponíveis (exceto o próprio) -->
+                    <VBox spacing="4" HBox.hgrow="ALWAYS">
+                        <Label style="-fx-font-size: 11px; -fx-font-weight: bold;" text="Temas disponíveis" />
+                        <ListView fx:id="listTemasDisponiveis" VBox.vgrow="ALWAYS" />
+                    </VBox>
+
+                    <!-- Controles de transferência e ordem -->
+                    <VBox alignment="CENTER" spacing="6">
+                        <Button onAction="#handleAdicionarDep" prefWidth="34" text="→" />
+                        <Button onAction="#handleRemoverDep" prefWidth="34" text="←" />
+                        <Separator />
+                        <Button onAction="#handleSubirDep" prefWidth="34" text="↑" />
+                        <Button onAction="#handleDescerDep" prefWidth="34" text="↓" />
+                    </VBox>
+
+                    <!-- Dependências ordenadas (índice 0 = primeiro a ser lecionado) -->
+                    <VBox spacing="4" HBox.hgrow="ALWAYS">
+                        <Label style="-fx-font-size: 11px; -fx-font-weight: bold;" text="Dependências (em ordem de precedência)" />
+                        <ListView fx:id="listDependencias" VBox.vgrow="ALWAYS" />
+                    </VBox>
+
+                </HBox>
+
+                <HBox alignment="CENTER_RIGHT">
+                    <Button onAction="#handleSalvarDependencias" style="-fx-background-color: #8e44ad; -fx-text-fill: white;" text="💾 Salvar Dependências" />
+                </HBox>
+            </VBox>
+
+        </SplitPane>
+    </center>
+
+</BorderPane>

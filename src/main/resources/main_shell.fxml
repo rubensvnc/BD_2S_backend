@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.ComboBox?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.Separator?>
+<?import javafx.scene.control.ToggleButton?>
+<?import javafx.scene.control.ToolBar?>
+<?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Region?>
+<?import javafx.scene.layout.StackPane?>
+<?import javafx.scene.layout.VBox?>
+
+<BorderPane prefHeight="768" prefWidth="1366" xmlns="http://javafx.com/javafx/25" xmlns:fx="http://javafx.com/fxml/1" fx:controller="org.example.demo3.controller.MainShellController">
+
+    <!-- TOPO: Seletor de Contexto Global + Banner Read-Only -->
+    <top>
+        <VBox>
+            <ToolBar style="-fx-background-color: #2c3e50; -fx-padding: 6 12;">
+
+                <Label style="-fx-text-fill: #ecf0f1;" text="Ano:" />
+                <ComboBox fx:id="cbAno" onAction="#handleContextChange" prefWidth="80" />
+
+                <Separator orientation="VERTICAL" />
+
+                <Label style="-fx-text-fill: #ecf0f1;" text="Semestre:" />
+                <!-- ToggleGroup controlado pelo controller para garantir exclusividade -->
+                <ToggleButton fx:id="tbSem1" onAction="#handleSemestreToggle" text="1º" />
+                <ToggleButton fx:id="tbSem2" onAction="#handleSemestreToggle" text="2º" />
+
+                <Separator orientation="VERTICAL" />
+
+                <Label style="-fx-text-fill: #ecf0f1;" text="Curso:" />
+                <ComboBox fx:id="cbCurso" onAction="#handleContextChange" prefWidth="200" />
+
+                <Separator orientation="VERTICAL" />
+
+                <Label style="-fx-text-fill: #ecf0f1;" text="Sem. do Curso:" />
+                <ComboBox fx:id="cbSemestreCurso" onAction="#handleContextChange" prefWidth="80" />
+            <Label style="-fx-text-fill: #ecf0f1;" text="Disciplina:" />
+            <ComboBox onAction="#handleContextChange" prefWidth="80" />
+
+                <!-- Espaço flexível empurra info do usuário para a direita -->
+                <Region HBox.hgrow="ALWAYS" />
+
+                <Label fx:id="lblNomeUsuario" style="-fx-text-fill: #ecf0f1; -fx-font-weight: bold;" />
+                <Label fx:id="lblPerfilUsuario" style="-fx-text-fill: #95a5a6; -fx-font-size: 11px;" />
+                <Separator orientation="VERTICAL" />
+                <Button onAction="#handleLogout" style="-fx-background-color: transparent; -fx-text-fill: #ecf0f1; -fx-border-color: #7f8c8d; -fx-border-radius: 3;" text="Sair" />
+            </ToolBar>
+
+            <!-- Banner de modo somente leitura — visível apenas em períodos passados -->
+            <Label fx:id="bannerReadOnly" managed="false" maxWidth="Infinity" style="-fx-background-color: #f39c12; -fx-text-fill: #2c3e50;                           -fx-padding: 5 12; -fx-font-weight: bold; -fx-font-size: 12px;" text="⚠   Você está visualizando um período passado — modo somente leitura" textAlignment="CENTER" visible="false" />
+        </VBox>
+    </top>
+
+    <!-- ESQUERDA: Menu de navegação lateral (itens filtrados por perfil no controller) -->
+    <left>
+        <VBox fx:id="menuLateral" prefWidth="210" spacing="2" style="-fx-background-color: #34495e;">
+            <padding><Insets bottom="14" left="8" right="8" top="14" /></padding>
+
+            <!-- Seção ADM -->
+            <VBox fx:id="secaoAdm" managed="false" spacing="2" visible="false">
+                <Label style="-fx-text-fill: #95a5a6; -fx-font-size: 10px; -fx-padding: 6 0 2 4;" text="ADMINISTRADOR" />
+                <Button maxWidth="Infinity" onAction="#navCalendario" styleClass="menu-item" text="📅  Calendário Acadêmico" />
+                <Button maxWidth="Infinity" onAction="#navCursosHorarios" styleClass="menu-item" text="🏫  Cursos e Horários" />
+                <Button maxWidth="Infinity" onAction="#navCoordenaodresAdms" styleClass="menu-item" text="👥  Coordenadores / ADMs" />
+                <Button maxWidth="Infinity" onAction="#navCalendario" styleClass="menu-item" text="🚫  Bloqueios e Cancelamentos" />
+            </VBox>
+
+            <!-- Seção Coordenador -->
+            <VBox fx:id="secaoCoordenador" managed="false" spacing="2" visible="false">
+                <Label style="-fx-text-fill: #95a5a6; -fx-font-size: 10px; -fx-padding: 6 0 2 4;" text="COORDENADOR" />
+                <Button maxWidth="Infinity" onAction="#navCoordPainel" styleClass="menu-item" text="📚  Disciplinas e Professores" />
+            </VBox>
+
+            <!-- Seção Professor -->
+            <VBox fx:id="secaoProfessor" managed="false" spacing="2" visible="false">
+                <Label style="-fx-text-fill: #95a5a6; -fx-font-size: 10px; -fx-padding: 6 0 2 4;" text="PROFESSOR" />
+                <Button maxWidth="Infinity" onAction="#navTemas" styleClass="menu-item" text="📝  Temas" />
+                <Button maxWidth="Infinity" onAction="#navPlanejamento" styleClass="menu-item" text="📋  Planejamento e Estatísticas" />
+            </VBox>
+
+        </VBox>
+    </left>
+
+    <!-- CENTRO: Área de conteúdo — FXMLs são carregados aqui via FXMLLoader -->
+    <center>
+        <StackPane fx:id="areaConteudo" style="-fx-background-color: #ecf0f1;">
+            <Label style="-fx-text-fill: #95a5a6; -fx-font-size: 14px;" text="Selecione uma seção no menu lateral." />
+        </StackPane>
+    </center>
+
+</BorderPane>
