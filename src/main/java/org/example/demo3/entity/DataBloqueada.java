@@ -1,14 +1,14 @@
 package org.example.demo3.entity;
 import java.time.LocalDate;
 
-public class DataCritica {
+public class DataBloqueada {
     private LocalDate data_bloqueio;
     private String descricao;
     private Long id_restricao;
     private Long id_referencia;
 
 
-    public DataCritica(LocalDate data_bloqueio, String descricao, Long id_restricao, Long id_referencia) {
+    public DataBloqueada(LocalDate data_bloqueio, String descricao, Long id_restricao, Long id_referencia) {
         this.data_bloqueio = data_bloqueio;
         this.descricao = descricao;
         this.id_restricao = id_restricao;
