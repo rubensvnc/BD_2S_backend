@@ -14,6 +14,8 @@ public class CancelamentoAdm{
     private LocalDate criado_em;
     private LocalDate deletado_em;
 
+    public CancelamentoAdm(){};
+
     public CancelamentoAdm(Integer id_cancelamento_adm, Integer adm_id, Integer semestre_letivo_id,
                            LocalDate data, String turno, Boolean dia_inteiro, String motivo,
                            LocalDate criado_em, LocalDate deletado_em) {
