@@ -12,14 +12,14 @@ public class Tema {
     private Integer qtd_max_aulas;
     private Integer prioridade;
     private Integer eh_opcional;
-    private LocalDate deleted_at;
+    private LocalDate deletado_em;
 
     public Tema() {
     }
 
     public Tema(Integer id_tema, Integer disciplina_id, Integer semestre_letivo_id, String nome,
                 Integer eh_avaliacao, Integer qtd_min_aulas, Integer qtd_max_aulas,
-                Integer prioridade, Integer eh_opcional, LocalDate deleted_at) {
+                Integer prioridade, Integer eh_opcional, LocalDate deletado_em) {
         this.id_tema = id_tema;
         this.disciplina_id = disciplina_id;
         this.semestre_letivo_id = semestre_letivo_id;
@@ -29,7 +29,7 @@ public class Tema {
         this.qtd_max_aulas = qtd_max_aulas;
         this.prioridade = prioridade;
         this.eh_opcional = eh_opcional;
-        this.deleted_at = deleted_at;
+        this.deletado_em = deletado_em;
     }
 
     // Getters e Setters
@@ -105,11 +105,11 @@ public class Tema {
         this.eh_opcional = eh_opcional;
     }
 
-    public LocalDate getDeleted_at() {
-        return deleted_at;
+    public LocalDate getDeletado_em() {
+        return deletado_em;
     }
 
-    public void setDeleted_at(LocalDate deleted_at) {
-        this.deleted_at = deleted_at;
+    public void setDeletado_em(LocalDate deletado_em) {
+        this.deletado_em = deletado_em;
     }
 }
