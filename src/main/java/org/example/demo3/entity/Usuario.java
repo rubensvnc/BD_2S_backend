@@ -8,19 +8,19 @@ public class Usuario {
     private String email;
     private String senha_hash;
     private LocalDate criado_em;
-    private LocalDate deleted_at;
+    private LocalDate deletado_em;
 
     public Usuario() {
     }
 
     public Usuario(Integer id_usuario, String nome, String email, String senha_hash,
-                   LocalDate criado_em, LocalDate deleted_at) {
+                   LocalDate criado_em, LocalDate deletado_em) {
         this.id_usuario = id_usuario;
         this.nome = nome;
         this.email = email;
         this.senha_hash = senha_hash;
         this.criado_em = criado_em;
-        this.deleted_at = deleted_at;
+        this.deletado_em = deletado_em;
     }
 
     // Getters e Setters
@@ -64,11 +64,11 @@ public class Usuario {
         this.criado_em = criado_em;
     }
 
-    public LocalDate getDeleted_at() {
-        return deleted_at;
+    public LocalDate getDeletado_em() {
+        return deletado_em;
     }
 
-    public void setDeleted_at(LocalDate deleted_at) {
-        this.deleted_at = deleted_at;
+    public void setDeletado_em(LocalDate deletado_em) {
+        this.deletado_em = deletado_em;
     }
 }
