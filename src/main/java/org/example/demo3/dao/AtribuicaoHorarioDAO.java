@@ -1,7 +1,7 @@
-package org.example.demo3.dao;
+package.org.example.demo3.dao;
 
-import org.example.demo3.DatabaseConnection;
-import  org.example.demo3.entity.AtribuicaoHorario;
+import.org.example.demo3.DatabaseConnection;
+import.org.example.demo3.entity.AtribuicaoHorario;
 
 import java.sql.*;
 import java.util.ArrayList;
