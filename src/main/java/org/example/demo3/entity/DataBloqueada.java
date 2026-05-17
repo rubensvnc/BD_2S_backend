@@ -1,33 +1,74 @@
-package org.example.demo3.entity;
 import java.time.LocalDate;
 
 public class DataBloqueada {
-    private LocalDate data_bloqueio;
-    private String descricao;
-    private Long id_restricao;
-    private Long id_referencia;
+
+    private Integer idDataBloqueada;
+    private Integer semestreLetivoId;
+    private LocalDate data;
+    private String motivo;
+    private Integer admId;
+    private boolean recorrente;
 
 
-    public DataBloqueada(LocalDate data_bloqueio, String descricao, Long id_restricao, Long id_referencia) {
-        this.data_bloqueio = data_bloqueio;
-        this.descricao = descricao;
-        this.id_restricao = id_restricao;
-        this.id_referencia = id_referencia;
+    public DataBloqueada() {
     }
 
-    public LocalDate getData_bloqueio() {
-        return data_bloqueio;
+
+    public DataBloqueada(Integer idDataBloqueada, Integer semestreLetivoId, LocalDate data, String motivo, Integer admId, boolean recorrente) {
+        this.idDataBloqueada = idDataBloqueada;
+        this.semestreLetivoId = semestreLetivoId;
+        this.data = data;
+        this.motivo = motivo;
+        this.admId = admId;
+        this.recorrente = recorrente;
     }
 
-    public String getDescricao() {
-        return descricao;
+
+    public Integer getIdDataBloqueada() {
+        return idDataBloqueada;
     }
 
-    public Long getId_restricao() {
-        return id_restricao;
+    public void setIdDataBloqueada(Integer idDataBloqueada) {
+        this.idDataBloqueada = idDataBloqueada;
     }
 
-    public Long getId_referencia() {
-        return id_referencia;
+    public Integer getSemestreLetivoId() {
+        return semestreLetivoId;
+    }
+
+    public void setSemestreLetivoId(Integer semestreLetivoId) {
+        this.semestreLetivoId = semestreLetivoId;
+    }
+
+    public LocalDate getData() {
+        return data;
+    }
+
+    public void setData(LocalDate data) {
+        this.data = data;
+    }
+
+    public String getMotivo() {
+        return motivo;
+    }
+
+    public void setMotivo(String motivo) {
+        this.motivo = motivo;
+    }
+
+    public Integer getAdmId() {
+        return admId;
+    }
+
+    public void setAdmId(Integer admId) {
+        this.admId = admId;
+    }
+
+    public boolean isRecorrente() {
+        return recorrente;
+    }
+
+    public void setRecorrente(boolean recorrente) {
+        this.recorrente = recorrente;
     }
 }
