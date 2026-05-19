@@ -24,7 +24,7 @@
 
 <?import javafx.scene.control.ListView?>
 <?import javafx.scene.control.TitledPane?>
-<BorderPane xmlns="http://javafx.com/javafx/26" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.example.testing_bd_2s_backend.controller.ProfPlanejamentoController">
+<BorderPane xmlns="http://javafx.com/javafx/26" xmlns:fx="http://javafx.com/fxml/1" fx:controller="org.example.demo3.controller.ProfPlanejamentoController">
 
     <top>
         <VBox spacing="6">

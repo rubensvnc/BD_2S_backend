@@ -6,7 +6,7 @@
 
 <BorderPane xmlns="http://javafx.com/javafx/21"
             xmlns:fx="http://javafx.com/fxml/1"
-            fx:controller="com.sigap.controller.AdmCoordenaoresAdmsController">
+            fx:controller="org.example.demo3.controller.AdmCoordenadoresAdmsController">
 
     <top>
         <Label text="Coordenadores e Administradores"
