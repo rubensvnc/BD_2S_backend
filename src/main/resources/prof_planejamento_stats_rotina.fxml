@@ -22,7 +22,9 @@
 <?import javafx.scene.layout.RowConstraints?>
 <?import javafx.scene.layout.VBox?>
 
-<BorderPane xmlns="http://javafx.com/javafx/26" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.sigap.controller.ProfPlanejamentoController">
+<?import javafx.scene.control.ListView?>
+<?import javafx.scene.control.TitledPane?>
+<BorderPane xmlns="http://javafx.com/javafx/26" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.example.testing_bd_2s_backend.controller.ProfPlanejamentoController">
 
     <top>
         <VBox spacing="6">
@@ -63,11 +65,20 @@
                             <Button onAction="#handleCancelarSelecionados" style="-fx-background-color: #e74c3c; -fx-text-fill: white;" text="❌ Cancelar Selecionados" />
                         </HBox>
 
+                        <TitledPane fx:id="tpLogCancelamentos" text="📢 Cancelamentos efetuados pela Secretaria"
+                                    animated="true" expanded="false">
+                            <VBox spacing="6">
+                                <Label style="-fx-text-fill: #7f8c8d; -fx-font-size: 11px;"
+                                       text="Os cancelamentos abaixo já foram aplicados ao seu planejamento (status 'Cancelado pela Secretaria')." />
+                                <ListView fx:id="listCancelamentos" prefHeight="120" />
+                            </VBox>
+                        </TitledPane>
+
                         <!-- TreeView: raiz invisível → nível 1 = datas → nível 2 = slots
                              Cada célula de slot possui: CheckBox + label horário +
                              label tema + indicador de status (ícone/cor)
                              Slots cancelados pela Secretaria aparecem bloqueados (sem CheckBox ativo) -->
-                        <TreeView fx:id="treePlanejamento" onMouseClicked="#handleClicSlot" showRoot="false" VBox.vgrow="ALWAYS" />
+                        <TreeView fx:id="treePlanejamento" showRoot="false" VBox.vgrow="ALWAYS" />
                     </VBox>
 
                     <!-- ──────────────────────────────────────────────

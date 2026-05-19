@@ -6,7 +6,7 @@
 
 <BorderPane xmlns="http://javafx.com/javafx/21"
             xmlns:fx="http://javafx.com/fxml/1"
-            fx:controller="com.sigap.controller.ProfTemasController">
+            fx:controller="com.example.testing_bd_2s_backend.controller.ProfTemasController">
 
     <top>
         <VBox spacing="6">
@@ -14,11 +14,9 @@
             <HBox spacing="16" alignment="CENTER_LEFT">
                 <Label text="Temas"
                        style="-fx-font-size: 16px; -fx-font-weight: bold;"/>
-                <Label text="Disciplina:"/>
-                <!-- Filtrado pelas disciplinas atribuídas ao professor no contexto global -->
-                <ComboBox fx:id="cbDisciplinaTema" prefWidth="260"
-                          promptText="Selecione a disciplina"
-                          onAction="#handleDisciplinaChange"/>
+
+                <Button text="📥 Importar de semestre anterior" onAction="#handleImportarTemas"
+                        style="-fx-background-color: #3498db; -fx-text-fill: white; -fx-font-weight: bold;"/>
             </HBox>
         </VBox>
     </top>
