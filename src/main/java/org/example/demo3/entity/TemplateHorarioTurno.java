@@ -1,15 +1,5 @@
-/*
-CREATE TABLE template_horario_turno (
-        id_template INT AUTO_INCREMENT,
-        turno ENUM('manha','noite') NOT NULL,
-tipo ENUM('aula','intervalo') NOT NULL,
-numero_ordem TINYINT NOT NULL, -- ex: 1 = aula1, 2 = intervalo, 3 = aula2
-hora_inicio TIME NOT NULL,
-hora_fim TIME NOT NULL,
+package org.example.demo3.entity;
 
-PRIMARY KEY(id_template),
-UNIQUE KEY uq_template (turno, numero_ordem)
-);*/
 import java.time.LocalTime;
 
 

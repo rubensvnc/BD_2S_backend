@@ -1,8 +1,10 @@
-package org.example.demo3;
+package org.example.demo3.dao;
 
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
+
+import org.example.demo3.DatabaseConnection;
 import org.example.demo3.entity.*;
 
 public class TemplateHorarioTurnoDAO {
