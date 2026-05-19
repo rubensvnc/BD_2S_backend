@@ -1,11 +1,9 @@
-package org.example.demo3.dao;
+package.org.example.demo3.dao;
 
 import org.example.demo3.DatabaseConnection;
 import org.example.demo3.entity.AtribuicaoProfessor;
-import org.example.demo3.entity.CancelamentoAdm;
 
 import java.sql.*;
-import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -28,7 +26,7 @@ public class AtribuicaoProfessorDAO {
 
             try (ResultSet rs = ps.getGeneratedKeys()) {
                 if (rs.next()) {
-                    atribuicao.setId_atribuicao(rs.getInt(1));
+                    atribuicao.setId_atribuicao_professor(rs.getInt(1));
                 }
             }
         }
@@ -176,7 +174,7 @@ public class AtribuicaoProfessorDAO {
 
     private AtribuicaoProfessor mapear(ResultSet rs) throws SQLException {
         AtribuicaoProfessor a = new AtribuicaoProfessor();
-        a.setId_atribuicao(rs.getInt("id_atribuicao_professor"));
+        a.setId_atribuicao_professor(rs.getInt("id_atribuicao_professor"));
         a.setDisciplina_id(rs.getInt("disciplina_id"));
         a.setProfessor_id(rs.getInt("professor_id"));
         a.setSemestre_letivo_id(rs.getInt("semestre_letivo_id"));

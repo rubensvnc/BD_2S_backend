@@ -13,8 +13,7 @@
 <?import javafx.scene.layout.StackPane?>
 <?import javafx.scene.layout.VBox?>
 
-<BorderPane prefHeight="768" prefWidth="1366" xmlns="http://javafx.com/javafx/25"
-            xmlns:fx="http://javafx.com/fxml/1" fx:controller="org.example.demo3.controller.MainShellController">
+<BorderPane prefHeight="768" prefWidth="1366" xmlns="http://javafx.com/javafx/25" xmlns:fx="http://javafx.com/fxml/1" fx:controller="org.example.demo3.controller.MainShellController">
 
     <!-- TOPO: Seletor de Contexto Global + Banner Read-Only -->
     <top>
