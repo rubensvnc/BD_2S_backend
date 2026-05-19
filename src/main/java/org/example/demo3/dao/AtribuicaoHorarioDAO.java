@@ -1,7 +1,7 @@
-package.org.example.demo3.dao;
+package org.example.demo3.dao;
 
-import.org.example.demo3.DatabaseConnection;
-import.org.example.demo3.entity.AtribuicaoHorario;
+import org.example.demo3.DatabaseConnection;
+import org.example.demo3.entity.AtribuicaoHorario;
 
 import java.sql.*;
 import java.util.ArrayList;
@@ -19,7 +19,7 @@ public class AtribuicaoHorarioDAO {
         try (Connection con = DatabaseConnection.getConnection();
              PreparedStatement ps = con.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
 
-            ps.setInt(1, horario.getAtribuicao_id());
+            ps.setInt(1, horario.getAtribuicao_professor_id());
             ps.setInt(2, horario.getDia_semana());
             ps.setInt(3, horario.getHorario_curso_id());
 
@@ -45,7 +45,7 @@ public class AtribuicaoHorarioDAO {
              PreparedStatement ps = con.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
 
             for (AtribuicaoHorario h : horarios) {
-                ps.setInt(1, h.getAtribuicao_id());
+                ps.setInt(1, h.getAtribuicao_professor_id());
                 ps.setInt(2, h.getDia_semana());
                 ps.setInt(3, h.getHorario_curso_id());
                 ps.addBatch();
@@ -88,7 +88,7 @@ public class AtribuicaoHorarioDAO {
                         Statement.RETURN_GENERATED_KEYS)) {
 
                     for (AtribuicaoHorario h : novosHorarios) {
-                        psIns.setInt(1, h.getAtribuicao_id());
+                        psIns.setInt(1, h.getAtribuicao_professor_id());
                         psIns.setInt(2, h.getDia_semana());
                         psIns.setInt(3, h.getHorario_curso_id());
                         psIns.addBatch();
@@ -230,7 +230,7 @@ public class AtribuicaoHorarioDAO {
     private AtribuicaoHorario mapear(ResultSet rs) throws SQLException {
         AtribuicaoHorario ah = new AtribuicaoHorario();
         ah.setId_atribuicao_horario(rs.getInt("id_atribuicao_horario"));
-        ah.setAtribuicao_id(rs.getInt("atribuicao_id"));
+        ah.setAtribuicao_professor_id(rs.getInt("atribuicao_id"));
         ah.setDia_semana(rs.getInt("dia_semana"));
         ah.setHorario_curso_id(rs.getInt("horario_curso_id"));
         return ah;
