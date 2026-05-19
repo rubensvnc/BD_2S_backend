@@ -15,7 +15,7 @@ public class SemestreLetivoDAO{
         String sql = """
             SELECT DISTINCT sl.ano, sl.numero_semestre FROM atribuicao_professor
             AS ap INNER JOIN semestre_letivo AS sl ON sl.id_semestre_letivo = semestre_letivo_id 
-            WHERE ap.professor_id = ?;
+            WHERE ap.professor_id = ? ORDER BY sl.ano ASC;
             """;
         Connection conn = null;
         PreparedStatement ps = null;
