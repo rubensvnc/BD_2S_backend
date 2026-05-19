@@ -5,7 +5,7 @@ public class AtribuicaoHorario {
     private Integer id_atribuicao_horario;
     private Integer atribuicao_professor_id;
     private Integer horario_curso_id;
-    private String dia_semana;
+    private Integer dia_semana;
 
     public AtribuicaoHorario() {
 
@@ -14,7 +14,7 @@ public class AtribuicaoHorario {
     public AtribuicaoHorario(Integer id_atribuicao_horario,
                              Integer atribuicao_professor_id,
                              Integer horario_curso_id,
-                             String dia_semana) {
+                             Integer dia_semana) {
         this.id_atribuicao_horario  = id_atribuicao_horario;
         this.atribuicao_professor_id = atribuicao_professor_id;
         this.horario_curso_id       = horario_curso_id;
@@ -45,11 +45,11 @@ public class AtribuicaoHorario {
         this.horario_curso_id = horario_curso_id;
     }
 
-    public String getDia_semana() {
+    public Integer getDia_semana() {
         return dia_semana;
     }
 
-    public void setDia_semana(String dia_semana) {
+    public void setDia_semana(Integer dia_semana) {
         this.dia_semana = dia_semana;
     }
 }
