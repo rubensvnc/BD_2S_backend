@@ -1,7 +1,7 @@
 package.org.example.demo3.dao;
 
-import.org.example.demo3.DatabaseConnection;
-import.org.example.demo3.entity.AtribuicaoProfessor;
+import org.example.demo3.DatabaseConnection;
+import org.example.demo3.entity.AtribuicaoProfessor;
 
 import java.sql.*;
 import java.util.ArrayList;

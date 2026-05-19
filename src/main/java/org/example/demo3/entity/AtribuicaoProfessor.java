@@ -4,7 +4,7 @@ import java.time.LocalDate;
 
 public class AtribuicaoProfessor {
 
-    private Integer id_atribuicao;
+    private Integer id_atribuicao_professor;
     private Integer professor_id;
     private Integer disciplina_id;
     private Integer semestre_letivo_id;
@@ -15,13 +15,13 @@ public class AtribuicaoProfessor {
 
     }
 
-    public AtribuicaoProfessor(Integer id_atribuicao,
+    public AtribuicaoProfessor(Integer id_atribuicao_professor,
                                Integer professor_id,
                                Integer disciplina_id,
                                Integer semestre_letivo_id,
                                LocalDate criado_em,
                                LocalDate deleted_at) {
-        this.id_atribuicao      = id_atribuicao;
+        this.id_atribuicao_professor = id_atribuicao_professor;
         this.professor_id       = professor_id;
         this.disciplina_id      = disciplina_id;
         this.semestre_letivo_id = semestre_letivo_id;
@@ -29,12 +29,12 @@ public class AtribuicaoProfessor {
         this.deleted_at         = deleted_at;
     }
 
-    public Integer getId_atribuicao() {
-        return id_atribuicao;
+    public Integer getId_atribuicao_professor() {
+        return id_atribuicao_professor;
     }
 
-    public void setId_atribuicao(Integer id_atribuicao) {
-        this.id_atribuicao = id_atribuicao;
+    public void setId_atribuicao_professor(Integer id_atribuicao_professor) {
+        this.id_atribuicao_professor = id_atribuicao_professor;
     }
 
     public Integer getProfessor_id() {

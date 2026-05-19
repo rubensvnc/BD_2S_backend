@@ -3,7 +3,7 @@ package org.example.demo3.entity;
 public class AtribuicaoHorario {
 
     private Integer id_atribuicao_horario;
-    private Integer atribuicao_professor_id;
+    private Integer atribuicao_id;
     private Integer horario_curso_id;
     private String dia_semana;
 
@@ -12,11 +12,11 @@ public class AtribuicaoHorario {
     }
 
     public AtribuicaoHorario(Integer id_atribuicao_horario,
-                             Integer atribuicao_professor_id,
+                             Integer atribuicao_id,
                              Integer horario_curso_id,
                              String dia_semana) {
         this.id_atribuicao_horario  = id_atribuicao_horario;
-        this.atribuicao_professor_id = atribuicao_professor_id;
+        this.atribuicao_id = atribuicao_id;
         this.horario_curso_id       = horario_curso_id;
         this.dia_semana             = dia_semana;
     }
@@ -29,12 +29,12 @@ public class AtribuicaoHorario {
         this.id_atribuicao_horario = id_atribuicao_horario;
     }
 
-    public Integer getAtribuicao_professor_id() {
-        return atribuicao_professor_id;
+    public Integer getAtribuicao_id() {
+        return atribuicao_id;
     }
 
-    public void setAtribuicao_professor_id(Integer atribuicao_professor_id) {
-        this.atribuicao_professor_id = atribuicao_professor_id;
+    public void setAtribuicao_id(Integer atribuicao_id) {
+        this.atribuicao_id = atribuicao_id;
     }
 
     public Integer getHorario_curso_id() {
