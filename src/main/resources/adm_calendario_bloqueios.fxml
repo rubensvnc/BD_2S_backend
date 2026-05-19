@@ -1,0 +1,163 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.geometry.*?>
+
+<BorderPane xmlns="http://javafx.com/javafx/21"
+            xmlns:fx="http://javafx.com/fxml/1"
+            fx:controller="org.example.demo3.controller.AdmCalendarioBloqueiosController">
+
+    <top>
+        <Label text="Calendário Acadêmico e Bloqueios"
+               style="-fx-font-size: 16px; -fx-font-weight: bold; -fx-padding: 12 16;"/>
+    </top>
+
+    <center>
+        <TabPane tabClosingPolicy="UNAVAILABLE">
+
+            <!-- ═══════════════════════════════════════════════
+                 ABA 1 — CALENDÁRIO DO SEMESTRE
+                 Cobre: 6.2.1 (datas letivas + 3 sprints + TCC + Feira)
+            ════════════════════════════════════════════════ -->
+            <Tab text="📅 Calendário do Semestre">
+                <ScrollPane fitToWidth="true">
+                    <VBox spacing="16">
+                        <padding><Insets top="16" right="20" bottom="20" left="20"/></padding>
+
+                        <!-- Datas principais do semestre -->
+                        <TitledPane text="Datas do Semestre Letivo" collapsible="false">
+                            <GridPane hgap="20" vgap="12">
+                                <padding><Insets top="12" right="12" bottom="12" left="12"/></padding>
+
+                                <Label text="Início do Semestre *:"
+                                       GridPane.columnIndex="0" GridPane.rowIndex="0"/>
+                                <DatePicker fx:id="dpInicioSemestre"
+                                            GridPane.columnIndex="1" GridPane.rowIndex="0"/>
+
+                                <Label text="Fim do Semestre *:"
+                                       GridPane.columnIndex="2" GridPane.rowIndex="0"/>
+                                <DatePicker fx:id="dpFimSemestre"
+                                            GridPane.columnIndex="3" GridPane.rowIndex="0"/>
+
+                                <Label text="Apresentação de TCC:"
+                                       GridPane.columnIndex="0" GridPane.rowIndex="1"/>
+                                <DatePicker fx:id="dpTcc"
+                                            GridPane.columnIndex="1" GridPane.rowIndex="1"/>
+
+                                <Label text="Feira de Soluções:"
+                                       GridPane.columnIndex="2" GridPane.rowIndex="1"/>
+                                <DatePicker fx:id="dpFeira"
+                                            GridPane.columnIndex="3" GridPane.rowIndex="1"/>
+                            </GridPane>
+                        </TitledPane>
+
+                        <!-- Sprints: TableView editável com 3 linhas fixas -->
+                        <TitledPane text="Sprints (3 por Semestre Letivo)" collapsible="false">
+                            <VBox spacing="8">
+                                <padding><Insets top="8" right="8" bottom="8" left="8"/></padding>
+                                <Label text="Clique em uma célula para editar diretamente."
+                                       style="-fx-text-fill: #7f8c8d; -fx-font-size: 11px;"/>
+                                <TableView fx:id="tabelaSprints" editable="true" prefHeight="130"
+                                           fixedCellSize="40">
+                                    <columns>
+                                        <TableColumn fx:id="colSprintNum"    text="Sprint"            prefWidth="70"/>
+                                        <TableColumn fx:id="colSprintInicio" text="Data Início"        prefWidth="170"/>
+                                        <TableColumn fx:id="colSprintFim"    text="Data Fim"           prefWidth="170"/>
+                                        <TableColumn fx:id="colSprintReview" text="Data Sprint Review" prefWidth="190"/>
+                                    </columns>
+                                </TableView>
+                            </VBox>
+                        </TitledPane>
+
+                        <!-- Ações -->
+                        <HBox alignment="CENTER_RIGHT" spacing="8">
+                            <Label fx:id="lblFeedbackCalendario"
+                                   visible="false" managed="false" styleClass="feedback-label"/>
+                            <Button text="💾 Salvar Calendário" onAction="#handleSalvarCalendario"
+                                    style="-fx-background-color: #27ae60; -fx-text-fill: white; -fx-font-weight: bold;"/>
+                        </HBox>
+
+                    </VBox>
+                </ScrollPane>
+            </Tab>
+
+            <!-- ═══════════════════════════════════════════════
+                 ABA 2 — BLOQUEIOS E CANCELAMENTOS
+                 Cobre: 6.3.1 (datas bloqueadas em lote, sugestão do semestre anterior)
+                         6.3.2 (cancelamento de dia inteiro, turno ou horários específicos)
+            ════════════════════════════════════════════════ -->
+            <Tab text="🚫 Bloqueios e Cancelamentos">
+                <ScrollPane fitToWidth="true">
+                    <VBox spacing="12">
+                        <padding><Insets top="14" right="16" bottom="14" left="16"/></padding>
+
+                        <!-- Seleção de mês e grade de dias -->
+                        <HBox spacing="10" alignment="CENTER_LEFT">
+                            <Label text="Mês:"/>
+                            <ComboBox fx:id="cbMes" promptText="Selecionar mês"/>
+                        </HBox>
+
+                        <ScrollPane prefHeight="200" fitToWidth="true">
+                            <GridPane fx:id="gridDias" hgap="4" vgap="4"
+                                      style="-fx-padding: 8;"/>
+                        </ScrollPane>
+
+                        <!-- Painel de configuração do cancelamento (aparece ao selecionar data) -->
+                        <VBox fx:id="boxConfigCancelamento" spacing="8"
+                              visible="false" managed="false">
+                            <Separator/>
+                            <Label text="Configurar Cancelamento"
+                                   style="-fx-font-weight: bold; -fx-font-size: 13px;"/>
+
+                            <HBox spacing="10" alignment="CENTER_LEFT">
+                                <Label text="Turno:"/>
+                                <ComboBox fx:id="cbTurno" promptText="Dia inteiro"/>
+                            </HBox>
+
+                            <VBox fx:id="painelHorarios" spacing="4"
+                                  visible="false" managed="false">
+                                <Label text="Horários a cancelar:"/>
+                                <FlowPane fx:id="flowHorarios" hgap="8" vgap="4"/>
+                            </VBox>
+
+                            <HBox spacing="10" alignment="CENTER_LEFT">
+                                <Label text="Motivo *:"/>
+                                <TextField fx:id="tfMotivoCancelamento"
+                                           HBox.hgrow="ALWAYS"
+                                           promptText="Descreva o motivo do cancelamento"/>
+                            </HBox>
+
+                            <HBox spacing="10" alignment="CENTER_RIGHT">
+                                <Label fx:id="lblFeedbackCancelamento"
+                                       visible="false" managed="false"
+                                       styleClass="feedback-label"/>
+                                <Button fx:id="btnCancelar" text="Cancelar Datas"
+                                        onAction="#handleCancelarDatas"
+                                        style="-fx-background-color: #e74c3c; -fx-text-fill: white; -fx-font-weight: bold;"/>
+                            </HBox>
+                        </VBox>
+
+                        <Separator/>
+
+                        <!-- Lista de cancelamentos existentes -->
+                        <Label text="Cancelamentos registrados"
+                               style="-fx-font-weight: bold;"/>
+                        <ListView fx:id="listCancelamentos" VBox.vgrow="ALWAYS"
+                                  prefHeight="150"/>
+
+                        <HBox spacing="10" alignment="CENTER_RIGHT">
+                            <Button fx:id="btnDeletar" text="Deletar Cancelamento Selecionado"
+                                    onAction="#handleDeletarCancelamento"
+                                    disable="true"
+                                    style="-fx-background-color: #c0392b; -fx-text-fill: white;"/>
+                        </HBox>
+
+                    </VBox>
+                </ScrollPane>
+            </Tab>
+
+        </TabPane>
+    </center>
+
+</BorderPane>
