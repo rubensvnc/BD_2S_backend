@@ -3,6 +3,7 @@ package org.example.demo3;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
+import org.example.demo3.entity.*;
 
 public class TemplateHorarioTurnoDAO {
 
