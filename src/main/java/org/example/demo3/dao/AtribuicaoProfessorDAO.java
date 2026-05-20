@@ -1,4 +1,4 @@
-package.org.example.demo3.dao;
+package org.example.demo3.dao;
 
 import org.example.demo3.DatabaseConnection;
 import org.example.demo3.entity.AtribuicaoProfessor;
