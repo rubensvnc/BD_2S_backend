@@ -5,6 +5,11 @@ import javafx.scene.control.*;
 import javafx.scene.layout.Region;
 import org.example.demo3.dao.DependenciaTemaDAO;
 import org.example.demo3.dao.TemaDAO;
+import org.example.demo3.entity.Disciplina;
+import org.example.demo3.entity.SemestreLetivo;
+import org.example.demo3.entity.Tema;
+
+import java.util.List;
 
 public class ProfTemasController {
 
@@ -32,7 +37,6 @@ public class ProfTemasController {
     @FXML private Label lblErrCircular;
     @FXML private ListView<?> listTemasDisponiveis;
     @FXML private ListView<?> listDependencias;
-
     //DAOS
     private TemaDAO temaDAO = new TemaDAO();
     private DependenciaTemaDAO dependenciaTemaDAO = new DependenciaTemaDAO();
@@ -97,5 +101,7 @@ public class ProfTemasController {
     private void handleSalvarDependencias() {
 
     }
+
+
 
 }

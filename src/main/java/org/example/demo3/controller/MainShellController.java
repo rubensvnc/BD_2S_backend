@@ -11,6 +11,7 @@ import javafx.scene.layout.VBox;
 import org.example.demo3.UsuarioAtual;
 import org.example.demo3.dao.SemestreLetivoDAO;
 import org.example.demo3.entity.SemestreLetivo;
+import org.example.demo3.controller.ProfTemasController;
 
 import java.io.IOException;
 import java.sql.SQLException;
@@ -22,6 +23,7 @@ public class MainShellController {
     @FXML private ToggleButton tbSem2;
     @FXML private ComboBox<String> cbCurso; // Substitua <String> pelo tipo de dado correto se necessário
     @FXML private ComboBox<String> cbSemestreCurso; // Substitua <String> pelo tipo de dado correto se necessário
+    @FXML private ComboBox<String> cbDisciplina;
     @FXML private Label lblNomeUsuario;
     @FXML private Label lblPerfilUsuario;
     @FXML private Label bannerReadOnly;
@@ -84,15 +86,26 @@ public class MainShellController {
 
     }
 
+
     @FXML
     void navTemas() {
+
         try {
-            Parent prof_temas = FXMLLoader.load(getClass().getResource("/prof_temas.fxml"));
-            areaConteudo.getChildren().setAll(prof_temas);
-        }catch (IOException e) {
+            Parent profTemas =
+                    FXMLLoader.load(
+                            getClass().getResource("/prof_temas.fxml")
+                    );
+            areaConteudo.getChildren().setAll(profTemas);
+
+        } catch (IOException e) {
             e.printStackTrace();
         }
     }
+
+
+
+
+
 
     @FXML
     void navPlanejamento() {

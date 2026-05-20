@@ -85,7 +85,7 @@ public class TemaDAO {
 
 
     //LISTA OS TEMAS POR DISCIPLINA E SEMESTRE
-    public List<Tema> listarTemasPorDisciplinaESemestre(int disciplinaId, int semestreLetivoId) {
+    public List<Tema> listarTemasPorDisciplinaESemestre(int disciplina_id, int semestre_letivo_id) {
         String sql = """
         SELECT * FROM tema
         WHERE disciplina_id = ?
@@ -97,8 +97,8 @@ public class TemaDAO {
         List<Tema> temas = new ArrayList<>();
 
         try (PreparedStatement stmt = connection.prepareStatement(sql)) {
-            stmt.setInt(1, disciplinaId);
-            stmt.setInt(2, semestreLetivoId);
+            stmt.setInt(1, disciplina_id);
+            stmt.setInt(2, semestre_letivo_id);
 
             try (ResultSet rs = stmt.executeQuery()) {
                 while (rs.next()) {
