@@ -55,8 +55,8 @@ public class MainShellController {
         tbSem1.setDisable(true);
         tbSem2.setDisable(true);
 
-        logado.setId_usuario(4);
-        logado.setTipo("PROF");
+        logado.setId_usuario(2);
+        logado.setTipo("COORD");
 
 
         ObservableList<String> opcoesAno = FXCollections.observableArrayList();
@@ -76,6 +76,12 @@ public class MainShellController {
             carregarConteudo("/prof_temas.fxml");
             secaoProfessor.setVisible(true);
             secaoProfessor.setManaged(true);
+        } else {
+            if (logado.getTipo() == "COORD") {
+                carregarConteudo("/coord_painel.fxml");
+                secaoCoordenador.setVisible(true);
+                secaoCoordenador.setManaged(true);
+            }
         }
 
     }
@@ -196,7 +202,7 @@ public class MainShellController {
 
     @FXML
     void navCoordPainel() {
-
+        carregarConteudo("/coord_painel.fxml");
     }
 
     @FXML
