@@ -2,6 +2,7 @@ package org.example.demo3.controller;
 
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
+import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
@@ -10,12 +11,12 @@ import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import org.example.demo3.UsuarioAtual;
 import org.example.demo3.dao.CursoDAO;
+import org.example.demo3.dao.DisciplinaDAO;
 import org.example.demo3.dao.SemestreLetivoDAO;
 import org.example.demo3.entity.Curso;
+import org.example.demo3.entity.Disciplina;
 import org.example.demo3.entity.SemestreLetivo;
 
-import javax.swing.*;
-import java.awt.event.ActionEvent;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
@@ -26,6 +27,7 @@ public class MainShellController {
     @FXML private ToggleButton tbSem2;
     @FXML private ComboBox<String> cbCurso; // Substitua <String> pelo tipo de dado correto se necessário
     @FXML private ComboBox<String> cbSemestreCurso; // Substitua <String> pelo tipo de dado correto se necessário
+    @FXML private ComboBox<String> cbDisciplina;
     @FXML private Label lblNomeUsuario;
     @FXML private Label lblPerfilUsuario;
     @FXML private Label bannerReadOnly;
@@ -36,6 +38,8 @@ public class MainShellController {
     @FXML private StackPane areaConteudo;
 
     private List<SemestreLetivo> listaSl;
+    private List<Disciplina> listaD;
+
     UsuarioAtual logado = UsuarioAtual.getInstancia();
     private Integer anoSelecionado;
     private Integer semestreAnoEscolhido;
@@ -58,7 +62,6 @@ public class MainShellController {
             listaSl = slDao.listarAnoESemestreAno(logado.getId_usuario());
             for (SemestreLetivo sl: listaSl){
                 opcoesAno.add(sl.getAno().toString());
-                System.out.println("Ano: "+sl.getAno().toString()+" - Semestre: "+sl.getNumero_semestre().toString());
             }
             cbAno.setItems(opcoesAno);
 
@@ -85,17 +88,14 @@ public class MainShellController {
     }
 
     @FXML
-    public void handleSemestreToggle1() {
-        semestreAnoEscolhido = 1;
-    }
+    public void handleSemestreToggle(ActionEvent event) {
+        Object ativador = event.getSource();
+        if (ativador == tbSem1){
+            semestreAnoEscolhido = 1;
+        } else {
+            semestreAnoEscolhido = 2;
+        }
 
-    @FXML
-    public void handleSemestreToggle2() {
-        semestreAnoEscolhido = 2;
-    }
-
-    @FXML
-    public void handleTrocaCurso(){
         ObservableList<String> opcoesCurso = FXCollections.observableArrayList();
         CursoDAO slDao = new CursoDAO();
         try{
@@ -103,7 +103,7 @@ public class MainShellController {
             for (Curso c: listaCursos){
                 opcoesCurso.add(c.getNome());
             }
-            cbAno.setItems(opcoesCurso);
+            cbCurso.setItems(opcoesCurso);
 
         } catch (SQLException e){
             e.printStackTrace();
@@ -111,8 +111,40 @@ public class MainShellController {
     }
 
     @FXML
-    public void handleContextChange(){
+    public void handleTrocaCurso(){
+        cursoEscolhido = cbCurso.getValue();
 
+        ObservableList<String> opcoesSemestreCurso = FXCollections.observableArrayList();
+        DisciplinaDAO dDao = new DisciplinaDAO();
+        try{
+            listaD = dDao.listarDisciplinasCurso
+                    (logado.getId_usuario(),anoSelecionado,semestreAnoEscolhido, cursoEscolhido);
+            for (Disciplina d: listaD){
+                opcoesSemestreCurso.add(d.getSemestre_curso().toString());
+            }
+            cbSemestreCurso.setItems(opcoesSemestreCurso);
+
+        } catch (SQLException e){
+            e.printStackTrace();
+        }
+    }
+
+    @FXML
+    public void handleTrocaSemestreCurso(){
+        semestreCursoEscolhido = Integer.parseInt(cbSemestreCurso.getValue());
+
+        ObservableList<String> opcoesDisciplina = FXCollections.observableArrayList();
+        for (Disciplina d: listaD){
+            if (d.getSemestre_curso().equals(semestreCursoEscolhido)){
+                opcoesDisciplina.add(d.getNome());
+            }
+        }
+        cbDisciplina.setItems(opcoesDisciplina);
+    }
+
+    @FXML
+    public void handleTrocaDisciplina(){
+        disciplinaEscolhida = cbDisciplina.getValue();
     }
 
     @FXML
