@@ -32,7 +32,7 @@
 
                 <Separator opacity="0.0" orientation="VERTICAL" />
 
-                <Label style="-fx-text-fill: #ecf0f1;" text="Curso:" />
+                <Label fx:id="lblCurso" style="-fx-text-fill: #ecf0f1;" text="Curso:" />
                 <ComboBox fx:id="cbCurso" onAction="#handleTrocaCurso" prefWidth="200" />
 
                 <Separator opacity="0.0" orientation="VERTICAL" />
