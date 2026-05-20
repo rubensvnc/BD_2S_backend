@@ -12,6 +12,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class TemaDAO {
+
     private Connection connection;
         //FAZ A CONEXÃO;
         public TemaDAO() {
@@ -48,8 +49,9 @@ public class TemaDAO {
                 System.out.println("Erro ao inserir tema: " + e.getMessage());
             }
         }
+
         //LISTA TODOS OS TEMAS
-        public List<Tema> listarTemas() {
+    public List<Tema> listarTemas() {
                 List<Tema> temas = new ArrayList<>();
                 String sql = """
                     SELECT * FROM tema
@@ -80,6 +82,45 @@ public class TemaDAO {
                 return temas;
         }
 
+
+
+    //LISTA OS TEMAS POR DISCIPLINA E SEMESTRE
+    public List<Tema> listarTemasPorDisciplinaESemestre(int disciplinaId, int semestreLetivoId) {
+        String sql = """
+        SELECT * FROM tema
+        WHERE disciplina_id = ?
+          AND semestre_letivo_id = ?
+          AND deletado_em IS NULL
+        ORDER BY prioridade ASC
+        """;
+
+        List<Tema> temas = new ArrayList<>();
+
+        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+            stmt.setInt(1, disciplinaId);
+            stmt.setInt(2, semestreLetivoId);
+
+            try (ResultSet rs = stmt.executeQuery()) {
+                while (rs.next()) {
+                    Tema tema = new Tema();
+                    tema.setId_tema(rs.getInt("id_tema"));
+                    tema.setDisciplina_id(rs.getInt("disciplina_id"));
+                    tema.setSemestre_letivo_id(rs.getInt("semestre_letivo_id"));
+                    tema.setNome(rs.getString("nome"));
+                    tema.setEh_avaliacao(rs.getInt("eh_avaliacao"));
+                    tema.setQtd_min_aulas(rs.getInt("qtd_min_aulas"));
+                    tema.setQtd_max_aulas(rs.getInt("qtd_max_aulas"));
+                    tema.setPrioridade(rs.getInt("prioridade"));
+                    tema.setEh_opcional(rs.getInt("eh_opcional"));
+                    temas.add(tema);
+                }
+            }
+        } catch (SQLException e) {
+            System.out.println("Erro ao listar temas: " + e.getMessage());
+        }
+
+        return temas;
+    }
 
     //EDITA TEMA
     public void editarTema(Tema tema) {
