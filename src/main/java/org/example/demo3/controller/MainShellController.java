@@ -9,7 +9,9 @@ import javafx.scene.control.ToggleButton;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import org.example.demo3.UsuarioAtual;
+import org.example.demo3.dao.CursoDAO;
 import org.example.demo3.dao.SemestreLetivoDAO;
+import org.example.demo3.entity.Curso;
 import org.example.demo3.entity.SemestreLetivo;
 
 import javax.swing.*;
@@ -34,6 +36,7 @@ public class MainShellController {
     @FXML private StackPane areaConteudo;
 
     private List<SemestreLetivo> listaSl;
+    UsuarioAtual logado = UsuarioAtual.getInstancia();
     private Integer anoSelecionado;
     private Integer semestreAnoEscolhido;
     private String cursoEscolhido;
@@ -45,7 +48,6 @@ public class MainShellController {
         tbSem1.setDisable(true);
         tbSem2.setDisable(true);
 
-        UsuarioAtual logado = UsuarioAtual.getInstancia();
         logado.setId_usuario(4);
         logado.setTipo("PROF");
 
@@ -94,7 +96,18 @@ public class MainShellController {
 
     @FXML
     public void handleTrocaCurso(){
+        ObservableList<String> opcoesCurso = FXCollections.observableArrayList();
+        CursoDAO slDao = new CursoDAO();
+        try{
+            List<Curso> listaCursos = slDao.listarCursos(logado.getId_usuario(),anoSelecionado,semestreAnoEscolhido);
+            for (Curso c: listaCursos){
+                opcoesCurso.add(c.getNome());
+            }
+            cbAno.setItems(opcoesCurso);
 
+        } catch (SQLException e){
+            e.printStackTrace();
+        }
     }
 
     @FXML
