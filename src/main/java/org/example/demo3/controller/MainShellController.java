@@ -56,7 +56,7 @@ public class MainShellController {
         tbSem2.setDisable(true);
 
         logado.setId_usuario(2);
-        logado.setTipo("COORD");
+        logado.setTipo("ADM");
 
 
         ObservableList<String> opcoesAno = FXCollections.observableArrayList();
@@ -81,6 +81,10 @@ public class MainShellController {
                 carregarConteudo("/coord_painel.fxml");
                 secaoCoordenador.setVisible(true);
                 secaoCoordenador.setManaged(true);
+            } else {
+                carregarConteudo("/adm_cursos_horarios.fxml");
+                secaoAdm.setVisible(true);
+                secaoAdm.setManaged(true);
             }
         }
 
@@ -187,17 +191,17 @@ public class MainShellController {
 
     @FXML
     void navCalendario() {
-
+        carregarConteudo("/adm_calendario_bloqueios.fxml");
     }
 
     @FXML
     void navCursosHorarios() {
-
+        carregarConteudo("/adm_cursos_horarios.fxml");
     }
 
     @FXML
     void navCoordenaodresAdms() {
-
+        carregarConteudo("/adm_coordenadores_adms.fxml");
     }
 
     @FXML
