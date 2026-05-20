@@ -4,6 +4,8 @@ import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
+import javafx.fxml.FXMLLoader;
+import javafx.scene.Parent;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.ToggleButton;
@@ -17,6 +19,7 @@ import org.example.demo3.entity.Curso;
 import org.example.demo3.entity.Disciplina;
 import org.example.demo3.entity.SemestreLetivo;
 
+import java.io.IOException;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
@@ -69,6 +72,24 @@ public class MainShellController {
             e.printStackTrace();
         }
 
+    }
+
+    private void carregarConteudo(String caminhoFxml) {
+        try {
+            // 1. Localiza e carrega o arquivo FXML secundário
+            FXMLLoader loader = new FXMLLoader(getClass().getResource(caminhoFxml));
+            Parent novoConteudo = loader.load();
+
+            // 2. Limpa o que está atualmente na área de conteúdo
+            areaConteudo.getChildren().clear();
+
+            // 3. Adiciona a nova tela na StackPane
+            areaConteudo.getChildren().add(novoConteudo);
+
+        } catch (IOException e) {
+            e.printStackTrace();
+            // Dica: Trate o erro de forma visual se achar necessário, colocando um aviso na tela
+        }
     }
 
     @FXML
