@@ -16,7 +16,36 @@ public class CursoDAO {
         this.connection = DatabaseConnection.getConnection();
     }
 
-    public List<Curso> listarCursos(int professorId, int ano, int semestreAno) throws SQLException {
+    public Curso buscarCursoCoordenador(int coordenadorId) throws SQLException{
+        String sql = """
+            SELECT nome FROM curso WHERE coordenador_id = ?;
+            """;
+        Connection conn = null;
+        PreparedStatement ps = null;
+        ResultSet rs = null;
+
+        Curso c = new Curso();
+        try {
+            conn = DatabaseConnection.getConnection();
+            ps = conn.prepareStatement(sql);
+            ps.setInt(1, coordenadorId);
+
+            rs = ps.executeQuery();
+
+            while (rs.next()) {
+                c.setNome(rs.getString("nome"));
+            }
+        } catch (SQLException e) {
+            System.err.println("Erro ao listar temas: " + e.getMessage());
+            throw e;
+        } finally {
+            DatabaseConnection.closeConnection();
+        }
+
+        return c;
+    }
+
+    public List<Curso> listarCursosProfessor(int professorId, int ano, int semestreAno) throws SQLException {
         String sql = """
             SELECT DISTINCT c.nome FROM atribuicao_professor AS ap INNER JOIN 
             semestre_letivo AS sl ON sl.id_semestre_letivo = ap.semestre_letivo_id 
