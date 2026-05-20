@@ -27,8 +27,8 @@
 
                 <Label style="-fx-text-fill: #ecf0f1;" text="Semestre:" />
                 <!-- ToggleGroup controlado pelo controller para garantir exclusividade -->
-                <ToggleButton fx:id="tbSem1" onAction="#handleSemestreToggle1" text="1º" />
-                <ToggleButton fx:id="tbSem2" onAction="#handleSemestreToggle2" text="2º" />
+                <ToggleButton fx:id="tbSem1" onAction="#handleSemestreToggle" text="1º" />
+                <ToggleButton fx:id="tbSem2" onAction="#handleSemestreToggle" text="2º" />
 
                 <Separator orientation="VERTICAL" />
 
@@ -38,9 +38,9 @@
                 <Separator orientation="VERTICAL" />
 
                 <Label style="-fx-text-fill: #ecf0f1;" text="Sem. do Curso:" />
-                <ComboBox fx:id="cbSemestreCurso" onAction="#handleContextChange" prefWidth="80" />
+                <ComboBox fx:id="cbSemestreCurso" onAction="#handleTrocaSemestreCurso" prefWidth="80" />
             <Label style="-fx-text-fill: #ecf0f1;" text="Disciplina:" />
-            <ComboBox onAction="#handleContextChange" prefWidth="80" />
+            <ComboBox fx:id="cbDisciplina" onAction="#handleTrocaDisciplina" prefWidth="80" />
 
                 <!-- Espaço flexível empurra info do usuário para a direita -->
                 <Region HBox.hgrow="ALWAYS" />
