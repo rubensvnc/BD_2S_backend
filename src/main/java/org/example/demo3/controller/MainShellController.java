@@ -1,5 +1,7 @@
 package org.example.demo3.controller;
 
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
@@ -10,7 +12,10 @@ import org.example.demo3.UsuarioAtual;
 import org.example.demo3.dao.SemestreLetivoDAO;
 import org.example.demo3.entity.SemestreLetivo;
 
+import javax.swing.*;
+import java.awt.event.ActionEvent;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.List;
 
 public class MainShellController {
@@ -28,18 +33,33 @@ public class MainShellController {
     @FXML private VBox secaoProfessor;
     @FXML private StackPane areaConteudo;
 
+    private List<SemestreLetivo> listaSl;
+    private Integer anoSelecionado;
+    private Integer semestreAnoEscolhido;
+    private String cursoEscolhido;
+    private Integer semestreCursoEscolhido;
+    private String disciplinaEscolhida;
+
     @FXML
     public void initialize(){
+        tbSem1.setDisable(true);
+        tbSem2.setDisable(true);
+
         UsuarioAtual logado = UsuarioAtual.getInstancia();
         logado.setId_usuario(4);
         logado.setTipo("PROF");
 
+
+        ObservableList<String> opcoesAno = FXCollections.observableArrayList();
         SemestreLetivoDAO slDao = new SemestreLetivoDAO();
         try{
-            List<SemestreLetivo> listaSl = slDao.listarAnoESemestreAno(logado.getId_usuario());
+            listaSl = slDao.listarAnoESemestreAno(logado.getId_usuario());
             for (SemestreLetivo sl: listaSl){
+                opcoesAno.add(sl.getAno().toString());
                 System.out.println("Ano: "+sl.getAno().toString()+" - Semestre: "+sl.getNumero_semestre().toString());
             }
+            cbAno.setItems(opcoesAno);
+
         } catch (SQLException e){
             e.printStackTrace();
         }
@@ -47,12 +67,38 @@ public class MainShellController {
     }
 
     @FXML
-    void handleContextChange() {
+    public void handleTrocaAno() {
+        anoSelecionado = Integer.parseInt(cbAno.getValue());
+        for (SemestreLetivo sl: listaSl){
+            if (sl.getAno().equals(anoSelecionado)){
+                if (sl.getNumero_semestre() == 1){
+                    tbSem1.setDisable(false);
+                } else {
+                    if (sl.getNumero_semestre() == 2){
+                        tbSem2.setDisable(false);
+                    }
+                }
+            }
+        }
+    }
+
+    @FXML
+    public void handleSemestreToggle1() {
+        semestreAnoEscolhido = 1;
+    }
+
+    @FXML
+    public void handleSemestreToggle2() {
+        semestreAnoEscolhido = 2;
+    }
+
+    @FXML
+    public void handleTrocaCurso(){
 
     }
 
     @FXML
-    void handleSemestreToggle() {
+    public void handleContextChange(){
 
     }
 
