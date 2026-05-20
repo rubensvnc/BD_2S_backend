@@ -72,6 +72,12 @@ public class MainShellController {
             e.printStackTrace();
         }
 
+        if (logado.getTipo() == "PROF"){
+            carregarConteudo("/prof_temas.fxml");
+            secaoProfessor.setVisible(true);
+            secaoProfessor.setManaged(true);
+        }
+
     }
 
     private void carregarConteudo(String caminhoFxml) {
@@ -195,12 +201,12 @@ public class MainShellController {
 
     @FXML
     void navTemas() {
-
+        carregarConteudo("/prof_temas.fxml");
     }
 
     @FXML
     void navPlanejamento() {
-
+        carregarConteudo("/prof_planejamento_stats_rotina.fxml");
     }
 
 }
