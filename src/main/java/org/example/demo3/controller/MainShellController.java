@@ -89,7 +89,6 @@ public class MainShellController {
 
     @FXML
     void navTemas() {
-
         try {
             Parent profTemas =
                     FXMLLoader.load(
@@ -103,13 +102,18 @@ public class MainShellController {
     }
 
 
-
-
-
-
     @FXML
     void navPlanejamento() {
+        try {
+            Parent profPlanejamentos =
+                    FXMLLoader.load(
+                            getClass().getResource("/prof_planejamento_stats_rotina.fxml")
+                    );
+            areaConteudo.getChildren().setAll(profPlanejamentos);
 
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
 }
