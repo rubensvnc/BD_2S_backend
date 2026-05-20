@@ -13,7 +13,7 @@
 <?import javafx.scene.layout.StackPane?>
 <?import javafx.scene.layout.VBox?>
 
-<BorderPane prefHeight="768" prefWidth="1366" xmlns="http://javafx.com/javafx/25" xmlns:fx="http://javafx.com/fxml/1" fx:controller="org.example.demo3.controller.MainShellController">
+<BorderPane prefHeight="768" prefWidth="1366" xmlns="http://javafx.com/javafx/26" xmlns:fx="http://javafx.com/fxml/1" fx:controller="org.example.demo3.controller.MainShellController">
 
     <!-- TOPO: Seletor de Contexto Global + Banner Read-Only -->
     <top>
@@ -23,23 +23,23 @@
                 <Label style="-fx-text-fill: #ecf0f1;" text="Ano:" />
                 <ComboBox fx:id="cbAno" onAction="#handleTrocaAno" prefWidth="80" />
 
-                <Separator orientation="VERTICAL" />
+                <Separator opacity="0.0" orientation="VERTICAL" />
 
                 <Label style="-fx-text-fill: #ecf0f1;" text="Semestre:" />
                 <!-- ToggleGroup controlado pelo controller para garantir exclusividade -->
                 <ToggleButton fx:id="tbSem1" onAction="#handleSemestreToggle" text="1º" />
                 <ToggleButton fx:id="tbSem2" onAction="#handleSemestreToggle" text="2º" />
 
-                <Separator orientation="VERTICAL" />
+                <Separator opacity="0.0" orientation="VERTICAL" />
 
                 <Label style="-fx-text-fill: #ecf0f1;" text="Curso:" />
                 <ComboBox fx:id="cbCurso" onAction="#handleTrocaCurso" prefWidth="200" />
 
-                <Separator orientation="VERTICAL" />
+                <Separator opacity="0.0" orientation="VERTICAL" />
 
-                <Label style="-fx-text-fill: #ecf0f1;" text="Sem. do Curso:" />
+                <Label fx:id="lblSemestreCurso" style="-fx-text-fill: #ecf0f1;" text="Sem. do Curso:" />
                 <ComboBox fx:id="cbSemestreCurso" onAction="#handleTrocaSemestreCurso" prefWidth="80" />
-            <Label style="-fx-text-fill: #ecf0f1;" text="Disciplina:" />
+            <Label fx:id="lblDisciplina" style="-fx-text-fill: #ecf0f1;" text="Disciplina:" />
             <ComboBox fx:id="cbDisciplina" onAction="#handleTrocaDisciplina" prefWidth="80" />
 
                 <!-- Espaço flexível empurra info do usuário para a direita -->
@@ -47,7 +47,7 @@
 
                 <Label fx:id="lblNomeUsuario" style="-fx-text-fill: #ecf0f1; -fx-font-weight: bold;" />
                 <Label fx:id="lblPerfilUsuario" style="-fx-text-fill: #95a5a6; -fx-font-size: 11px;" />
-                <Separator orientation="VERTICAL" />
+                <Separator opacity="0.0" orientation="VERTICAL" />
                 <Button onAction="#handleLogout" style="-fx-background-color: transparent; -fx-text-fill: #ecf0f1; -fx-border-color: #7f8c8d; -fx-border-radius: 3;" text="Sair" />
             </ToolBar>
 
