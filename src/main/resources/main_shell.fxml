@@ -40,7 +40,7 @@
                 <Label style="-fx-text-fill: #ecf0f1;" text="Sem. do Curso:" />
                 <ComboBox fx:id="cbSemestreCurso" onAction="#handleContextChange" prefWidth="80" />
             <Label style="-fx-text-fill: #ecf0f1;" text="Disciplina:" />
-            <ComboBox onAction="#handleContextChange" prefWidth="80" />
+            <ComboBox fx:id="cbDisciplina" onAction="#handleContextChange" prefWidth="80" />
 
                 <!-- Espaço flexível empurra info do usuário para a direita -->
                 <Region HBox.hgrow="ALWAYS" />
