@@ -34,6 +34,8 @@ public class MainShellController {
     @FXML private Label lblNomeUsuario;
     @FXML private Label lblPerfilUsuario;
     @FXML private Label bannerReadOnly;
+    @FXML private Label lblSemestreCurso;
+    @FXML private Label lblDisciplina;
     @FXML private VBox menuLateral;
     @FXML private VBox secaoAdm;
     @FXML private VBox secaoCoordenador;
@@ -55,32 +57,49 @@ public class MainShellController {
         tbSem1.setDisable(true);
         tbSem2.setDisable(true);
 
-        logado.setId_usuario(2);
-        logado.setTipo("ADM");
-
+        logado.setId_usuario(3);
+        logado.setTipo("COORD");
 
         ObservableList<String> opcoesAno = FXCollections.observableArrayList();
         SemestreLetivoDAO slDao = new SemestreLetivoDAO();
-        try{
-            listaSl = slDao.listarAnoESemestreAno(logado.getId_usuario());
-            for (SemestreLetivo sl: listaSl){
-                opcoesAno.add(sl.getAno().toString());
-            }
-            cbAno.setItems(opcoesAno);
-
-        } catch (SQLException e){
-            e.printStackTrace();
-        }
 
         if (logado.getTipo() == "PROF"){
             carregarConteudo("/prof_temas.fxml");
             secaoProfessor.setVisible(true);
             secaoProfessor.setManaged(true);
+
+            try{
+                listaSl = slDao.listarProfessorAnoESemestreAno(logado.getId_usuario());
+                for (SemestreLetivo sl: listaSl){
+                    opcoesAno.add(sl.getAno().toString());
+                }
+                cbAno.setItems(opcoesAno);
+
+            } catch (SQLException e){
+                e.printStackTrace();
+            }
+
         } else {
             if (logado.getTipo() == "COORD") {
                 carregarConteudo("/coord_painel.fxml");
                 secaoCoordenador.setVisible(true);
                 secaoCoordenador.setManaged(true);
+                lblSemestreCurso.setVisible(false);
+                cbSemestreCurso.setVisible(false);
+                lblDisciplina.setVisible(false);
+                cbDisciplina.setVisible(false);
+
+                try{
+                    listaSl = slDao.listarCoordenadorAnoESemestreAno(logado.getId_usuario());
+                    for (SemestreLetivo sl: listaSl){
+                        opcoesAno.add(sl.getAno().toString());
+                    }
+                    cbAno.setItems(opcoesAno);
+
+                } catch (SQLException e){
+                    e.printStackTrace();
+                }
+
             } else {
                 carregarConteudo("/adm_cursos_horarios.fxml");
                 secaoAdm.setVisible(true);
@@ -134,17 +153,32 @@ public class MainShellController {
         }
 
         ObservableList<String> opcoesCurso = FXCollections.observableArrayList();
-        CursoDAO slDao = new CursoDAO();
-        try{
-            List<Curso> listaCursos = slDao.listarCursos(logado.getId_usuario(),anoSelecionado,semestreAnoEscolhido);
-            for (Curso c: listaCursos){
-                opcoesCurso.add(c.getNome());
-            }
-            cbCurso.setItems(opcoesCurso);
+        CursoDAO cDao = new CursoDAO();
 
-        } catch (SQLException e){
-            e.printStackTrace();
+        if (logado.getTipo() == "PROF"){
+            try{
+                List<Curso> listaCursos = cDao.listarCursosProfessor(logado.getId_usuario(),anoSelecionado,semestreAnoEscolhido);
+                for (Curso c: listaCursos){
+                    opcoesCurso.add(c.getNome());
+                }
+                cbCurso.setItems(opcoesCurso);
+
+            } catch (SQLException e){
+                e.printStackTrace();
+            }
+        } else {
+            if (logado.getTipo() == "COORD"){
+                try{
+                    Curso c = cDao.buscarCursoCoordenador(logado.getId_usuario());
+                    opcoesCurso.add(c.getNome());
+                    cbCurso.setItems(opcoesCurso);
+
+                } catch (SQLException e){
+                    e.printStackTrace();
+                }
+            }
         }
+
     }
 
     @FXML
