@@ -1,6 +1,8 @@
 package org.example.demo3.controller;
 
 import javafx.fxml.FXML;
+import javafx.fxml.FXMLLoader;
+import javafx.scene.Parent;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.ToggleButton;
@@ -10,6 +12,7 @@ import org.example.demo3.UsuarioAtual;
 import org.example.demo3.dao.SemestreLetivoDAO;
 import org.example.demo3.entity.SemestreLetivo;
 
+import java.io.IOException;
 import java.sql.SQLException;
 import java.util.List;
 
@@ -83,7 +86,12 @@ public class MainShellController {
 
     @FXML
     void navTemas() {
-
+        try {
+            Parent prof_temas = FXMLLoader.load(getClass().getResource("/prof_temas.fxml"));
+            areaConteudo.getChildren().setAll(prof_temas);
+        }catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     @FXML
