@@ -32,4 +32,5 @@ replay_pid*
 ### Database / Environment (Important for MySQL) ###
 .env
 *.sql
+*db.properties
 # Only ignore .sql if you don't want to version control your DB dumps.
