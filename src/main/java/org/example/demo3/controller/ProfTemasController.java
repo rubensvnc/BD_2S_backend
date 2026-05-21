@@ -414,4 +414,16 @@ public class ProfTemasController {
             System.out.println(e.getMessage());
         }
     }
+
+    @FXML
+    public void handleImportarTemas(){}
+
+    @FXML
+    public void handleNovoTema(){}
+
+    @FXML
+    public void handleSelecionarTema(){}
+
+    @FXML
+    public void handleLimparTema(){}
 }
