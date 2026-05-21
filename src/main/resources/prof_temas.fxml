@@ -15,7 +15,7 @@
                 <Label text="Temas"
                        style="-fx-font-size: 16px; -fx-font-weight: bold;"/>
 
-                <Button text="📥 Importar de semestre anterior" onAction="#handleImportarTemas"
+                <Button text="📥 Importar de semestre anterior"
                         style="-fx-background-color: #3498db; -fx-text-fill: white; -fx-font-weight: bold;"/>
             </HBox>
         </VBox>
