@@ -34,6 +34,7 @@ public class MainShellController {
     @FXML private Label lblNomeUsuario;
     @FXML private Label lblPerfilUsuario;
     @FXML private Label bannerReadOnly;
+    @FXML private Label lblCurso;
     @FXML private Label lblSemestreCurso;
     @FXML private Label lblDisciplina;
     @FXML private VBox menuLateral;
@@ -57,8 +58,8 @@ public class MainShellController {
         tbSem1.setDisable(true);
         tbSem2.setDisable(true);
 
-        logado.setId_usuario(3);
-        logado.setTipo("COORD");
+        logado.setId_usuario(4);
+        logado.setTipo("PROF");
 
         ObservableList<String> opcoesAno = FXCollections.observableArrayList();
         SemestreLetivoDAO slDao = new SemestreLetivoDAO();
@@ -85,14 +86,20 @@ public class MainShellController {
                 secaoCoordenador.setVisible(true);
                 secaoCoordenador.setManaged(true);
                 lblSemestreCurso.setVisible(false);
+                lblSemestreCurso.setManaged(false);
                 cbSemestreCurso.setVisible(false);
+                cbSemestreCurso.setManaged(false);
                 lblDisciplina.setVisible(false);
+                lblDisciplina.setManaged(false);
                 cbDisciplina.setVisible(false);
+                cbDisciplina.setManaged(false);
 
                 try{
                     listaSl = slDao.listarCoordenadorAnoESemestreAno(logado.getId_usuario());
                     for (SemestreLetivo sl: listaSl){
-                        opcoesAno.add(sl.getAno().toString());
+                        if (!opcoesAno.contains(sl.getAno().toString())){
+                            opcoesAno.add(sl.getAno().toString());
+                        }
                     }
                     cbAno.setItems(opcoesAno);
 
@@ -104,6 +111,32 @@ public class MainShellController {
                 carregarConteudo("/adm_cursos_horarios.fxml");
                 secaoAdm.setVisible(true);
                 secaoAdm.setManaged(true);
+
+                lblCurso.setVisible(false);
+                lblCurso.setManaged(false);
+                cbCurso.setVisible(false);
+                cbCurso.setManaged(false);
+                lblSemestreCurso.setVisible(false);
+                lblSemestreCurso.setManaged(false);
+                cbSemestreCurso.setVisible(false);
+                cbSemestreCurso.setManaged(false);
+                lblDisciplina.setVisible(false);
+                lblDisciplina.setManaged(false);
+                cbDisciplina.setVisible(false);
+                cbDisciplina.setManaged(false);
+
+                try{
+                    listaSl = slDao.listarAdmsAnoESemestreAno();
+                    for (SemestreLetivo sl: listaSl){
+                        if (!opcoesAno.contains(sl.getAno().toString())){
+                            opcoesAno.add(sl.getAno().toString());
+                        }
+                    }
+                    cbAno.setItems(opcoesAno);
+
+                } catch (SQLException e){
+                    e.printStackTrace();
+                }
             }
         }
 
@@ -130,6 +163,8 @@ public class MainShellController {
     @FXML
     public void handleTrocaAno() {
         anoSelecionado = Integer.parseInt(cbAno.getValue());
+        tbSem1.setDisable(false);
+        tbSem2.setDisable(false);
         for (SemestreLetivo sl: listaSl){
             if (sl.getAno().equals(anoSelecionado)){
                 if (sl.getNumero_semestre() == 1){
