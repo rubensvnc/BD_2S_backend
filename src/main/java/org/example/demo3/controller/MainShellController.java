@@ -11,6 +11,7 @@ import javafx.scene.control.Label;
 import javafx.scene.control.ToggleButton;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
+import org.example.demo3.DatabaseConnection;
 import org.example.demo3.UsuarioAtual;
 import org.example.demo3.dao.CursoDAO;
 import org.example.demo3.dao.DisciplinaDAO;
@@ -20,16 +21,19 @@ import org.example.demo3.entity.Disciplina;
 import org.example.demo3.entity.SemestreLetivo;
 
 import java.io.IOException;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
 public class MainShellController {
-    @FXML private ComboBox<String> cbAno; // Substitua <String> pelo tipo de dado correto se necessário
+    @FXML private ComboBox<String> cbAno;
     @FXML private ToggleButton tbSem1;
     @FXML private ToggleButton tbSem2;
-    @FXML private ComboBox<String> cbCurso; // Substitua <String> pelo tipo de dado correto se necessário
-    @FXML private ComboBox<String> cbSemestreCurso; // Substitua <String> pelo tipo de dado correto se necessário
+    @FXML private ComboBox<String> cbCurso;
+    @FXML private ComboBox<String> cbSemestreCurso;
     @FXML private ComboBox<String> cbDisciplina;
     @FXML private Label lblNomeUsuario;
     @FXML private Label lblPerfilUsuario;
@@ -45,6 +49,7 @@ public class MainShellController {
 
     private List<SemestreLetivo> listaSl;
     private List<Disciplina> listaD;
+    private List<Curso> listaCursos;
 
     UsuarioAtual logado = UsuarioAtual.getInstancia();
     private Integer anoSelecionado;
@@ -139,40 +144,30 @@ public class MainShellController {
                 }
             }
         }
-
     }
 
     private void carregarConteudo(String caminhoFxml) {
         try {
-            // 1. Localiza e carrega o arquivo FXML secundário
             FXMLLoader loader = new FXMLLoader(getClass().getResource(caminhoFxml));
             Parent novoConteudo = loader.load();
-
-            // 2. Limpa o que está atualmente na área de conteúdo
             areaConteudo.getChildren().clear();
-
-            // 3. Adiciona a nova tela na StackPane
             areaConteudo.getChildren().add(novoConteudo);
-
         } catch (IOException e) {
             e.printStackTrace();
-            // Dica: Trate o erro de forma visual se achar necessário, colocando um aviso na tela
         }
     }
 
     @FXML
     public void handleTrocaAno() {
         anoSelecionado = Integer.parseInt(cbAno.getValue());
-        tbSem1.setDisable(false);
-        tbSem2.setDisable(false);
+        tbSem1.setDisable(true);
+        tbSem2.setDisable(true);
         for (SemestreLetivo sl: listaSl){
             if (sl.getAno().equals(anoSelecionado)){
                 if (sl.getNumero_semestre() == 1){
                     tbSem1.setDisable(false);
-                } else {
-                    if (sl.getNumero_semestre() == 2){
-                        tbSem2.setDisable(false);
-                    }
+                } else if (sl.getNumero_semestre() == 2){
+                    tbSem2.setDisable(false);
                 }
             }
         }
@@ -192,7 +187,7 @@ public class MainShellController {
 
         if (logado.getTipo() == "PROF"){
             try{
-                List<Curso> listaCursos = cDao.listarCursosProfessor(logado.getId_usuario(),anoSelecionado,semestreAnoEscolhido);
+                listaCursos = cDao.listarCursosProfessor(logado.getId_usuario(), anoSelecionado, semestreAnoEscolhido);
                 for (Curso c: listaCursos){
                     opcoesCurso.add(c.getNome());
                 }
@@ -201,19 +196,18 @@ public class MainShellController {
             } catch (SQLException e){
                 e.printStackTrace();
             }
-        } else {
-            if (logado.getTipo() == "COORD"){
-                try{
-                    Curso c = cDao.buscarCursoCoordenador(logado.getId_usuario());
-                    opcoesCurso.add(c.getNome());
-                    cbCurso.setItems(opcoesCurso);
+        } else if (logado.getTipo() == "COORD"){
+            try{
+                Curso c = cDao.buscarCursoCoordenador(logado.getId_usuario());
+                listaCursos = new ArrayList<>();
+                listaCursos.add(c);
+                opcoesCurso.add(c.getNome());
+                cbCurso.setItems(opcoesCurso);
 
-                } catch (SQLException e){
-                    e.printStackTrace();
-                }
+            } catch (SQLException e){
+                e.printStackTrace();
             }
         }
-
     }
 
     @FXML
@@ -223,10 +217,11 @@ public class MainShellController {
         ObservableList<String> opcoesSemestreCurso = FXCollections.observableArrayList();
         DisciplinaDAO dDao = new DisciplinaDAO();
         try{
-            listaD = dDao.listarDisciplinasCurso
-                    (logado.getId_usuario(),anoSelecionado,semestreAnoEscolhido, cursoEscolhido);
+            listaD = dDao.listarDisciplinasCurso(logado.getId_usuario(), anoSelecionado, semestreAnoEscolhido, cursoEscolhido);
             for (Disciplina d: listaD){
-                opcoesSemestreCurso.add(d.getSemestre_curso().toString());
+                if (!opcoesSemestreCurso.contains(d.getSemestre_curso().toString())) {
+                    opcoesSemestreCurso.add(d.getSemestre_curso().toString());
+                }
             }
             cbSemestreCurso.setItems(opcoesSemestreCurso);
 
@@ -253,39 +248,90 @@ public class MainShellController {
         disciplinaEscolhida = cbDisciplina.getValue();
     }
 
-    @FXML
-    void handleLogout() {
+    @FXML void handleLogout() {}
 
-    }
+    @FXML void navCalendario() { carregarConteudo("/adm_calendario_bloqueios.fxml"); }
 
-    @FXML
-    void navCalendario() {
-        carregarConteudo("/adm_calendario_bloqueios.fxml");
-    }
+    @FXML void navCursosHorarios() { carregarConteudo("/adm_cursos_horarios.fxml"); }
 
-    @FXML
-    void navCursosHorarios() {
-        carregarConteudo("/adm_cursos_horarios.fxml");
-    }
+    @FXML void navCoordenaodresAdms() { carregarConteudo("/adm_coordenadores_adms.fxml"); }
 
-    @FXML
-    void navCoordenaodresAdms() {
-        carregarConteudo("/adm_coordenadores_adms.fxml");
-    }
+    @FXML void navCoordPainel() { carregarConteudo("/coord_painel.fxml"); }
 
-    @FXML
-    void navCoordPainel() {
-        carregarConteudo("/coord_painel.fxml");
-    }
+    @FXML void navTemas() { carregarConteudo("/prof_temas.fxml"); }
 
-    @FXML
-    void navTemas() {
-        carregarConteudo("/prof_temas.fxml");
-    }
-
+    /**
+     * MODIFICAÇÃO CIRÚRGICA: Descobre os IDs direto do banco usando os NOMES textuais,
+     * contornando de forma limpa os IDs nulos que vinham dos DAOs intocados.
+     */
     @FXML
     void navPlanejamento() {
-        carregarConteudo("/prof_planejamento_stats_rotina.fxml");
+        try {
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/prof_planejamento_stats_rotina.fxml"));
+            Parent novoConteudo = loader.load();
+
+            ProfPlanejamentoController profController = loader.getController();
+
+            areaConteudo.getChildren().clear();
+            areaConteudo.getChildren().add(novoConteudo);
+
+            if (anoSelecionado != null && semestreAnoEscolhido != null && cursoEscolhido != null && disciplinaEscolhida != null) {
+
+                int idCurso = descobrirIdCursoPorNome(cursoEscolhido);
+                int idDisciplina = descobrirIdDisciplinaPorNome(disciplinaEscolhida);
+
+                profController.setContextoFiltros(anoSelecionado, semestreAnoEscolhido, idCurso, idDisciplina);
+            }
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
+    @FXML
+    public void handleGerarPlanejamento() {
+        if (anoSelecionado == null || semestreAnoEscolhido == null || cursoEscolhido == null || disciplinaEscolhida == null) {
+            return;
+        }
+        navPlanejamento();
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    // MÉTODOS AUXILIARES: Consultas locais para buscar IDs por Nome
+    // ═══════════════════════════════════════════════════════════════
+    private int descobrirIdCursoPorNome(String nomeCurso) {
+        String sql = "SELECT id_curso FROM curso WHERE nome = ?";
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, nomeCurso);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getInt("id_curso");
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        } finally {
+            DatabaseConnection.closeConnection();
+        }
+        return 0;
+    }
+
+    private int descobrirIdDisciplinaPorNome(String nomeDisciplina) {
+        String sql = "SELECT id_disciplina FROM disciplina WHERE nome = ?";
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, nomeDisciplina);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getInt("id_disciplina");
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        } finally {
+            DatabaseConnection.closeConnection();
+        }
+        return 0;
+    }
 }

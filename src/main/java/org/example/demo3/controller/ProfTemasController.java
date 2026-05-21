@@ -4,180 +4,73 @@ import javafx.beans.property.SimpleStringProperty;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
-import javafx.scene.layout.Region;
 import org.example.demo3.dao.DependenciaTemaDAO;
 import org.example.demo3.dao.TemaDAO;
-import org.example.demo3.entity.Disciplina;
-import org.example.demo3.entity.SemestreLetivo;
+import org.example.demo3.entity.DependenciaTema;
 import org.example.demo3.entity.Tema;
 
-import java.time.LocalDate;
 import java.util.List;
 
 public class ProfTemasController {
 
-    //TABELA DE TEMAS
+    // TABELA
     @FXML private TableView<Tema> tabelaTemas;
+
     @FXML private TableColumn<Tema, Integer> colTemaPrior;
     @FXML private TableColumn<Tema, String> colTemaNome;
     @FXML private TableColumn<Tema, Integer> colTemaMin;
     @FXML private TableColumn<Tema, Integer> colTemaMax;
     @FXML private TableColumn<Tema, String> colTemaAval;
     @FXML private TableColumn<Tema, String> colTemaOpc;
-    @FXML private TableColumn<Tema, String> colTemaAcoes;
-    //FORMULÁRIO
-    @FXML private Label lblTituloFormTema;
+
+    // FORMULÁRIO
     @FXML private TextField tfTemaNome;
-    @FXML private Label errTemaNome;
     @FXML private Spinner<Integer> spTemaMin;
     @FXML private Spinner<Integer> spTemaMax;
     @FXML private Spinner<Integer> spTemaPrioridade;
     @FXML private CheckBox cbTemaAvaliacao;
     @FXML private CheckBox cbTemaOpcional;
     @FXML private Label lblFeedbackTema;
+    @FXML private Label errTemaNome;
+    @FXML private Label lblTituloFormTema;
+
     // DEPENDÊNCIAS
     @FXML private Label lblTemaSelecionadoDep;
     @FXML private Label lblErrCircular;
+
     @FXML private ListView<Tema> listTemasDisponiveis;
     @FXML private ListView<Tema> listDependencias;
-    //DAOS
+
+    // DAO
     private TemaDAO temaDAO = new TemaDAO();
-    private DependenciaTemaDAO dependenciaTemaDAO = new DependenciaTemaDAO();
+    private DependenciaTemaDAO dependenciaTemaDAO =
+            new DependenciaTemaDAO();
+
+    // TEMA SELECIONADO
+    private Tema temaSelecionado;
+
     // INITIALIZE
     @FXML
     public void initialize() {
+
         configurarSpinners();
-        listarTemasnaTabela();
+        configurarTabela();
         carregarTemas();
-    }
 
-    // AÇÕES DE TEMAS
-    @FXML
-    private void handleImportarTemas() {
+        tabelaTemas.getSelectionModel()
+                .selectedItemProperty()
+                .addListener((obs, oldValue, newValue) -> {
 
-    }
-
-    @FXML
-    private void handleNovoTema() {
-
-    }
-
-    @FXML
-    private void handleSelecionarTema() {
-
-    }
-
-    @FXML
-    private void handleLimparTema() {
-        limparFormulario();
-    }
-
-    @FXML
-    private void handleSalvarTema() {
-        try {
-
-            errTemaNome.setText("");
-
-            if (tfTemaNome.getText().isBlank()) {
-                errTemaNome.setText("Digite o nome do tema.");
-                return;
-            }
-            Tema tema = new Tema();
-
-            // IDs FIXOS PARA TESTE
-            tema.setDisciplina_id(1);
-            tema.setSemestre_letivo_id(3);
-
-            // CAMPOS DO FORMULÁRIO
-            tema.setNome(tfTemaNome.getText());
-            tema.setQtd_min_aulas(spTemaMin.getValue());
-            tema.setQtd_max_aulas(spTemaMax.getValue());
-            tema.setPrioridade(spTemaPrioridade.getValue());
-
-            // CHECKBOX → INT
-            tema.setEh_avaliacao(cbTemaAvaliacao.isSelected() ? 1 : 0);
-            tema.setEh_opcional(cbTemaOpcional.isSelected() ? 1 : 0);
-
-            // INSERT NO BANCO
-            temaDAO.inserirTema(tema);
-
-            // FEEDBACK
-            lblFeedbackTema.setText("Tema salvo com sucesso!");
-
-            // LIMPAR FORM
-            handleLimparTema();
-            carregarTemas();
-
-        } catch (Exception e) {
-
-            lblFeedbackTema.setText("Erro ao salvar tema.");
-
-            System.out.println(e.getMessage());
-        }
+                    if (newValue != null) {
+                        handleSelecionarTema();
+                    }
+                });
     }
 
 
-    // AÇÕES DE DEPENDÊNCIAS
-    @FXML
-    private void handleAdicionarDep() {
+    // CONFIGURA TABELA
+    private void configurarTabela() {
 
-    }
-
-    @FXML
-    private void handleRemoverDep() {
-
-    }
-
-    @FXML
-    private void handleSubirDep() {
-
-    }
-
-    @FXML
-    private void handleDescerDep() {
-
-    }
-
-    @FXML
-    private void handleSalvarDependencias() {
-
-    }
-
-    @FXML
-    private void limparFormulario() {
-        tfTemaNome.clear();
-        spTemaMin.getValueFactory().setValue(1);
-        spTemaMax.getValueFactory().setValue(1);
-        spTemaPrioridade.getValueFactory().setValue(1);
-        cbTemaAvaliacao.setSelected(false);
-        cbTemaOpcional.setSelected(false);
-    }
-
-
-    private void carregarTemas() {
-
-        List<Tema> temas = temaDAO.listarTemas();
-
-        tabelaTemas.getItems().clear();
-
-        tabelaTemas.getItems().addAll(temas);
-    }
-
-    private void configurarSpinners() {
-        spTemaMin.setValueFactory(
-                new SpinnerValueFactory.IntegerSpinnerValueFactory(1, 100, 1)
-        );
-
-        spTemaMax.setValueFactory(
-                new SpinnerValueFactory.IntegerSpinnerValueFactory(1, 100, 1)
-        );
-
-        spTemaPrioridade.setValueFactory(
-                new SpinnerValueFactory.IntegerSpinnerValueFactory(1, 999, 1)
-        );
-    }
-
-    private void listarTemasnaTabela() {
         colTemaPrior.setCellValueFactory(
                 new PropertyValueFactory<>("prioridade")
         );
@@ -194,18 +87,337 @@ public class ProfTemasController {
                 new PropertyValueFactory<>("qtd_max_aulas")
         );
 
-        colTemaAval.setCellValueFactory(cellData ->
-                new SimpleStringProperty(
-                        cellData.getValue().getEh_avaliacao() == 1 ? "Sim" : "Não"
-                )
-        );
+        colTemaAval.setCellValueFactory(cellData -> {
 
-        colTemaOpc.setCellValueFactory(cellData ->
-                new SimpleStringProperty(
-                        cellData.getValue().getEh_opcional() == 1 ? "Sim" : "Não"
-                )
-        );
+            if (cellData.getValue().getEh_avaliacao() == 1) {
+                return new SimpleStringProperty("Sim");
+            } else {
+                return new SimpleStringProperty("Não");
+            }
+        });
 
+        colTemaOpc.setCellValueFactory(cellData -> {
+
+            if (cellData.getValue().getEh_opcional() == 1) {
+                return new SimpleStringProperty("Sim");
+            } else {
+                return new SimpleStringProperty("Não");
+            }
+        });
     }
 
+    // CARREGAR TEMAS
+    private void carregarTemas() {
+
+        List<Tema> temas = temaDAO.listarTemas();
+
+        tabelaTemas.getItems().clear();
+
+        tabelaTemas.getItems().addAll(temas);
+    }
+
+    // CARREGAR TEMAS DISPONÍVEIS
+    private void carregarTemasDisponiveis() {
+
+        listTemasDisponiveis.getItems().clear();
+
+        List<Tema> temas = temaDAO.listarTemas();
+
+        for (Tema tema : temas) {
+
+            // NÃO MOSTRAR O PRÓPRIO TEMA
+            if (tema.getId_tema() !=
+                    temaSelecionado.getId_tema()) {
+
+                listTemasDisponiveis.getItems().add(tema);
+            }
+        }
+    }
+
+    // SPINNERS
+    private void configurarSpinners() {
+
+        spTemaMin.setValueFactory(
+                new SpinnerValueFactory
+                        .IntegerSpinnerValueFactory(
+                        1, 100, 1
+                )
+        );
+
+        spTemaMax.setValueFactory(
+                new SpinnerValueFactory
+                        .IntegerSpinnerValueFactory(
+                        1, 100, 1
+                )
+        );
+
+        spTemaPrioridade.setValueFactory(
+                new SpinnerValueFactory
+                        .IntegerSpinnerValueFactory(
+                        1, 999, 1
+                )
+        );
+    }
+
+    // SALVAR TEMA
+    @FXML
+    private void handleSalvarTema() {
+
+        try {
+
+            if (tfTemaNome.getText().isBlank()) {
+
+                errTemaNome.setText(
+                        "Digite o nome do tema."
+                );
+
+                return;
+            }
+
+            Tema tema = new Tema();
+
+            // TESTE
+            tema.setDisciplina_id(1);
+            tema.setSemestre_letivo_id(3);
+
+            tema.setNome(tfTemaNome.getText());
+
+            tema.setQtd_min_aulas(
+                    spTemaMin.getValue()
+            );
+
+            tema.setQtd_max_aulas(
+                    spTemaMax.getValue()
+            );
+
+            tema.setPrioridade(
+                    spTemaPrioridade.getValue()
+            );
+
+            tema.setEh_avaliacao(
+                    cbTemaAvaliacao.isSelected() ? 1 : 0
+            );
+
+            tema.setEh_opcional(
+                    cbTemaOpcional.isSelected() ? 1 : 0
+            );
+
+            temaDAO.inserirTema(tema);
+
+            lblFeedbackTema.setText(
+                    "Tema salvo com sucesso!"
+            );
+
+            handleLimparTema();
+
+            carregarTemas();
+
+        } catch (Exception e) {
+
+            lblFeedbackTema.setText(
+                    "Erro ao salvar tema."
+            );
+
+            System.out.println(e.getMessage());
+        }
+    }
+
+    // ADICIONAR DEPENDÊNCIA
+    @FXML
+    private void handleAdicionarDep() {
+
+        Tema temaSelecionadoLista =
+                listTemasDisponiveis
+                        .getSelectionModel()
+                        .getSelectedItem();
+
+        if (temaSelecionadoLista != null) {
+
+            listDependencias
+                    .getItems()
+                    .add(temaSelecionadoLista);
+
+            listTemasDisponiveis
+                    .getItems()
+                    .remove(temaSelecionadoLista);
+        }
+    }
+
+    // REMOVER DEPENDÊNCIA
+    @FXML
+    private void handleRemoverDep() {
+
+        Tema temaSelecionadoLista =
+                listDependencias
+                        .getSelectionModel()
+                        .getSelectedItem();
+
+        if (temaSelecionadoLista != null) {
+
+            listTemasDisponiveis
+                    .getItems()
+                    .add(temaSelecionadoLista);
+
+            listDependencias
+                    .getItems()
+                    .remove(temaSelecionadoLista);
+        }
+    }
+
+    // SUBIR DEPENDÊNCIA
+    @FXML
+    private void handleSubirDep() {
+
+        int index = listDependencias
+                .getSelectionModel()
+                .getSelectedIndex();
+
+        if (index > 0) {
+
+            Tema tema =
+                    listDependencias
+                            .getItems()
+                            .remove(index);
+
+            listDependencias
+                    .getItems()
+                    .add(index - 1, tema);
+
+            listDependencias
+                    .getSelectionModel()
+                    .select(index - 1);
+        }
+    }
+
+    // DESCER DEPENDÊNCIA
+    @FXML
+    private void handleDescerDep() {
+
+        int index = listDependencias
+                .getSelectionModel()
+                .getSelectedIndex();
+
+        if (index <
+                listDependencias.getItems().size() - 1
+                && index >= 0) {
+
+            Tema tema =
+                    listDependencias
+                            .getItems()
+                            .remove(index);
+
+            listDependencias
+                    .getItems()
+                    .add(index + 1, tema);
+
+            listDependencias
+                    .getSelectionModel()
+                    .select(index + 1);
+        }
+    }
+
+    // SALVAR DEPENDÊNCIAS
+    @FXML
+    private void handleSalvarDependencias() {
+
+        if (temaSelecionado == null) {
+
+            lblFeedbackTema.setText(
+                    "Selecione um tema."
+            );
+
+            return;
+        }
+
+        try {
+
+            dependenciaTemaDAO.removerDependenciasTema(
+                            temaSelecionado.getId_tema()
+                    );
+
+            for (int i = 0;
+                 i < listDependencias.getItems().size();
+                 i++) {
+
+                Tema temaDependencia =
+                        listDependencias
+                                .getItems()
+                                .get(i);
+
+                DependenciaTema dependencia =
+                        new DependenciaTema();
+
+                dependencia.setTema_id(
+                        temaSelecionado.getId_tema()
+                );
+
+                dependencia.setTema_dependencia_id(
+                        temaDependencia.getId_tema()
+                );
+
+                dependencia.setOrdem(i + 1);
+
+                dependenciaTemaDAO
+                        .inserirDependencia(
+                                dependencia
+                        );
+            }
+
+            lblFeedbackTema.setText(
+                    "Dependências salvas!"
+            );
+
+        } catch (Exception e) {
+
+            lblFeedbackTema.setText(
+                    "Erro ao salvar dependências."
+            );
+
+            System.out.println(e.getMessage());
+        }
+    }
+
+    @FXML
+    private void handleSelecionarTema() {
+        Tema tema = tabelaTemas.getSelectionModel().getSelectedItem();
+        if (tema == null) return;
+
+        temaSelecionado = tema;
+        lblTemaSelecionadoDep.setText(tema.getNome());
+
+        // Preenche o formulário para edição
+        lblTituloFormTema.setText("Editar Tema");
+        tfTemaNome.setText(tema.getNome());
+        spTemaMin.getValueFactory().setValue(tema.getQtd_min_aulas());
+        spTemaMax.getValueFactory().setValue(tema.getQtd_max_aulas());
+        spTemaPrioridade.getValueFactory().setValue(tema.getPrioridade());
+        cbTemaAvaliacao.setSelected(tema.getEh_avaliacao() == 1);
+        cbTemaOpcional.setSelected(tema.getEh_opcional() == 1);
+
+        // Atualiza lista de dependências disponíveis
+        carregarTemasDisponiveis();
+    }
+
+    @FXML
+    private void handleLimparTema() {
+        tfTemaNome.clear();
+
+        spTemaMin.getValueFactory().setValue(1);
+
+        spTemaMax.getValueFactory().setValue(1);
+
+        spTemaPrioridade
+                .getValueFactory()
+                .setValue(1);
+
+        cbTemaAvaliacao.setSelected(false);
+
+        cbTemaOpcional.setSelected(false);
+    }
+
+    @FXML
+    private void handleNovoTema() {
+        lblTituloFormTema.setText("Novo Tema");
+        handleLimparTema();
+    }
 }
