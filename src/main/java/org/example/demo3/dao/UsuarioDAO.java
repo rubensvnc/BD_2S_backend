@@ -15,6 +15,38 @@ public class UsuarioDAO {
         this.connection = DatabaseConnection.getConnection();
     }
 
+    public List<Usuario> listarCoordSemestreLetivo (Integer ano, Integer anoSemestre) throws SQLException{
+
+        List<Usuario> usuarios = new ArrayList<>();
+        String sql = """
+            SELECT DISTINCT u.nome FROM usuario AS u INNER JOIN usuario_tipo 
+            AS ut ON ut.usuario_id = u.id_usuario INNER JOIN curso AS c 
+            ON c.coordenador_id = u.id_usuario INNER JOIN horario_curso AS hc 
+            ON hc.curso_id = c.id_curso INNER JOIN semestre_letivo AS sl 
+            ON sl.id_semestre_letivo = hc.semestre_letivo_id 
+            WHERE ut.tipo = "COORD" AND sl.ano = 2025 AND sl.numero_semestre = 2;
+            """;
+
+        try (PreparedStatement stmt = connection.prepareStatement(sql);
+             ResultSet rs = stmt.executeQuery()) {
+
+            while (rs.next()) {
+
+                Usuario usuario = new Usuario();
+
+                usuario.setNome(rs.getString("nome"));
+
+                usuarios.add(usuario);
+            }
+
+        } catch (SQLException e) {
+            System.out.println("Erro ao listar usuários: " + e.getMessage());
+        } finally {
+            connection.close();
+        }
+        return usuarios;
+    }
+
     public void inserirUsuario(Usuario usuario) {
 
         String sql = """
