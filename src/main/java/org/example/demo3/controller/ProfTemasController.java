@@ -25,16 +25,14 @@ public class ProfTemasController {
 
     // FORMULÁRIO
     @FXML private TextField tfTemaNome;
-
     @FXML private Spinner<Integer> spTemaMin;
     @FXML private Spinner<Integer> spTemaMax;
     @FXML private Spinner<Integer> spTemaPrioridade;
-
     @FXML private CheckBox cbTemaAvaliacao;
     @FXML private CheckBox cbTemaOpcional;
-
     @FXML private Label lblFeedbackTema;
     @FXML private Label errTemaNome;
+    @FXML private Label lblTituloFormTema;
 
     // DEPENDÊNCIAS
     @FXML private Label lblTemaSelecionadoDep;
@@ -56,35 +54,19 @@ public class ProfTemasController {
     public void initialize() {
 
         configurarSpinners();
-
         configurarTabela();
-
         carregarTemas();
 
-        configurarCliqueTabela();
+        tabelaTemas.getSelectionModel()
+                .selectedItemProperty()
+                .addListener((obs, oldValue, newValue) -> {
+
+                    if (newValue != null) {
+                        handleSelecionarTema();
+                    }
+                });
     }
 
-    // CONFIGURAR CLIQUE NA TABELA
-    private void configurarCliqueTabela() {
-
-        tabelaTemas.setOnMouseClicked(event -> {
-
-            Tema tema = tabelaTemas
-                    .getSelectionModel()
-                    .getSelectedItem();
-
-            if (tema != null) {
-
-                temaSelecionado = tema;
-
-                lblTemaSelecionadoDep.setText(
-                        temaSelecionado.getNome()
-                );
-
-                carregarTemasDisponiveis();
-            }
-        });
-    }
 
     // CONFIGURA TABELA
     private void configurarTabela() {
@@ -226,7 +208,7 @@ public class ProfTemasController {
                     "Tema salvo com sucesso!"
             );
 
-            limparFormulario();
+            handleLimparTema();
 
             carregarTemas();
 
@@ -238,25 +220,6 @@ public class ProfTemasController {
 
             System.out.println(e.getMessage());
         }
-    }
-
-    // LIMPAR FORMULÁRIO
-    @FXML
-    private void limparFormulario() {
-
-        tfTemaNome.clear();
-
-        spTemaMin.getValueFactory().setValue(1);
-
-        spTemaMax.getValueFactory().setValue(1);
-
-        spTemaPrioridade
-                .getValueFactory()
-                .setValue(1);
-
-        cbTemaAvaliacao.setSelected(false);
-
-        cbTemaOpcional.setSelected(false);
     }
 
     // ADICIONAR DEPENDÊNCIA
@@ -368,8 +331,7 @@ public class ProfTemasController {
 
         try {
 
-            dependenciaTemaDAO
-                    .removerDependenciasTema(
+            dependenciaTemaDAO.removerDependenciasTema(
                             temaSelecionado.getId_tema()
                     );
 
@@ -413,5 +375,49 @@ public class ProfTemasController {
 
             System.out.println(e.getMessage());
         }
+    }
+
+    @FXML
+    private void handleSelecionarTema() {
+        Tema tema = tabelaTemas.getSelectionModel().getSelectedItem();
+        if (tema == null) return;
+
+        temaSelecionado = tema;
+        lblTemaSelecionadoDep.setText(tema.getNome());
+
+        // Preenche o formulário para edição
+        lblTituloFormTema.setText("Editar Tema");
+        tfTemaNome.setText(tema.getNome());
+        spTemaMin.getValueFactory().setValue(tema.getQtd_min_aulas());
+        spTemaMax.getValueFactory().setValue(tema.getQtd_max_aulas());
+        spTemaPrioridade.getValueFactory().setValue(tema.getPrioridade());
+        cbTemaAvaliacao.setSelected(tema.getEh_avaliacao() == 1);
+        cbTemaOpcional.setSelected(tema.getEh_opcional() == 1);
+
+        // Atualiza lista de dependências disponíveis
+        carregarTemasDisponiveis();
+    }
+
+    @FXML
+    private void handleLimparTema() {
+        tfTemaNome.clear();
+
+        spTemaMin.getValueFactory().setValue(1);
+
+        spTemaMax.getValueFactory().setValue(1);
+
+        spTemaPrioridade
+                .getValueFactory()
+                .setValue(1);
+
+        cbTemaAvaliacao.setSelected(false);
+
+        cbTemaOpcional.setSelected(false);
+    }
+
+    @FXML
+    private void handleNovoTema() {
+        lblTituloFormTema.setText("Novo Tema");
+        handleLimparTema();
     }
 }
