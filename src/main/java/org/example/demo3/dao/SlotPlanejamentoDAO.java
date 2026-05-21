@@ -1,6 +1,7 @@
 package org.example.demo3.dao;
 
 import org.example.demo3.SlotPlanejamento;
+import org.example.demo3.DatabaseConnection;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -9,17 +10,10 @@ import java.util.Map;
 
 public class SlotPlanejamentoDAO {
 
-    private Connection getConnection() throws SQLException {
-        String url = "jdbc:mysql://localhost:3306/swiftplan";
-        String user = "root";
-        String password = "sua_senha_aqui";
-        return DriverManager.getConnection(url, user, password);
+    private Connection getConnection() {
+        return DatabaseConnection.getConnection();
     }
 
-    /**
-     * Retorna uma estrutura contendo a entidade cheia e os dados textuais dos JOINs
-     * usando um Map para não precisar de uma classe externa.
-     */
     public List<Map<String, Object>> buscarDadosMixados(int ano, int semestre, int idCurso, int idDisciplina) {
         List<Map<String, Object>> resultado = new ArrayList<>();
 
@@ -37,8 +31,8 @@ public class SlotPlanejamentoDAO {
                 "WHERE sl.ano = ? AND sl.numero_semestre = ? AND c.id_curso = ? AND d.id_disciplina = ? " +
                 "ORDER BY sp.data ASC, hc.hora_inicio ASC";
 
-        try (Connection conn = getConnection();
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
+        Connection conn = getConnection();
+        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
 
             stmt.setInt(1, ano);
             stmt.setInt(2, semestre);
@@ -68,14 +62,16 @@ public class SlotPlanejamentoDAO {
             }
         } catch (SQLException e) {
             e.printStackTrace();
+        } finally {
+            DatabaseConnection.closeConnection();
         }
         return resultado;
     }
 
     public void atualizarStatusEmLote(List<Integer> ids, String novoStatus, String motivo) {
         String sql = "UPDATE slot_planejamento SET status = ?, motivo_cancelamento = ? WHERE id_slot_planejamento = ?";
-        try (Connection conn = getConnection();
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
+        Connection conn = getConnection();
+        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
 
             conn.setAutoCommit(false);
             for (Integer id : ids) {
@@ -88,6 +84,8 @@ public class SlotPlanejamentoDAO {
             conn.commit();
         } catch (SQLException e) {
             e.printStackTrace();
+        } finally {
+            DatabaseConnection.closeConnection();
         }
     }
 }
