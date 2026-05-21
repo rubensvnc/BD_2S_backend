@@ -45,6 +45,37 @@ public class SemestreLetivoDAO{
         return lista;
     }
 
+    public List<SemestreLetivo> listarAdmsAnoESemestreAno() throws SQLException {
+        String sql = """
+            SELECT DISTINCT ano, numero_semestre FROM semestre_letivo;
+            """;
+        Connection conn = null;
+        PreparedStatement ps = null;
+        ResultSet rs = null;
+
+        List<SemestreLetivo> lista = new ArrayList<>();
+        try {
+            conn = DatabaseConnection.getConnection();
+            ps = conn.prepareStatement(sql);
+
+            rs = ps.executeQuery();
+            while (rs.next()) {
+                SemestreLetivo sl = new SemestreLetivo();
+                sl.setAno(rs.getInt("ano"));
+                sl.setNumero_semestre(rs.getInt("numero_semestre"));
+
+                lista.add(sl);
+            }
+        } catch (SQLException e) {
+            System.err.println("Erro ao listar temas: " + e.getMessage());
+            throw e;
+        } finally {
+            DatabaseConnection.closeConnection();
+        }
+
+        return lista;
+    }
+
     public List<SemestreLetivo> listarCoordenadorAnoESemestreAno(int coordId) throws SQLException {
         String sql = """
             SELECT DISTINCT sl.ano, sl.numero_semestre FROM horario_curso AS hc INNER JOIN 
