@@ -1,3 +1,7 @@
+package org.example.demo3.dao;
+
+import org.example.demo3.entity.DataBloqueada;
+
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;

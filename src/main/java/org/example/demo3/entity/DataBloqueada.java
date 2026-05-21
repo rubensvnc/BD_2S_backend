@@ -1,3 +1,5 @@
+package org.example.demo3.entity;
+
 import java.time.LocalDate;
 
 public class DataBloqueada {
