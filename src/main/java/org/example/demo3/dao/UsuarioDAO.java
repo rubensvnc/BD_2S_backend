@@ -1,6 +1,7 @@
 package org.example.demo3.dao;
 
 import org.example.demo3.DatabaseConnection;
+import org.example.demo3.entity.SemestreLetivo;
 import org.example.demo3.entity.Usuario;
 
 import java.sql.*;
@@ -24,26 +25,31 @@ public class UsuarioDAO {
             ON c.coordenador_id = u.id_usuario INNER JOIN horario_curso AS hc 
             ON hc.curso_id = c.id_curso INNER JOIN semestre_letivo AS sl 
             ON sl.id_semestre_letivo = hc.semestre_letivo_id 
-            WHERE ut.tipo = "COORD" AND sl.ano = 2025 AND sl.numero_semestre = 2;
+            WHERE ut.tipo = "COORD" AND sl.ano = ? AND sl.numero_semestre = ?;
             """;
 
-        try (PreparedStatement stmt = connection.prepareStatement(sql);
-             ResultSet rs = stmt.executeQuery()) {
+        PreparedStatement ps = null;
+        ResultSet rs = null;
+        try {
+            connection = DatabaseConnection.getConnection();
+            ps = connection.prepareStatement(sql);
+            ps.setInt(1, ano);
+            ps.setInt(2, anoSemestre);
 
+            rs = ps.executeQuery();
             while (rs.next()) {
+                Usuario u = new Usuario();
+                u.setNome(rs.getString("u.nome"));
 
-                Usuario usuario = new Usuario();
-
-                usuario.setNome(rs.getString("nome"));
-
-                usuarios.add(usuario);
+                usuarios.add(u);
             }
-
         } catch (SQLException e) {
-            System.out.println("Erro ao listar usuários: " + e.getMessage());
+            System.err.println("Erro ao listar temas: " + e.getMessage());
+            throw e;
         } finally {
             connection.close();
         }
+
         return usuarios;
     }
 
