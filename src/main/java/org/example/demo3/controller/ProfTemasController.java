@@ -162,62 +162,42 @@ public class ProfTemasController {
     // SALVAR TEMA
     @FXML
     private void handleSalvarTema() {
-
         try {
-
             if (tfTemaNome.getText().isBlank()) {
-
-                errTemaNome.setText(
-                        "Digite o nome do tema."
-                );
-
+                errTemaNome.setText("Digite o nome do tema.");
                 return;
             }
 
             Tema tema = new Tema();
-
-            // TESTE
             tema.setDisciplina_id(1);
             tema.setSemestre_letivo_id(3);
-
             tema.setNome(tfTemaNome.getText());
+            tema.setQtd_min_aulas(spTemaMin.getValue());
+            tema.setQtd_max_aulas(spTemaMax.getValue());
+            tema.setPrioridade(spTemaPrioridade.getValue());
+            tema.setEh_avaliacao(cbTemaAvaliacao.isSelected() ? 1 : 0);
+            tema.setEh_opcional(cbTemaOpcional.isSelected() ? 1 : 0);
 
-            tema.setQtd_min_aulas(
-                    spTemaMin.getValue()
-            );
-
-            tema.setQtd_max_aulas(
-                    spTemaMax.getValue()
-            );
-
-            tema.setPrioridade(
-                    spTemaPrioridade.getValue()
-            );
-
-            tema.setEh_avaliacao(
-                    cbTemaAvaliacao.isSelected() ? 1 : 0
-            );
-
-            tema.setEh_opcional(
-                    cbTemaOpcional.isSelected() ? 1 : 0
-            );
-
-            temaDAO.inserirTema(tema);
-
-            lblFeedbackTema.setText(
-                    "Tema salvo com sucesso!"
-            );
-
-            handleLimparTema();
+            if (temaSelecionado != null && temaSelecionado.getId_tema() != null) {
+                // MODO EDIÇÃO — atualiza o tema existente
+                tema.setId_tema(temaSelecionado.getId_tema());
+                temaDAO.editarTema(tema);         // implemente no DAO se não tiver
+                temaSelecionado = tema;
+                lblFeedbackTema.setText("Tema atualizado com sucesso!");
+            } else {
+                // MODO CRIAÇÃO — insere e recupera o ID gerado
+                Integer idGerado = temaDAO.inserirTemaRetornandoId(tema); // veja abaixo
+                tema.setId_tema(idGerado);
+                temaSelecionado = tema;
+                lblFeedbackTema.setText("Tema salvo com sucesso!");
+            }
 
             carregarTemas();
+            carregarTemasDisponiveis();
+            listarDependenciasDoTemaSelecionado();
 
         } catch (Exception e) {
-
-            lblFeedbackTema.setText(
-                    "Erro ao salvar tema."
-            );
-
+            lblFeedbackTema.setText("Erro ao salvar tema.");
             System.out.println(e.getMessage());
         }
     }
@@ -396,6 +376,7 @@ public class ProfTemasController {
 
         // Atualiza lista de dependências disponíveis
         carregarTemasDisponiveis();
+        listarDependenciasDoTemaSelecionado();
     }
 
     @FXML
@@ -417,7 +398,34 @@ public class ProfTemasController {
 
     @FXML
     private void handleNovoTema() {
+        temaSelecionado = null;              // <-- essencial
         lblTituloFormTema.setText("Novo Tema");
+        lblTemaSelecionadoDep.setText("—");
+        listDependencias.getItems().clear();
+        listTemasDisponiveis.getItems().clear();
         handleLimparTema();
+    }
+
+    private void listarDependenciasDoTemaSelecionado() {
+        listDependencias.getItems().clear();
+
+        if (temaSelecionado == null) return;
+
+        List<DependenciaTema> listaVinculos =
+                dependenciaTemaDAO.listarDependenciasTema(temaSelecionado.getId_tema());
+
+        List<Tema> todosOsTemas = temaDAO.listarTemas();
+
+        for (DependenciaTema dep : listaVinculos) {
+            for (Tema t : todosOsTemas) {
+                if (t.getId_tema().equals(dep.getTema_dependencia_id())) {
+                    listDependencias.getItems().add(t);
+                    // Remove da lista de disponíveis para não duplicar
+                    listTemasDisponiveis.getItems()
+                            .removeIf(item -> item.getId_tema().equals(t.getId_tema()));
+                    break;
+                }
+            }
+        }
     }
 }
