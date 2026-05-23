@@ -77,7 +77,10 @@ public class MainShellController {
             try{
                 listaSl = slDao.listarProfessorAnoESemestreAno(logado.getId_usuario());
                 for (SemestreLetivo sl: listaSl){
-                    opcoesAno.add(sl.getAno().toString());
+                    String anoStr = sl.getAno().toString();
+                    if (!opcoesAno.contains(anoStr)) {
+                        opcoesAno.add(anoStr);
+                    }
                 }
                 cbAno.setItems(opcoesAno);
 
@@ -249,21 +252,12 @@ public class MainShellController {
     }
 
     @FXML void handleLogout() {}
-
     @FXML void navCalendario() { carregarConteudo("/adm_calendario_bloqueios.fxml"); }
-
     @FXML void navCursosHorarios() { carregarConteudo("/adm_cursos_horarios.fxml"); }
-
     @FXML void navCoordenaodresAdms() { carregarConteudo("/adm_coordenadores_adms.fxml"); }
-
     @FXML void navCoordPainel() { carregarConteudo("/coord_painel.fxml"); }
-
     @FXML void navTemas() { carregarConteudo("/prof_temas.fxml"); }
 
-    /**
-     * MODIFICAÇÃO CIRÚRGICA: Descobre os IDs direto do banco usando os NOMES textuais,
-     * contornando de forma limpa os IDs nulos que vinham dos DAOs intocados.
-     */
     @FXML
     void navPlanejamento() {
         try {
@@ -271,48 +265,31 @@ public class MainShellController {
             Parent novoConteudo = loader.load();
 
             ProfPlanejamentoController profController = loader.getController();
+            profController.setMainShellController(this);
 
             areaConteudo.getChildren().clear();
             areaConteudo.getChildren().add(novoConteudo);
-
-            if (anoSelecionado != null && semestreAnoEscolhido != null && cursoEscolhido != null && disciplinaEscolhida != null) {
-
-                int idCurso = descobrirIdCursoPorNome(cursoEscolhido);
-                int idDisciplina = descobrirIdDisciplinaPorNome(disciplinaEscolhida);
-
-                profController.setContextoFiltros(anoSelecionado, semestreAnoEscolhido, idCurso, idDisciplina);
-            }
 
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
 
-    @FXML
-    public void handleGerarPlanejamento() {
-        if (anoSelecionado == null || semestreAnoEscolhido == null || cursoEscolhido == null || disciplinaEscolhida == null) {
-            return;
-        }
-        navPlanejamento();
-    }
+    public Integer getAnoSelecionado() { return anoSelecionado; }
+    public Integer getSemestreAnoEscolhido() { return semestreAnoEscolhido; }
+    public String getCursoEscolhido() { return cursoEscolhido; }
+    public String getDisciplinaEscolhida() { return disciplinaEscolhida; }
 
-    // ═══════════════════════════════════════════════════════════════
-    // MÉTODOS AUXILIARES: Consultas locais para buscar IDs por Nome
-    // ═══════════════════════════════════════════════════════════════
     private int descobrirIdCursoPorNome(String nomeCurso) {
         String sql = "SELECT id_curso FROM curso WHERE nome = ?";
         try (Connection conn = DatabaseConnection.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, nomeCurso);
             try (ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) {
-                    return rs.getInt("id_curso");
-                }
+                if (rs.next()) return rs.getInt("id_curso");
             }
         } catch (SQLException e) {
             e.printStackTrace();
-        } finally {
-            DatabaseConnection.closeConnection();
         }
         return 0;
     }
@@ -323,14 +300,10 @@ public class MainShellController {
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, nomeDisciplina);
             try (ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) {
-                    return rs.getInt("id_disciplina");
-                }
+                if (rs.next()) return rs.getInt("id_disciplina");
             }
         } catch (SQLException e) {
             e.printStackTrace();
-        } finally {
-            DatabaseConnection.closeConnection();
         }
         return 0;
     }
