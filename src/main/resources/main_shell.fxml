@@ -45,7 +45,6 @@
 
                 <Separator opacity="0.0" orientation="VERTICAL" />
 
-                <Button fx:id="btnGerarPlanejamento" onAction="#handleGerarPlanejamento" style="-fx-background-color: #2980b9; -fx-text-fill: white; -fx-font-weight: bold;" text="⚙ Gerar / Atualizar Planejamento" />
 
                 <Region HBox.hgrow="ALWAYS" />
 
