@@ -1,123 +1,213 @@
 package org.example.demo3.controller;
 
+import javafx.beans.binding.Bindings;
+import javafx.beans.property.*;
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
+import javafx.scene.chart.PieChart;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.CheckBoxTreeCell;
 import javafx.scene.layout.HBox;
+import org.example.demo3.DatabaseConnection;
+import org.example.demo3.UsuarioAtual;
 import org.example.demo3.SlotPlanejamento;
 import org.example.demo3.dao.SlotPlanejamentoDAO;
+import org.example.demo3.entity.Planejamento;
 
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.time.LocalDate;
 import java.util.*;
 import java.util.stream.Collectors;
 
 public class ProfPlanejamentoController {
 
+    @FXML private Label lblTotalTemas;
+    @FXML private Label lblAulasGeradas;
+    @FXML private Label lblAulasMinistradas;
+    @FXML private Label lblAulasPendentes;
+    @FXML private Label lblAulasCanceladas;
+    @FXML private Label lblCargaHorariaMinima;
+    @FXML private ProgressBar progressConclusao;
+    @FXML private Label lblPercentual;
+    @FXML private PieChart chartStatusAulas;
+
     @FXML private ProgressIndicator progressGeracao;
     @FXML private TreeView<Object> treePlanejamento;
     @FXML private HBox barraAcoesLote;
     @FXML private Label lblQtdSelecionados;
 
+    private final IntegerProperty totalTemas = new SimpleIntegerProperty(0);
+    private final IntegerProperty aulasGeradas = new SimpleIntegerProperty(0);
+    private final IntegerProperty aulasMinistradas = new SimpleIntegerProperty(0);
+    private final IntegerProperty aulasPendentes = new SimpleIntegerProperty(0);
+    private final IntegerProperty aulasCanceladas = new SimpleIntegerProperty(0);
+    private final IntegerProperty cargaMinima = new SimpleIntegerProperty(0);
+    private final DoubleProperty percentualConclusao = new SimpleDoubleProperty(0.0);
+
     private final SlotPlanejamentoDAO slotDAO = new SlotPlanejamentoDAO();
     private final List<CheckBoxTreeItem<Object>> itensSelecionadosAulas = new ArrayList<>();
 
-    // Variáveis de filtro recebidas dinamicamente do MainShellController
-    private int anoContexto;
-    private int semestreContexto;
-    private int idCursoContexto;
-    private int idDisciplinaContexto;
+    private MainShellController mainShellController;
 
     @FXML
     public void initialize() {
+        lblTotalTemas.textProperty().bind(totalTemas.asString());
+        lblAulasGeradas.textProperty().bind(aulasGeradas.asString());
+        lblAulasMinistradas.textProperty().bind(aulasMinistradas.asString());
+        lblAulasPendentes.textProperty().bind(aulasPendentes.asString());
+        lblAulasCanceladas.textProperty().bind(aulasCanceladas.asString());
+        lblCargaHorariaMinima.textProperty().bind(cargaMinima.asString());
+
+        progressConclusao.progressProperty().bind(percentualConclusao);
+        lblPercentual.textProperty().bind(
+                Bindings.concat(Bindings.format("%.1f", percentualConclusao.multiply(100)), "%")
+        );
+
         treePlanejamento.setCellFactory(CheckBoxTreeCell.forTreeView());
     }
 
-    /**
-     * Método público para o MainShellController injetar os parâmetros selecionados
-     */
-    public void setContextoFiltros(int ano, int semestre, int idCurso, int idDisciplina) {
-        this.anoContexto = ano;
-        this.semestreContexto = semestre;
-        this.idCursoContexto = idCurso;
-        this.idDisciplinaContexto = idDisciplina;
-
-        // Dispara a busca real assim que recebe os dados de filtro do Shell
-        handleGerarPlanejamento();
+    public void setMainShellController(MainShellController mainShellController) {
+        this.mainShellController = mainShellController;
     }
 
     @FXML
     public void handleGerarPlanejamento() {
-        // Se nenhum filtro foi passado pelo Shell ainda, não faz nada
-        if (anoContexto == 0 || idDisciplinaContexto == 0) {
+        if (mainShellController == null ||
+                mainShellController.getAnoSelecionado() == null ||
+                mainShellController.getCursoEscolhido() == null ||
+                mainShellController.getDisciplinaEscolhida() == null) {
+
+            Alert alert = new Alert(Alert.AlertType.WARNING);
+            alert.setTitle("Filtros insuficientes");
+            alert.setHeaderText(null);
+            alert.setContentText("Por favor, selecione Ano, Semestre, Curso e Disciplina nos menus do topo antes de gerar.");
+            alert.showAndWait();
             return;
         }
+
+        int ano = mainShellController.getAnoSelecionado();
+        int semestre = mainShellController.getSemestreAnoEscolhido();
+        String nomeCurso = mainShellController.getCursoEscolhido();
+        String nomeDisciplina = mainShellController.getDisciplinaEscolhida();
+
+        int idCurso = descobrirIdCursoPorNome(nomeCurso);
+        int idDisciplina = descobrirIdDisciplinaPorNome(nomeDisciplina);
 
         progressGeracao.setManaged(true);
         progressGeracao.setVisible(true);
         itensSelecionadosAulas.clear();
         atualizarBarraLote();
 
-        // 1. Busca os dados reais utilizando as propriedades enviadas pelo Shell
-        List<Map<String, Object>> dadosBrutos = slotDAO.buscarDadosMixados(
-                anoContexto, semestreContexto, idCursoContexto, idDisciplinaContexto
-        );
+        try {
+            List<Map<String, Object>> dadosBrutos = slotDAO.buscarDadosMixados(ano, semestre, idCurso, idDisciplina);
 
-        // 2. Converte localmente para a classe interna SlotVisual
-        List<SlotVisual> listaVisuais = dadosBrutos.stream().map(map -> new SlotVisual(
-                (SlotPlanejamento) map.get("entidade"),
-                (String) map.get("hora_inicio"),
-                (String) map.get("nome_tema")
-        )).collect(Collectors.toList());
+            List<SlotVisual> listaVisuais = dadosBrutos.stream().map(map -> new SlotVisual(
+                    (SlotPlanejamento) map.get("entidade"),
+                    (String) map.get("hora_inicio"),
+                    (String) map.get("nome_tema")
+            )).collect(Collectors.toList());
 
-        // 3. Agrupa por data baseando-se na entidade
-        Map<LocalDate, List<SlotVisual>> agrupadosPorData = listaVisuais.stream()
-                .collect(Collectors.groupingBy(
-                        v -> v.getSlot().getData(),
-                        LinkedHashMap::new,
-                        Collectors.toList()
-                ));
+            Map<LocalDate, List<SlotVisual>> agrupadosPorData = listaVisuais.stream()
+                    .collect(Collectors.groupingBy(v -> v.getSlot().getData(), LinkedHashMap::new, Collectors.toList()));
 
-        CheckBoxTreeItem<Object> rootNode = new CheckBoxTreeItem<>("Raiz");
-        rootNode.setExpanded(true);
+            CheckBoxTreeItem<Object> rootNode = new CheckBoxTreeItem<>("Raiz");
+            rootNode.setExpanded(true);
 
-        String[] diasDaSemana = {"", "Domingo", "Segunda-feira", "Terça-feira", "Quarta-feira", "Quinta-feira", "Sexta-feira", "Sábado"};
+            String[] diasDaSemana = {"", "Domingo", "Segunda-feira", "Terça-feira", "Quarta-feira", "Quinta-feira", "Sexta-feira", "Sábado"};
 
-        for (Map.Entry<LocalDate, List<SlotVisual>> entry : agrupadosPorData.entrySet()) {
-            LocalDate data = entry.getKey();
-            int diaNum = data.getDayOfWeek().getValue() == 7 ? 1 : data.getDayOfWeek().getValue() + 1;
+            for (Map.Entry<LocalDate, List<SlotVisual>> entry : agrupadosPorData.entrySet()) {
+                LocalDate data = entry.getKey();
+                int diaNum = data.getDayOfWeek().getValue() == 7 ? 1 : data.getDayOfWeek().getValue() + 1;
 
-            String labelDia = String.format("%s (%s)", data.toString(), diasDaSemana[diaNum]);
-            CheckBoxTreeItem<Object> diaNode = new CheckBoxTreeItem<>(labelDia);
-            diaNode.setExpanded(true);
+                String labelDia = String.format("%s (%s)", data.toString(), diasDaSemana[diaNum]);
+                CheckBoxTreeItem<Object> diaNode = new CheckBoxTreeItem<>(labelDia);
+                diaNode.setExpanded(true);
 
-            for (SlotVisual visual : entry.getValue()) {
-                CheckBoxTreeItem<Object> slotNode = new CheckBoxTreeItem<>(visual);
+                for (SlotVisual visual : entry.getValue()) {
+                    CheckBoxTreeItem<Object> slotNode = new CheckBoxTreeItem<>(visual);
 
-                if ("cancelada_adm".equals(visual.getSlot().getStatus())) {
-                    slotNode.setIndependent(true);
-                }
-
-                slotNode.selectedProperty().addListener((obs, antigo, novo) -> {
                     if ("cancelada_adm".equals(visual.getSlot().getStatus())) {
-                        slotNode.setSelected(false);
-                        return;
+                        slotNode.setIndependent(true);
                     }
-                    if (novo) {
-                        itensSelecionadosAulas.add(slotNode);
-                    } else {
-                        itensSelecionadosAulas.remove(slotNode);
-                    }
-                    atualizarBarraLote();
-                });
 
-                diaNode.getChildren().add(slotNode);
+                    slotNode.selectedProperty().addListener((obs, antigo, novo) -> {
+                        if ("cancelada_adm".equals(visual.getSlot().getStatus())) {
+                            slotNode.setSelected(false);
+                            return;
+                        }
+                        if (novo) itensSelecionadosAulas.add(slotNode);
+                        else itensSelecionadosAulas.remove(slotNode);
+                        atualizarBarraLote();
+                    });
+                    diaNode.getChildren().add(slotNode);
+                }
+                rootNode.getChildren().add(diaNode);
             }
-            rootNode.getChildren().add(diaNode);
-        }
 
-        treePlanejamento.setRoot(rootNode);
-        progressGeracao.setVisible(false);
-        progressGeracao.setManaged(false);
+            treePlanejamento.setRoot(rootNode);
+            carregarEstatisticasContexto(ano, semestre, nomeCurso, nomeDisciplina);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            progressGeracao.setVisible(false);
+            progressGeracao.setManaged(false);
+        }
+    }
+
+    public void carregarEstatisticasContexto(int ano, int semestreAno, String nomeCurso, String nomeDisciplina) {
+        Integer idProfessor = UsuarioAtual.getInstancia().getId_usuario();
+        if (idProfessor == null) return;
+
+        try {
+            Map<String, Object> metricas = Planejamento.obterEstatisticasGlobais(ano, semestreAno, nomeCurso, nomeDisciplina, idProfessor);
+
+            if (metricas != null && !metricas.isEmpty()) {
+                int totalAulas = (int) metricas.getOrDefault("totalAulas", 0);
+                int ministradas = (int) metricas.getOrDefault("ministradas", 0);
+                int pendentes = (int) metricas.getOrDefault("pendentes", 0);
+                int canceladas = (int) metricas.getOrDefault("canceladas", 0);
+                int chMinima = (int) metricas.getOrDefault("chMinima", 0);
+                int totalTemas = (int) metricas.getOrDefault("totalTemas", 0);
+
+                this.aulasGeradas.set(totalAulas);
+                this.aulasMinistradas.set(ministradas);
+                this.aulasPendentes.set(pendentes);
+                this.aulasCanceladas.set(canceladas);
+                this.cargaMinima.set(chMinima);
+                this.totalTemas.set(totalTemas);
+
+                double progresso = (totalAulas > 0) ? (double) ministradas / totalAulas : 0.0;
+                this.percentualConclusao.set(progresso);
+
+                ObservableList<PieChart.Data> dadosGrafico = FXCollections.observableArrayList(
+                        new PieChart.Data("Ministradas (" + ministradas + ")", ministradas),
+                        new PieChart.Data("Pendentes (" + pendentes + ")", pendentes),
+                        new PieChart.Data("Canceladas (" + canceladas + ")", canceladas)
+                );
+                chartStatusAulas.setData(dadosGrafico);
+            } else {
+                limparCamposEstatisticas();
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            limparCamposEstatisticas();
+        }
+    }
+
+    private void limparCamposEstatisticas() {
+        this.aulasGeradas.set(0);
+        this.aulasMinistradas.set(0);
+        this.aulasPendentes.set(0);
+        this.aulasCanceladas.set(0);
+        this.cargaMinima.set(0);
+        this.totalTemas.set(0);
+        this.percentualConclusao.set(0.0);
+        chartStatusAulas.getData().clear();
     }
 
     private void atualizarBarraLote() {
@@ -135,11 +225,7 @@ public class ProfPlanejamentoController {
     @FXML
     public void handleMarcarMinistrada() {
         if (itensSelecionadosAulas.isEmpty()) return;
-
-        List<Integer> ids = itensSelecionadosAulas.stream()
-                .map(item -> ((SlotVisual) item.getValue()).getSlot().getId_slot_planejamento())
-                .collect(Collectors.toList());
-
+        List<Integer> ids = itensSelecionadosAulas.stream().map(item -> ((SlotVisual) item.getValue()).getSlot().getId_slot_planejamento()).collect(Collectors.toList());
         slotDAO.atualizarStatusEmLote(ids, "ministrada", null);
         handleGerarPlanejamento();
     }
@@ -147,7 +233,6 @@ public class ProfPlanejamentoController {
     @FXML
     public void handleCancelarSelecionados() {
         if (itensSelecionadosAulas.isEmpty()) return;
-
         TextInputDialog dialog = new TextInputDialog();
         dialog.setTitle("Mudar Status — Cancelamento pelo Professor");
         dialog.setHeaderText("Cancelamento em Lote (" + itensSelecionadosAulas.size() + " aulas)");
@@ -155,14 +240,38 @@ public class ProfPlanejamentoController {
 
         dialog.showAndWait().ifPresent(motivo -> {
             if (motivo.trim().isEmpty()) return;
-
-            List<Integer> ids = itensSelecionadosAulas.stream()
-                    .map(item -> ((SlotVisual) item.getValue()).getSlot().getId_slot_planejamento())
-                    .collect(Collectors.toList());
-
+            List<Integer> ids = itensSelecionadosAulas.stream().map(item -> ((SlotVisual) item.getValue()).getSlot().getId_slot_planejamento()).collect(Collectors.toList());
             slotDAO.atualizarStatusEmLote(ids, "cancelada_professor", motivo);
             handleGerarPlanejamento();
         });
+    }
+
+    private int descobrirIdCursoPorNome(String nomeCurso) {
+        String sql = "SELECT id_curso FROM curso WHERE nome = ?";
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, nomeCurso);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) return rs.getInt("id_curso");
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return 0;
+    }
+
+    private int descobrirIdDisciplinaPorNome(String nomeDisciplina) {
+        String sql = "SELECT id_disciplina FROM disciplina WHERE nome = ?";
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, nomeDisciplina);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) return rs.getInt("id_disciplina");
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return 0;
     }
 
     private static class SlotVisual {
@@ -176,9 +285,7 @@ public class ProfPlanejamentoController {
             this.nomeTema = nomeTema;
         }
 
-        public SlotPlanejamento getSlot() {
-            return slot;
-        }
+        public SlotPlanejamento getSlot() { return slot; }
 
         @Override
         public String toString() {
@@ -189,12 +296,8 @@ public class ProfPlanejamentoController {
                 case "cancelada_adm" -> "[CANCELADO PELA SECRETARIA]";
                 default -> "[" + slot.getStatus().toUpperCase() + "]";
             };
-
             String conteudo = (this.nomeTema != null) ? this.nomeTema : "Aula sem tema definido";
-            String horaCortada = (this.horaInicio != null && this.horaInicio.length() >= 5)
-                    ? this.horaInicio.substring(0, 5)
-                    : "00:00";
-
+            String horaCortada = (this.horaInicio != null && this.horaInicio.length() >= 5) ? this.horaInicio.substring(0, 5) : "00:00";
             return String.format("%s - %s   %s", horaCortada, conteudo, statusFormatado);
         }
     }
