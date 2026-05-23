@@ -3,10 +3,7 @@ package org.example.demo3.dao;
 import org.example.demo3.DatabaseConnection;
 import org.example.demo3.entity.Tema;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
+import java.sql.*;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
@@ -45,6 +42,34 @@ public class TemaDAO {
                 System.out.println("Erro ao inserir tema: " + e.getMessage());
             }
         }
+
+    public Integer inserirTemaRetornandoId(Tema tema) {
+        String sql = "INSERT INTO tema (nome, qtd_min_aulas, qtd_max_aulas, " +
+                "prioridade, eh_avaliacao, eh_opcional, disciplina_id, semestre_letivo_id) " +
+                "VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
+
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+
+            ps.setString(1, tema.getNome());
+            ps.setInt(2, tema.getQtd_min_aulas());
+            ps.setInt(3, tema.getQtd_max_aulas());
+            ps.setInt(4, tema.getPrioridade());
+            ps.setInt(5, tema.getEh_avaliacao());
+            ps.setInt(6, tema.getEh_opcional());
+            ps.setInt(7, tema.getDisciplina_id());
+            ps.setInt(8, tema.getSemestre_letivo_id());
+            ps.executeUpdate();
+
+            try (ResultSet rs = ps.getGeneratedKeys()) {
+                if (rs.next()) return rs.getInt(1);
+            }
+
+        } catch (SQLException e) {
+            System.out.println(e.getMessage());
+        }
+        return null;
+    }
 
         //LISTA TODOS OS TEMAS
     public List<Tema> listarTemas() {
