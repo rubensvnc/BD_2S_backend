@@ -56,6 +56,7 @@ public class ProfTemasController {
         configurarSpinners();
         configurarTabela();
         carregarTemas();
+        configurarListViews();
 
         tabelaTemas.getSelectionModel()
                 .selectedItemProperty()
@@ -427,5 +428,23 @@ public class ProfTemasController {
                 }
             }
         }
+    }
+
+    private void configurarListViews() {
+        listTemasDisponiveis.setCellFactory(lv -> new ListCell<Tema>() {
+            @Override
+            protected void updateItem(Tema tema, boolean empty) {
+                super.updateItem(tema, empty);
+                setText(empty || tema == null ? null : tema.getNome());
+            }
+        });
+
+        listDependencias.setCellFactory(lv -> new ListCell<Tema>() {
+            @Override
+            protected void updateItem(Tema tema, boolean empty) {
+                super.updateItem(tema, empty);
+                setText(empty || tema == null ? null : tema.getNome());
+            }
+        });
     }
 }
