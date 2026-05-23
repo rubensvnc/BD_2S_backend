@@ -1,6 +1,7 @@
 package org.example.demo3.dao;
 
 import org.example.demo3.DatabaseConnection;
+import org.example.demo3.entity.SemestreLetivo;
 import org.example.demo3.entity.Usuario;
 
 import java.sql.*;
@@ -13,6 +14,43 @@ public class UsuarioDAO {
 
     public UsuarioDAO() {
         this.connection = DatabaseConnection.getConnection();
+    }
+
+    public List<Usuario> listarCoordSemestreLetivo (Integer ano, Integer anoSemestre) throws SQLException{
+
+        List<Usuario> usuarios = new ArrayList<>();
+        String sql = """
+            SELECT DISTINCT u.nome FROM usuario AS u INNER JOIN usuario_tipo 
+            AS ut ON ut.usuario_id = u.id_usuario INNER JOIN curso AS c 
+            ON c.coordenador_id = u.id_usuario INNER JOIN horario_curso AS hc 
+            ON hc.curso_id = c.id_curso INNER JOIN semestre_letivo AS sl 
+            ON sl.id_semestre_letivo = hc.semestre_letivo_id 
+            WHERE ut.tipo = "COORD" AND sl.ano = ? AND sl.numero_semestre = ?;
+            """;
+
+        PreparedStatement ps = null;
+        ResultSet rs = null;
+        try {
+            connection = DatabaseConnection.getConnection();
+            ps = connection.prepareStatement(sql);
+            ps.setInt(1, ano);
+            ps.setInt(2, anoSemestre);
+
+            rs = ps.executeQuery();
+            while (rs.next()) {
+                Usuario u = new Usuario();
+                u.setNome(rs.getString("u.nome"));
+
+                usuarios.add(u);
+            }
+        } catch (SQLException e) {
+            System.err.println("Erro ao listar temas: " + e.getMessage());
+            throw e;
+        } finally {
+            connection.close();
+        }
+
+        return usuarios;
     }
 
     public void inserirUsuario(Usuario usuario) {

@@ -25,16 +25,14 @@ public class ProfTemasController {
 
     // FORMULÁRIO
     @FXML private TextField tfTemaNome;
-
     @FXML private Spinner<Integer> spTemaMin;
     @FXML private Spinner<Integer> spTemaMax;
     @FXML private Spinner<Integer> spTemaPrioridade;
-
     @FXML private CheckBox cbTemaAvaliacao;
     @FXML private CheckBox cbTemaOpcional;
-
     @FXML private Label lblFeedbackTema;
     @FXML private Label errTemaNome;
+    @FXML private Label lblTituloFormTema;
 
     // DEPENDÊNCIAS
     @FXML private Label lblTemaSelecionadoDep;
@@ -56,35 +54,20 @@ public class ProfTemasController {
     public void initialize() {
 
         configurarSpinners();
-
         configurarTabela();
-
         carregarTemas();
+        configurarListViews();
 
-        configurarCliqueTabela();
+        tabelaTemas.getSelectionModel()
+                .selectedItemProperty()
+                .addListener((obs, oldValue, newValue) -> {
+
+                    if (newValue != null) {
+                        handleSelecionarTema();
+                    }
+                });
     }
 
-    // CONFIGURAR CLIQUE NA TABELA
-    private void configurarCliqueTabela() {
-
-        tabelaTemas.setOnMouseClicked(event -> {
-
-            Tema tema = tabelaTemas
-                    .getSelectionModel()
-                    .getSelectedItem();
-
-            if (tema != null) {
-
-                temaSelecionado = tema;
-
-                lblTemaSelecionadoDep.setText(
-                        temaSelecionado.getNome()
-                );
-
-                carregarTemasDisponiveis();
-            }
-        });
-    }
 
     // CONFIGURA TABELA
     private void configurarTabela() {
@@ -180,83 +163,44 @@ public class ProfTemasController {
     // SALVAR TEMA
     @FXML
     private void handleSalvarTema() {
-
         try {
-
             if (tfTemaNome.getText().isBlank()) {
-
-                errTemaNome.setText(
-                        "Digite o nome do tema."
-                );
-
+                errTemaNome.setText("Digite o nome do tema.");
                 return;
             }
 
             Tema tema = new Tema();
-
-            // TESTE
             tema.setDisciplina_id(1);
             tema.setSemestre_letivo_id(3);
-
             tema.setNome(tfTemaNome.getText());
+            tema.setQtd_min_aulas(spTemaMin.getValue());
+            tema.setQtd_max_aulas(spTemaMax.getValue());
+            tema.setPrioridade(spTemaPrioridade.getValue());
+            tema.setEh_avaliacao(cbTemaAvaliacao.isSelected() ? 1 : 0);
+            tema.setEh_opcional(cbTemaOpcional.isSelected() ? 1 : 0);
 
-            tema.setQtd_min_aulas(
-                    spTemaMin.getValue()
-            );
-
-            tema.setQtd_max_aulas(
-                    spTemaMax.getValue()
-            );
-
-            tema.setPrioridade(
-                    spTemaPrioridade.getValue()
-            );
-
-            tema.setEh_avaliacao(
-                    cbTemaAvaliacao.isSelected() ? 1 : 0
-            );
-
-            tema.setEh_opcional(
-                    cbTemaOpcional.isSelected() ? 1 : 0
-            );
-
-            temaDAO.inserirTema(tema);
-
-            lblFeedbackTema.setText(
-                    "Tema salvo com sucesso!"
-            );
-
-            limparFormulario();
+            if (temaSelecionado != null && temaSelecionado.getId_tema() != null) {
+                // MODO EDIÇÃO — atualiza o tema existente
+                tema.setId_tema(temaSelecionado.getId_tema());
+                temaDAO.editarTema(tema);         // implemente no DAO se não tiver
+                temaSelecionado = tema;
+                lblFeedbackTema.setText("Tema atualizado com sucesso!");
+            } else {
+                // MODO CRIAÇÃO — insere e recupera o ID gerado
+                Integer idGerado = temaDAO.inserirTemaRetornandoId(tema); // veja abaixo
+                tema.setId_tema(idGerado);
+                temaSelecionado = tema;
+                lblFeedbackTema.setText("Tema salvo com sucesso!");
+            }
 
             carregarTemas();
+            carregarTemasDisponiveis();
+            listarDependenciasDoTemaSelecionado();
 
         } catch (Exception e) {
-
-            lblFeedbackTema.setText(
-                    "Erro ao salvar tema."
-            );
-
+            lblFeedbackTema.setText("Erro ao salvar tema.");
             System.out.println(e.getMessage());
         }
-    }
-
-    // LIMPAR FORMULÁRIO
-    @FXML
-    private void limparFormulario() {
-
-        tfTemaNome.clear();
-
-        spTemaMin.getValueFactory().setValue(1);
-
-        spTemaMax.getValueFactory().setValue(1);
-
-        spTemaPrioridade
-                .getValueFactory()
-                .setValue(1);
-
-        cbTemaAvaliacao.setSelected(false);
-
-        cbTemaOpcional.setSelected(false);
     }
 
     // ADICIONAR DEPENDÊNCIA
@@ -368,8 +312,7 @@ public class ProfTemasController {
 
         try {
 
-            dependenciaTemaDAO
-                    .removerDependenciasTema(
+            dependenciaTemaDAO.removerDependenciasTema(
                             temaSelecionado.getId_tema()
                     );
 
@@ -416,14 +359,92 @@ public class ProfTemasController {
     }
 
     @FXML
-    public void handleImportarTemas(){}
+    private void handleSelecionarTema() {
+        Tema tema = tabelaTemas.getSelectionModel().getSelectedItem();
+        if (tema == null) return;
+
+        temaSelecionado = tema;
+        lblTemaSelecionadoDep.setText(tema.getNome());
+
+        // Preenche o formulário para edição
+        lblTituloFormTema.setText("Editar Tema");
+        tfTemaNome.setText(tema.getNome());
+        spTemaMin.getValueFactory().setValue(tema.getQtd_min_aulas());
+        spTemaMax.getValueFactory().setValue(tema.getQtd_max_aulas());
+        spTemaPrioridade.getValueFactory().setValue(tema.getPrioridade());
+        cbTemaAvaliacao.setSelected(tema.getEh_avaliacao() == 1);
+        cbTemaOpcional.setSelected(tema.getEh_opcional() == 1);
+
+        // Atualiza lista de dependências disponíveis
+        carregarTemasDisponiveis();
+        listarDependenciasDoTemaSelecionado();
+    }
 
     @FXML
-    public void handleNovoTema(){}
+    private void handleLimparTema() {
+        tfTemaNome.clear();
+
+        spTemaMin.getValueFactory().setValue(1);
+
+        spTemaMax.getValueFactory().setValue(1);
+
+        spTemaPrioridade
+                .getValueFactory()
+                .setValue(1);
+
+        cbTemaAvaliacao.setSelected(false);
+
+        cbTemaOpcional.setSelected(false);
+    }
 
     @FXML
-    public void handleSelecionarTema(){}
+    private void handleNovoTema() {
+        temaSelecionado = null;              // <-- essencial
+        lblTituloFormTema.setText("Novo Tema");
+        lblTemaSelecionadoDep.setText("—");
+        listDependencias.getItems().clear();
+        listTemasDisponiveis.getItems().clear();
+        handleLimparTema();
+    }
 
-    @FXML
-    public void handleLimparTema(){}
+    private void listarDependenciasDoTemaSelecionado() {
+        listDependencias.getItems().clear();
+
+        if (temaSelecionado == null) return;
+
+        List<DependenciaTema> listaVinculos =
+                dependenciaTemaDAO.listarDependenciasTema(temaSelecionado.getId_tema());
+
+        List<Tema> todosOsTemas = temaDAO.listarTemas();
+
+        for (DependenciaTema dep : listaVinculos) {
+            for (Tema t : todosOsTemas) {
+                if (t.getId_tema().equals(dep.getTema_dependencia_id())) {
+                    listDependencias.getItems().add(t);
+                    // Remove da lista de disponíveis para não duplicar
+                    listTemasDisponiveis.getItems()
+                            .removeIf(item -> item.getId_tema().equals(t.getId_tema()));
+                    break;
+                }
+            }
+        }
+    }
+
+    private void configurarListViews() {
+        listTemasDisponiveis.setCellFactory(lv -> new ListCell<Tema>() {
+            @Override
+            protected void updateItem(Tema tema, boolean empty) {
+                super.updateItem(tema, empty);
+                setText(empty || tema == null ? null : tema.getNome());
+            }
+        });
+
+        listDependencias.setCellFactory(lv -> new ListCell<Tema>() {
+            @Override
+            protected void updateItem(Tema tema, boolean empty) {
+                super.updateItem(tema, empty);
+                setText(empty || tema == null ? null : tema.getNome());
+            }
+        });
+    }
 }
