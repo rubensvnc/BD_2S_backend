@@ -18,7 +18,7 @@ public class DisciplinaDAO {
 
     public List<Disciplina> listarDisciplinasCurso(int professorId, int ano, int semestreAno, String cursoNome) throws SQLException {
         String sql = """
-            SELECT DISTINCT d.semestre_curso, d.nome FROM atribuicao_professor 
+            SELECT DISTINCT d.id_disciplina, d.semestre_curso, d.nome FROM atribuicao_professor 
             AS ap INNER JOIN semestre_letivo AS sl ON sl.id_semestre_letivo = ap.semestre_letivo_id 
             INNER JOIN disciplina AS d ON ap.disciplina_id = d.id_disciplina 
             INNER JOIN curso AS c ON d.curso_id = c.id_curso WHERE ap.professor_id = ? 
@@ -42,6 +42,7 @@ public class DisciplinaDAO {
                 Disciplina d = new Disciplina();
                 d.setSemestre_curso(rs.getInt("d.semestre_curso"));
                 d.setNome(rs.getString("d.nome"));
+                d.setId_disciplina(rs.getInt("id_disciplina"));
 
                 lista.add(d);
             }
