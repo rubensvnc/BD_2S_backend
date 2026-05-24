@@ -13,8 +13,9 @@ import java.util.List;
 public class SemestreLetivoDAO{
     public List<SemestreLetivo> listarProfessorAnoESemestreAno(int professorId) throws SQLException {
         String sql = """
-            SELECT DISTINCT sl.ano, sl.numero_semestre FROM atribuicao_professor
-            AS ap INNER JOIN semestre_letivo AS sl ON sl.id_semestre_letivo = semestre_letivo_id 
+            SELECT DISTINCT sl.id_semestre_letivo, sl.ano, sl.numero_semestre 
+            FROM atribuicao_professor AS ap 
+            INNER JOIN semestre_letivo AS sl ON sl.id_semestre_letivo = ap.semestre_letivo_id 
             WHERE ap.professor_id = ? ORDER BY sl.ano ASC;
             """;
         Connection conn = null;
@@ -32,6 +33,7 @@ public class SemestreLetivoDAO{
                 SemestreLetivo sl = new SemestreLetivo();
                 sl.setAno(rs.getInt("sl.ano"));
                 sl.setNumero_semestre(rs.getInt("sl.numero_semestre"));
+                sl.setId_semestre_letivo(rs.getInt("id_semestre_letivo"));
 
                 lista.add(sl);
             }
@@ -47,7 +49,7 @@ public class SemestreLetivoDAO{
 
     public List<SemestreLetivo> listarAdmsAnoESemestreAno() throws SQLException {
         String sql = """
-            SELECT DISTINCT ano, numero_semestre FROM semestre_letivo;
+            SELECT DISTINCT id_semestre_letivo, ano, numero_semestre, FROM semestre_letivo;
             """;
         Connection conn = null;
         PreparedStatement ps = null;
@@ -63,6 +65,7 @@ public class SemestreLetivoDAO{
                 SemestreLetivo sl = new SemestreLetivo();
                 sl.setAno(rs.getInt("ano"));
                 sl.setNumero_semestre(rs.getInt("numero_semestre"));
+                sl.setId_semestre_letivo(rs.getInt("id_semestre_letivo"));
 
                 lista.add(sl);
             }
@@ -78,7 +81,7 @@ public class SemestreLetivoDAO{
 
     public List<SemestreLetivo> listarCoordenadorAnoESemestreAno(int coordId) throws SQLException {
         String sql = """
-            SELECT DISTINCT sl.ano, sl.numero_semestre FROM horario_curso AS hc INNER JOIN 
+            SELECT DISTINCT sl.id_semestre_letivo, sl.ano, sl.numero_semestre FROM horario_curso AS hc INNER JOIN 
             semestre_letivo AS sl ON hc.semestre_letivo_id = sl.id_semestre_letivo 
             INNER JOIN curso AS c ON c.id_curso = hc.curso_id WHERE c.coordenador_id = ?;
             """;
@@ -97,6 +100,7 @@ public class SemestreLetivoDAO{
                 SemestreLetivo sl = new SemestreLetivo();
                 sl.setAno(rs.getInt("sl.ano"));
                 sl.setNumero_semestre(rs.getInt("sl.numero_semestre"));
+                sl.setId_semestre_letivo(rs.getInt("sl.id_semestre_letivo"));
 
                 lista.add(sl);
             }
