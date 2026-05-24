@@ -23,15 +23,25 @@ public class AdmCursosHorariosController {
     @FXML private TitledPane painelFormCurso;
     @FXML private Button btnCancelarCurso;
     @FXML private Button btnSalvarCurso;
+    @FXML private RadioButton rbProfessor;
+    @FXML private RadioButton rbCoordenador;
+
+    private ToggleGroup grupoResponsavel;
 
     private UsuarioAtual logado = UsuarioAtual.getInstancia();
 
     private Integer anoAntes = 0;
     private Integer anoSemestreAntes = 0;
 
+    private Boolean coordsCarregados = false;
+    private Boolean profsCarregados = false;
+
     @FXML
     public void initialize(){
         logado.usuarioAdm();
+        grupoResponsavel = new ToggleGroup();
+        rbProfessor.setToggleGroup(grupoResponsavel);
+        rbCoordenador.setToggleGroup(grupoResponsavel);
     }
 
     @FXML
@@ -56,24 +66,60 @@ public class AdmCursosHorariosController {
 
     @FXML
     public void fillComboboxCoordenador(){
-        if (!anoAntes.equals(logado.getAno()) || !anoSemestreAntes.equals(logado.getAnoSemestre())){
-            System.out.println("ANO: "+anoAntes);
-            System.out.println("SEMESTRE_ANO: "+anoSemestreAntes);
+        cbCoordenadorCurso.setDisable(false);
+        cbProfessorCurso.setDisable(true);
+
+        if (!coordsCarregados || !anoAntes.equals(logado.getAno()) || !anoSemestreAntes.equals(logado.getAnoSemestre())) {
+            carregarCoords();
+        }
+    }
+
+    private void carregarCoords() {
+        try {
+            UsuarioDAO uDao = new UsuarioDAO();
+            List<Usuario> coords = uDao.listarCoordSemestreLetivo(logado.getAno(), logado.getAnoSemestre());
             ObservableList<String> opcoesCoords = FXCollections.observableArrayList();
-            try{
-                UsuarioDAO uDao = new UsuarioDAO();
-                List<Usuario> coords = uDao.listarCoordSemestreLetivo(logado.getAno(), logado.getAnoSemestre());
-                for (Usuario coord: coords){
-                    opcoesCoords.add(coord.getNome());
-                }
-                cbCoordenadorCurso.setItems(opcoesCoords);
-            } catch (SQLException e){
-                e.printStackTrace();
+            for (Usuario coord : coords) {
+                opcoesCoords.add(coord.getNome());
             }
+            cbCoordenadorCurso.setItems(opcoesCoords);
+
+            // Atualiza controle
+            coordsCarregados = true;
             anoAntes = logado.getAno();
             anoSemestreAntes = logado.getAnoSemestre();
-            System.out.println("ANO DEPOIS: "+anoAntes);
-            System.out.println("SEMESTRE_ANO DEPOIS: "+anoSemestreAntes);
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
+    @FXML
+    public void fillComboboxProfessor() {
+        cbProfessorCurso.setDisable(false);
+        cbCoordenadorCurso.setDisable(true);
+
+        if (!profsCarregados || !anoAntes.equals(logado.getAno()) || !anoSemestreAntes.equals(logado.getAnoSemestre())) {
+            carregarProfs();
+        }
+    }
+
+    private void carregarProfs() {
+        try {
+            UsuarioDAO uDao = new UsuarioDAO();
+            List<Usuario> profs = uDao.listarProfSemestreLetivo(logado.getAno(), logado.getAnoSemestre());
+
+            ObservableList<String> opcoesProfs = FXCollections.observableArrayList();
+            for (Usuario prof : profs) {
+                opcoesProfs.add(prof.getNome());
+            }
+            cbProfessorCurso.setItems(opcoesProfs);
+
+            // Atualiza controle
+            profsCarregados = true;
+            anoAntes = logado.getAno();
+            anoSemestreAntes = logado.getAnoSemestre();
+        } catch (SQLException e) {
+            e.printStackTrace();
         }
     }
 
