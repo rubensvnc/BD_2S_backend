@@ -56,11 +56,12 @@ public class UsuarioDAO {
     public List<Usuario> listarProfSemestreLetivo (Integer ano, Integer anoSemestre) throws SQLException{
         List<Usuario> usuarios = new ArrayList<>();
         String sql = """
-            SELECT DISTINCT u.nome FROM usuario AS u INNER JOIN usuario_tipo 
+            SELECT DISTINCT u.id_usuario, u.email FROM usuario AS u INNER JOIN usuario_tipo 
             AS ut ON ut.usuario_id = u.id_usuario INNER JOIN atribuicao_professor 
             AS ap ON ap.professor_id = ut.usuario_id INNER JOIN semestre_letivo 
             AS sl ON sl.id_semestre_letivo = ap.semestre_letivo_id 
-            WHERE ut.tipo = "PROF" AND sl.ano = ? AND sl.numero_semestre = ?;
+            WHERE ut.tipo = "PROF" AND sl.ano = ? AND sl.numero_semestre = ?
+            AND u.id_usuario NOT IN (SELECT coordenador_id FROM curso WHERE coordenador_id IS NOT NULL);
             """;
 
         PreparedStatement ps = null;
@@ -74,7 +75,8 @@ public class UsuarioDAO {
             rs = ps.executeQuery();
             while (rs.next()) {
                 Usuario u = new Usuario();
-                u.setNome(rs.getString("u.nome"));
+                u.setId_usuario(rs.getInt("u.id_usuario"));
+                u.setEmail(rs.getString("u.email"));
 
                 usuarios.add(u);
             }
