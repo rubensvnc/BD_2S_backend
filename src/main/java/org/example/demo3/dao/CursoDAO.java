@@ -11,6 +11,7 @@ import java.util.List;
 public class CursoDAO {
 
     private Connection connection;
+    private PreparedStatement ps;
 
     public CursoDAO() {
         this.connection = DatabaseConnection.getConnection();
@@ -79,6 +80,41 @@ public class CursoDAO {
         }
 
         return lista;
+    }
+
+    public void inserirCurso(String nomeCurso, String turno, Integer qtdSemestre) throws SQLException{
+        try {
+            String q = "INSERT INTO curso(nome, turno, qtd_semestres)" +
+                    "VALUES (?, ?, ?);";
+            ps = connection.prepareStatement(q);
+            ps.setString(1, nomeCurso);
+            ps.setString(2, turno);
+            ps.setInt(3, qtdSemestre);
+            ps.executeUpdate();
+
+        } catch (SQLException e){
+            e.printStackTrace();
+        } finally {
+            connection.close();
+        }
+    }
+
+    public void inserirCurso(Integer idCoord, String nomeCurso, String turno, Integer qtdSemestre) throws SQLException{
+        try {
+            String q = "INSERT INTO curso(coordenador_id, nome, turno, qtd_semestres)" +
+                    "VALUES (?, ?, ?, ?);";
+            ps = connection.prepareStatement(q);
+            ps.setInt(1, idCoord);
+            ps.setString(2, nomeCurso);
+            ps.setString(3, turno);
+            ps.setInt(4, qtdSemestre);
+            ps.executeUpdate();
+
+        } catch (SQLException e){
+            e.printStackTrace();
+        } finally {
+            connection.close();
+        }
     }
 
     public void inserirCurso(Curso curso) {
