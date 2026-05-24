@@ -78,91 +78,46 @@ public class DependenciaTemaDAO {
         return lista;
     }
 
-    // INSERIR DEPENDÊNCIA
-    public void inserirDependencia(
-            DependenciaTema dependencia
-    ) {
+    // SALVAR DEPENDÊNCIAS (remove antigas e insere novas em uma única transação)
+    public void salvarDependencias(Integer temaId, List<DependenciaTema> dependencias) {
 
-        String sql = """
-                INSERT INTO dependencia_tema (
-                    tema_id,
-                    tema_dependencia_id,
-                    ordem
-                )
-                VALUES (?, ?, ?)
-                """;
+        String sqlDelete = """
+            DELETE FROM dependencia_tema
+            WHERE tema_id = ?
+            """;
 
-        try (
-                Connection conn =
-                        DatabaseConnection.getConnection();
+        String sqlInsert = """
+            INSERT INTO dependencia_tema (tema_id, tema_dependencia_id, ordem)
+            VALUES (?, ?, ?)
+            """;
 
-                PreparedStatement stmt =
-                        conn.prepareStatement(sql)
-        ) {
+        try (Connection conn = DatabaseConnection.getConnection()) {
 
-            stmt.setInt(
-                    1,
-                    dependencia.getTema_id()
-            );
+            conn.setAutoCommit(false); // inicia transação
 
-            stmt.setInt(
-                    2,
-                    dependencia.getTema_dependencia_id()
-            );
+            try (PreparedStatement stmtDelete = conn.prepareStatement(sqlDelete)) {
+                stmtDelete.setInt(1, temaId);
+                stmtDelete.executeUpdate();
+            }
 
-            stmt.setInt(
-                    3,
-                    dependencia.getOrdem()
-            );
+            try (PreparedStatement stmtInsert = conn.prepareStatement(sqlInsert)) {
+                for (DependenciaTema dep : dependencias) {
+                    stmtInsert.setInt(1, dep.getTema_id());
+                    stmtInsert.setInt(2, dep.getTema_dependencia_id());
+                    stmtInsert.setInt(3, dep.getOrdem());
+                    stmtInsert.addBatch(); // acumula para executar de uma vez
+                }
+                stmtInsert.executeBatch();
+            }
 
-            stmt.executeUpdate();
-
-            System.out.println(
-                    "Dependência salva com sucesso!"
-            );
+            conn.commit(); // confirma tudo junto
+            System.out.println("Dependências salvas com sucesso!");
 
         } catch (SQLException e) {
-
-            System.out.println(
-                    "Erro ao inserir dependência: "
-                            + e.getMessage()
-            );
+            System.out.println("Erro ao salvar dependências: " + e.getMessage());
+            // o AutoCommit volta ao padrão ao fechar a conexão, revertendo a transação
         }
     }
 
-    // REMOVER TODAS AS DEPENDÊNCIAS DE UM TEMA
-    public void removerDependenciasTema(
-            Integer temaId
-    ) {
-
-        String sql = """
-                DELETE FROM dependencia_tema
-                WHERE tema_id = ?
-                """;
-
-        try (
-                Connection conn =
-                        DatabaseConnection.getConnection();
-
-                PreparedStatement stmt =
-                        conn.prepareStatement(sql)
-        ) {
-
-            stmt.setInt(1, temaId);
-
-            stmt.executeUpdate();
-
-            System.out.println(
-                    "Dependências removidas!"
-            );
-
-        } catch (SQLException e) {
-
-            System.out.println(
-                    "Erro ao remover dependências: "
-                            + e.getMessage()
-            );
-        }
-    }
 }
 

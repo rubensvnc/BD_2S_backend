@@ -11,38 +11,6 @@ import java.util.List;
 public class TemaDAO {
 
         //INSERE UM TEMA
-        public void inserirTema(Tema tema) {
-            String sql = """
-                INSERT INTO tema (
-                    disciplina_id,
-                    semestre_letivo_id,
-                    nome,
-                    eh_avaliacao,
-                    qtd_min_aulas,
-                    qtd_max_aulas,
-                    prioridade,
-                    eh_opcional) VALUES (?, ?, ?, ?, ?, ?, ?, ?)""";
-            try ( Connection connection = DatabaseConnection.getConnection();
-                  PreparedStatement stmt = connection.prepareStatement(sql);
-                  ) {
-                stmt.setInt(1, tema.getDisciplina_id());
-                stmt.setInt(2, tema.getSemestre_letivo_id());
-                stmt.setString(3, tema.getNome());
-                stmt.setInt(4, tema.getEh_avaliacao());
-                stmt.setInt(5, tema.getQtd_min_aulas());
-                stmt.setInt(6, tema.getQtd_max_aulas());
-                stmt.setInt(7, tema.getPrioridade());
-                stmt.setInt(8, tema.getEh_opcional());
-
-                stmt.executeUpdate();
-
-                System.out.println("Tema inserido com sucesso!");
-
-            }catch (SQLException e) {
-                System.out.println("Erro ao inserir tema: " + e.getMessage());
-            }
-        }
-
     public Integer inserirTemaRetornandoId(Tema tema) {
         String sql = "INSERT INTO tema (nome, qtd_min_aulas, qtd_max_aulas, " +
                 "prioridade, eh_avaliacao, eh_opcional, disciplina_id, semestre_letivo_id) " +
@@ -104,9 +72,7 @@ public class TemaDAO {
                 return temas;
         }
 
-
-
-    //LISTA OS TEMAS POR DISCIPLINA E SEMESTRE
+        //LISTA OS TEMAS POR DISCIPLINA E SEMESTRE
     public List<Tema> listarTemasPorDisciplinaESemestre(
             int disciplina_id,
             int semestre_letivo_id
