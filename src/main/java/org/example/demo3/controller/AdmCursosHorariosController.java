@@ -1,9 +1,38 @@
 package org.example.demo3.controller;
 
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
+import javafx.scene.control.*;
 import javafx.scene.input.MouseEvent;
+import org.example.demo3.UsuarioAtual;
+import org.example.demo3.dao.UsuarioDAO;
+import org.example.demo3.entity.Usuario;
+
+import java.sql.SQLException;
+import java.util.List;
 
 public class AdmCursosHorariosController {
+
+    @FXML private TextField tfCursoNome;
+    @FXML private ToggleButton tbManha;
+    @FXML private ToggleButton tbNoite;
+    @FXML private Spinner<Integer> spQtdSemestres;
+    @FXML private ComboBox<String> cbCoordenadorCurso;
+    @FXML private ComboBox<String> cbProfessorCurso;
+    @FXML private TitledPane painelFormCurso;
+    @FXML private Button btnCancelarCurso;
+    @FXML private Button btnSalvarCurso;
+
+    private UsuarioAtual logado = UsuarioAtual.getInstancia();
+
+    private Integer anoAntes = 0;
+    private Integer anoSemestreAntes = 0;
+
+    @FXML
+    public void initialize(){
+        logado.usuarioAdm();
+    }
 
     @FXML
     public void handleNovoCurso() {
@@ -26,8 +55,34 @@ public class AdmCursosHorariosController {
     }
 
     @FXML
+    public void fillComboboxCoordenador(){
+        if (!anoAntes.equals(logado.getAno()) || !anoSemestreAntes.equals(logado.getAnoSemestre())){
+            System.out.println("ANO: "+anoAntes);
+            System.out.println("SEMESTRE_ANO: "+anoSemestreAntes);
+            ObservableList<String> opcoesCoords = FXCollections.observableArrayList();
+            try{
+                UsuarioDAO uDao = new UsuarioDAO();
+                List<Usuario> coords = uDao.listarCoordSemestreLetivo(logado.getAno(), logado.getAnoSemestre());
+                for (Usuario coord: coords){
+                    opcoesCoords.add(coord.getNome());
+                }
+                cbCoordenadorCurso.setItems(opcoesCoords);
+            } catch (SQLException e){
+                e.printStackTrace();
+            }
+            anoAntes = logado.getAno();
+            anoSemestreAntes = logado.getAnoSemestre();
+            System.out.println("ANO DEPOIS: "+anoAntes);
+            System.out.println("SEMESTRE_ANO DEPOIS: "+anoSemestreAntes);
+        }
+    }
+
+
+
+    @FXML
     public void handleSalvarCurso() {
-        // TODO: Validar as entradas e persistir as alterações do curso no banco de dados
+        String nomeCurso = tfCursoNome.getText();
+
     }
 
     // ═════════════════════════════════════════════════════════════════════════
