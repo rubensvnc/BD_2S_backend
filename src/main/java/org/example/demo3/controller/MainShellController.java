@@ -52,19 +52,14 @@ public class MainShellController {
     private List<Curso> listaCursos;
 
     UsuarioAtual logado = UsuarioAtual.getInstancia();
-    private Integer anoSelecionado;
-    private Integer semestreAnoEscolhido;
-    private String cursoEscolhido;
-    private Integer semestreCursoEscolhido;
-    private String disciplinaEscolhida;
 
     @FXML
     public void initialize(){
         tbSem1.setDisable(true);
         tbSem2.setDisable(true);
 
-        logado.setId_usuario(4);
-        logado.setTipo("PROF");
+        logado.setId_usuario(1);
+        logado.setTipo("ADM");
 
         ObservableList<String> opcoesAno = FXCollections.observableArrayList();
         SemestreLetivoDAO slDao = new SemestreLetivoDAO();
@@ -162,11 +157,11 @@ public class MainShellController {
 
     @FXML
     public void handleTrocaAno() {
-        anoSelecionado = Integer.parseInt(cbAno.getValue());
+        logado.setAno(Integer.parseInt(cbAno.getValue()));
         tbSem1.setDisable(true);
         tbSem2.setDisable(true);
         for (SemestreLetivo sl: listaSl){
-            if (sl.getAno().equals(anoSelecionado)){
+            if (sl.getAno().equals(logado.getAno())){
                 if (sl.getNumero_semestre() == 1){
                     tbSem1.setDisable(false);
                 } else if (sl.getNumero_semestre() == 2){
@@ -180,9 +175,9 @@ public class MainShellController {
     public void handleSemestreToggle(ActionEvent event) {
         Object ativador = event.getSource();
         if (ativador == tbSem1){
-            semestreAnoEscolhido = 1;
+            logado.setAnoSemestre(1);
         } else {
-            semestreAnoEscolhido = 2;
+            logado.setAnoSemestre(2);
         }
 
         ObservableList<String> opcoesCurso = FXCollections.observableArrayList();
@@ -190,7 +185,7 @@ public class MainShellController {
 
         if (logado.getTipo() == "PROF"){
             try{
-                listaCursos = cDao.listarCursosProfessor(logado.getId_usuario(), anoSelecionado, semestreAnoEscolhido);
+                listaCursos = cDao.listarCursosProfessor(logado.getId_usuario(), logado.getAno(), logado.getAnoSemestre());
                 for (Curso c: listaCursos){
                     opcoesCurso.add(c.getNome());
                 }
@@ -215,12 +210,12 @@ public class MainShellController {
 
     @FXML
     public void handleTrocaCurso(){
-        cursoEscolhido = cbCurso.getValue();
+        logado.setCurso(cbCurso.getValue());
 
         ObservableList<String> opcoesSemestreCurso = FXCollections.observableArrayList();
         DisciplinaDAO dDao = new DisciplinaDAO();
         try{
-            listaD = dDao.listarDisciplinasCurso(logado.getId_usuario(), anoSelecionado, semestreAnoEscolhido, cursoEscolhido);
+            listaD = dDao.listarDisciplinasCurso(logado.getId_usuario(), logado.getAno(), logado.getAnoSemestre(), logado.getCurso());
             for (Disciplina d: listaD){
                 if (!opcoesSemestreCurso.contains(d.getSemestre_curso().toString())) {
                     opcoesSemestreCurso.add(d.getSemestre_curso().toString());
@@ -235,11 +230,11 @@ public class MainShellController {
 
     @FXML
     public void handleTrocaSemestreCurso(){
-        semestreCursoEscolhido = Integer.parseInt(cbSemestreCurso.getValue());
+        logado.setSemestreCurso(Integer.parseInt(cbSemestreCurso.getValue()));
 
         ObservableList<String> opcoesDisciplina = FXCollections.observableArrayList();
         for (Disciplina d: listaD){
-            if (d.getSemestre_curso().equals(semestreCursoEscolhido)){
+            if (d.getSemestre_curso().equals(logado.getSemestreCurso())){
                 opcoesDisciplina.add(d.getNome());
             }
         }
@@ -248,7 +243,7 @@ public class MainShellController {
 
     @FXML
     public void handleTrocaDisciplina(){
-        disciplinaEscolhida = cbDisciplina.getValue();
+        logado.setDisciplina(cbDisciplina.getValue());
     }
 
     @FXML void handleLogout() {}
@@ -275,10 +270,10 @@ public class MainShellController {
         }
     }
 
-    public Integer getAnoSelecionado() { return anoSelecionado; }
-    public Integer getSemestreAnoEscolhido() { return semestreAnoEscolhido; }
-    public String getCursoEscolhido() { return cursoEscolhido; }
-    public String getDisciplinaEscolhida() { return disciplinaEscolhida; }
+    public Integer getAnoSelecionado() { return logado.getAno(); }
+    public Integer getSemestreAnoEscolhido() { return logado.getAnoSemestre(); }
+    public String getCursoEscolhido() { return logado.getCurso(); }
+    public String getDisciplinaEscolhida() { return logado.getDisciplina(); }
 
     private int descobrirIdCursoPorNome(String nomeCurso) {
         String sql = "SELECT id_curso FROM curso WHERE nome = ?";
