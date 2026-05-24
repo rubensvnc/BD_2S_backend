@@ -53,6 +53,41 @@ public class UsuarioDAO {
         return usuarios;
     }
 
+    public List<Usuario> listarProfSemestreLetivo (Integer ano, Integer anoSemestre) throws SQLException{
+        List<Usuario> usuarios = new ArrayList<>();
+        String sql = """
+            SELECT DISTINCT u.nome FROM usuario AS u INNER JOIN usuario_tipo 
+            AS ut ON ut.usuario_id = u.id_usuario INNER JOIN atribuicao_professor 
+            AS ap ON ap.professor_id = ut.usuario_id INNER JOIN semestre_letivo 
+            AS sl ON sl.id_semestre_letivo = ap.semestre_letivo_id 
+            WHERE ut.tipo = "PROF" AND sl.ano = ? AND sl.numero_semestre = ?;
+            """;
+
+        PreparedStatement ps = null;
+        ResultSet rs = null;
+        try {
+            connection = DatabaseConnection.getConnection();
+            ps = connection.prepareStatement(sql);
+            ps.setInt(1, ano);
+            ps.setInt(2, anoSemestre);
+
+            rs = ps.executeQuery();
+            while (rs.next()) {
+                Usuario u = new Usuario();
+                u.setNome(rs.getString("u.nome"));
+
+                usuarios.add(u);
+            }
+        } catch (SQLException e) {
+            System.err.println("Erro ao listar temas: " + e.getMessage());
+            throw e;
+        } finally {
+            connection.close();
+        }
+
+        return usuarios;
+    }
+
     public void inserirUsuario(Usuario usuario) {
 
         String sql = """
