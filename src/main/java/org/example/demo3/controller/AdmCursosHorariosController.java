@@ -6,11 +6,17 @@ import javafx.fxml.FXML;
 import javafx.scene.control.*;
 import javafx.scene.input.MouseEvent;
 import org.example.demo3.UsuarioAtual;
+import org.example.demo3.dao.CursoDAO;
 import org.example.demo3.dao.UsuarioDAO;
+import org.example.demo3.dao.UsuarioTipoDAO;
+import org.example.demo3.entity.Curso;
 import org.example.demo3.entity.Usuario;
+import org.example.demo3.entity.UsuarioTipo;
 
 import java.sql.SQLException;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class AdmCursosHorariosController {
 
@@ -18,30 +24,23 @@ public class AdmCursosHorariosController {
     @FXML private ToggleButton tbManha;
     @FXML private ToggleButton tbNoite;
     @FXML private Spinner<Integer> spQtdSemestres;
-    @FXML private ComboBox<String> cbCoordenadorCurso;
     @FXML private ComboBox<String> cbProfessorCurso;
     @FXML private TitledPane painelFormCurso;
-    @FXML private Button btnCancelarCurso;
-    @FXML private Button btnSalvarCurso;
-    @FXML private RadioButton rbProfessor;
-    @FXML private RadioButton rbCoordenador;
-
-    private ToggleGroup grupoResponsavel;
+    @FXML private CheckBox checkUsarProfessor;
 
     private UsuarioAtual logado = UsuarioAtual.getInstancia();
 
     private Integer anoAntes = 0;
     private Integer anoSemestreAntes = 0;
 
-    private Boolean coordsCarregados = false;
     private Boolean profsCarregados = false;
+    private Map<String, Integer> mapaProfessores = new HashMap<>();
+    private Integer idProfessorSelecionado;
 
     @FXML
     public void initialize(){
         logado.usuarioAdm();
-        grupoResponsavel = new ToggleGroup();
-        rbProfessor.setToggleGroup(grupoResponsavel);
-        rbCoordenador.setToggleGroup(grupoResponsavel);
+        cbProfessorCurso.setDisable(true);
     }
 
     @FXML
@@ -65,39 +64,16 @@ public class AdmCursosHorariosController {
     }
 
     @FXML
-    public void fillComboboxCoordenador(){
-        cbCoordenadorCurso.setDisable(false);
-        cbProfessorCurso.setDisable(true);
-
-        if (!coordsCarregados || !anoAntes.equals(logado.getAno()) || !anoSemestreAntes.equals(logado.getAnoSemestre())) {
-            carregarCoords();
+    public void usarProfessor(){
+        if (checkUsarProfessor.isSelected()){
+            cbProfessorCurso.setDisable(false);
+            fillComboboxProfessor();
+        } else {
+            cbProfessorCurso.setDisable(true);
         }
     }
 
-    private void carregarCoords() {
-        try {
-            UsuarioDAO uDao = new UsuarioDAO();
-            List<Usuario> coords = uDao.listarCoordSemestreLetivo(logado.getAno(), logado.getAnoSemestre());
-            ObservableList<String> opcoesCoords = FXCollections.observableArrayList();
-            for (Usuario coord : coords) {
-                opcoesCoords.add(coord.getNome());
-            }
-            cbCoordenadorCurso.setItems(opcoesCoords);
-
-            // Atualiza controle
-            coordsCarregados = true;
-            anoAntes = logado.getAno();
-            anoSemestreAntes = logado.getAnoSemestre();
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-    }
-
-    @FXML
     public void fillComboboxProfessor() {
-        cbProfessorCurso.setDisable(false);
-        cbCoordenadorCurso.setDisable(true);
-
         if (!profsCarregados || !anoAntes.equals(logado.getAno()) || !anoSemestreAntes.equals(logado.getAnoSemestre())) {
             carregarProfs();
         }
@@ -108,9 +84,11 @@ public class AdmCursosHorariosController {
             UsuarioDAO uDao = new UsuarioDAO();
             List<Usuario> profs = uDao.listarProfSemestreLetivo(logado.getAno(), logado.getAnoSemestre());
 
+            mapaProfessores.clear();
             ObservableList<String> opcoesProfs = FXCollections.observableArrayList();
             for (Usuario prof : profs) {
-                opcoesProfs.add(prof.getNome());
+                opcoesProfs.add(prof.getEmail());
+                mapaProfessores.put(prof.getEmail(), prof.getId_usuario());
             }
             cbProfessorCurso.setItems(opcoesProfs);
 
@@ -123,12 +101,45 @@ public class AdmCursosHorariosController {
         }
     }
 
-
+    @FXML
+    public void handleSelecaoProfessor(){
+        if (checkUsarProfessor.isSelected()){
+            String emailSelecionado = cbProfessorCurso.getValue();
+            if (emailSelecionado != null) {
+                this.idProfessorSelecionado = mapaProfessores.get(emailSelecionado);
+            }
+        } else {
+            this.idProfessorSelecionado = null;
+        }
+    }
 
     @FXML
     public void handleSalvarCurso() {
         String nomeCurso = tfCursoNome.getText();
+        String turno;
+        Integer qtd_semestres = spQtdSemestres.getValue();
 
+
+        if (tbManha.isSelected()){
+            turno = "manha";
+        } else {
+            turno = "noite";
+        }
+
+        try {
+            CursoDAO cDao = new CursoDAO();
+            if (checkUsarProfessor.isSelected()){
+                UsuarioTipoDAO utDao = new UsuarioTipoDAO();
+
+                utDao.inserirUsuarioTipo(new UsuarioTipo(idProfessorSelecionado, "COORD"));
+                cDao.inserirCurso(idProfessorSelecionado, nomeCurso, turno, qtd_semestres);
+
+            } else {
+                cDao.inserirCurso(nomeCurso, turno, qtd_semestres);
+            }
+        } catch (SQLException e){
+            e.printStackTrace();
+        }
     }
 
     // ═════════════════════════════════════════════════════════════════════════
