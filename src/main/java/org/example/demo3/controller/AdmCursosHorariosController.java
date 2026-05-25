@@ -4,12 +4,12 @@ import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
+import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.input.MouseEvent;
 import org.example.demo3.UsuarioAtual;
-import org.example.demo3.dao.CursoDAO;
-import org.example.demo3.dao.UsuarioDAO;
-import org.example.demo3.dao.UsuarioTipoDAO;
+import org.example.demo3.dao.*;
 import org.example.demo3.entity.Curso;
+import org.example.demo3.entity.TemplateHorarioTurno;
 import org.example.demo3.entity.Usuario;
 import org.example.demo3.entity.UsuarioTipo;
 
@@ -27,11 +27,29 @@ public class AdmCursosHorariosController {
     @FXML private ComboBox<String> cbProfessorCurso;
     @FXML private TitledPane painelFormCurso;
     @FXML private CheckBox checkUsarProfessor;
+    @FXML private TableView<Curso> tabelaCursos;
+    @FXML private Label lblTituloHorarios;
+    @FXML private Button btnSalvarCurso;
+    @FXML private Label lblProcessoSalvarCurso;
+    @FXML private TableView<TemplateHorarioTurno> tabelaHorarios;
+    @FXML private TableColumn<TemplateHorarioTurno, String> colHTipo;
+    @FXML private TableColumn<TemplateHorarioTurno, Integer> colHNumero;
+    @FXML private TableColumn<TemplateHorarioTurno, java.time.LocalTime> colHInicio;
+    @FXML private TableColumn<TemplateHorarioTurno, java.time.LocalTime> colHFim;
+    @FXML private TableColumn<TemplateHorarioTurno, Void> colHAcao;
 
     private UsuarioAtual logado = UsuarioAtual.getInstancia();
 
     private Integer anoAntes = 0;
     private Integer anoSemestreAntes = 0;
+    private Integer idCursoProcessando;
+    private Integer idSemestreLetivoProcessando;
+    private List<TemplateHorarioTurno> thtProcessando;
+    private ObservableList<TemplateHorarioTurno> linhasHorarios;
+
+    private String nomeCursoProcessando;
+    private String turnoProcessando;
+    private Integer qtdSemestresProcessando;
 
     private Boolean profsCarregados = false;
     private Map<String, Integer> mapaProfessores = new HashMap<>();
@@ -41,7 +59,13 @@ public class AdmCursosHorariosController {
     public void initialize(){
         logado.usuarioAdm();
         cbProfessorCurso.setDisable(true);
+
+        colHTipo.setCellValueFactory(new PropertyValueFactory<>("tipo"));
+        colHNumero.setCellValueFactory(new PropertyValueFactory<>("numero_ordem"));
+        colHInicio.setCellValueFactory(new PropertyValueFactory<>("hora_inicio"));
+        colHFim.setCellValueFactory(new PropertyValueFactory<>("hora_fim"));
     }
+
 
     @FXML
     public void handleNovoCurso() {
@@ -60,7 +84,30 @@ public class AdmCursosHorariosController {
 
     @FXML
     public void handleCancelarCurso() {
-        // TODO: Limpar o formulário de dados do curso e recolher o TitledPane
+        if (btnSalvarCurso.isDisabled()) {
+            try {
+                CursoDAO cDAO = new CursoDAO();
+                UsuarioTipoDAO utDao = new UsuarioTipoDAO();
+
+                cDAO.deletarCursoProcessando(idCursoProcessando);
+
+                System.out.println(cbProfessorCurso.getValue());
+                if (checkUsarProfessor.isSelected() && idProfessorSelecionado != null) {
+                    utDao.removerUsuarioTipo(cbProfessorCurso.getValue(), "COORD");
+                }
+
+                btnSalvarCurso.setDisable(false);
+                lblProcessoSalvarCurso.setVisible(false);
+                lblProcessoSalvarCurso.setManaged(false);
+                lblTituloHorarios.setText("Horários — selecione um curso à esquerda");
+                if (linhasHorarios != null) linhasHorarios.clear();
+
+                alterarEstadoEdicaoDadosCurso(false);
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+        }
+        alterarEstadoEdicaoDadosCurso(false);
     }
 
     @FXML
@@ -113,17 +160,30 @@ public class AdmCursosHorariosController {
         }
     }
 
+    public void alterarEstadoEdicaoDadosCurso(Boolean estado){
+        tfCursoNome.setDisable(estado);
+        tbManha.setDisable(estado);
+        tbNoite.setDisable(estado);
+        spQtdSemestres.setDisable(estado);
+        checkUsarProfessor.setDisable(estado);
+        if (checkUsarProfessor.isSelected()){
+            cbProfessorCurso.setDisable(true);
+        } else {
+            cbProfessorCurso.setDisable(false);
+        }
+
+    }
+
     @FXML
     public void handleSalvarCurso() {
-        String nomeCurso = tfCursoNome.getText();
-        String turno;
-        Integer qtd_semestres = spQtdSemestres.getValue();
+        nomeCursoProcessando = tfCursoNome.getText();
+        qtdSemestresProcessando = spQtdSemestres.getValue();
 
 
         if (tbManha.isSelected()){
-            turno = "manha";
+            turnoProcessando = "manha";
         } else {
-            turno = "noite";
+            turnoProcessando = "noite";
         }
 
         try {
@@ -132,11 +192,18 @@ public class AdmCursosHorariosController {
                 UsuarioTipoDAO utDao = new UsuarioTipoDAO();
 
                 utDao.inserirUsuarioTipo(new UsuarioTipo(idProfessorSelecionado, "COORD"));
-                cDao.inserirCurso(idProfessorSelecionado, nomeCurso, turno, qtd_semestres);
+                this.idCursoProcessando = cDao.inserirCursoRetornaId(idProfessorSelecionado,
+                        nomeCursoProcessando, turnoProcessando, qtdSemestresProcessando);
 
             } else {
-                cDao.inserirCurso(nomeCurso, turno, qtd_semestres);
+                this.idCursoProcessando = cDao.inserirCursoRetornaId(nomeCursoProcessando,
+                        turnoProcessando, qtdSemestresProcessando);
             }
+            lblTituloHorarios.setText("Horários — Curso selecionado: "+nomeCursoProcessando);
+            btnSalvarCurso.setDisable(true);
+            lblProcessoSalvarCurso.setVisible(true);
+            lblProcessoSalvarCurso.setManaged(true);
+            alterarEstadoEdicaoDadosCurso(true);
         } catch (SQLException e){
             e.printStackTrace();
         }
@@ -149,6 +216,20 @@ public class AdmCursosHorariosController {
     @FXML
     public void handleAplicarTemplate() {
         // TODO: Preencher a tabela com uma estrutura de horários padrão com base no turno do curso
+        SemestreLetivoDAO slDao = new SemestreLetivoDAO();
+        TemplateHorarioTurnoDAO thtDao = new TemplateHorarioTurnoDAO();
+        HorarioCursoDAO hcDao = new HorarioCursoDAO();
+        try {
+            thtProcessando = thtDao.listarPorTurno(turnoProcessando);
+
+            idSemestreLetivoProcessando = slDao.getIdSemestreLetivo(logado.getAno(), logado.getAnoSemestre());
+
+            linhasHorarios = FXCollections.observableArrayList(thtProcessando);
+            tabelaHorarios.setItems(linhasHorarios);
+        } catch (SQLException e){
+
+        }
+
     }
 
     @FXML
@@ -164,5 +245,15 @@ public class AdmCursosHorariosController {
     @FXML
     public void handleSalvarHorarios() {
         // TODO: Validar o encadeamento cronológico das linhas e salvar as alterações na tabela de horários
+        HorarioCursoDAO hcDao = new HorarioCursoDAO();
+        try {
+            hcDao.inserirTemplateHorarioCurso(thtProcessando, idCursoProcessando, idSemestreLetivoProcessando);
+            alterarEstadoEdicaoDadosCurso(false);
+            btnSalvarCurso.setDisable(false);
+            lblProcessoSalvarCurso.setVisible(false);
+            lblProcessoSalvarCurso.setManaged(false);
+        } catch (SQLException e){
+
+        }
     }
 }
