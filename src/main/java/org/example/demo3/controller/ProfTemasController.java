@@ -38,10 +38,14 @@ public class ProfTemasController {
     @FXML private ListView<Tema>   listTemasDisponiveis;
     @FXML private ListView<Tema>   listDependencias;
 
-    //DAOs
+    // DAOs
     private final TemaDAO temaDAO = new TemaDAO();
     private final DependenciaTemaDAO dependenciaTemaDAO = new DependenciaTemaDAO();
     private Tema temaSelecionado;
+
+    // MODIFICADO: Agora guardamos tanto a disciplina quanto o semestre ativo
+    private Integer idDisciplinaAtual;
+    private Integer idSemestreAtual;
 
     @FXML
     public void initialize() {
@@ -93,7 +97,7 @@ public class ProfTemasController {
         };
     }
 
-    //AÇÕES DO FORMULÁRIO DE TEMA
+    // AÇÕES DO FORMULÁRIO DE TEMA
     @FXML
     private void handleSalvarTema() {
         if (tfTemaNome.getText().isBlank()) {
@@ -113,7 +117,7 @@ public class ProfTemasController {
                 Integer idGerado = temaDAO.inserirTemaRetornandoId(tema);
                 tema.setId_tema(idGerado);
                 temaSelecionado = tema;
-                lblFeedbackTema.setText("Tema salvo com sucesso!");
+                lblFeedbackTema.setText("Tema saved com sucesso!");
             }
 
             carregarTemas();
@@ -150,11 +154,10 @@ public class ProfTemasController {
         lblTemaSelecionadoDep.setText(tema.getNome());
 
         preencherFormulario(tema);
-        atualizarPainelDependencias();           // ← unifica as duas chamadas
+        atualizarPainelDependencias();
     }
 
-
-    //MANUSEIO DAS DEPENDÊNCIAS (DESCER, SUBIR, ENVIAR OU RETIRAR) E SALVAR
+    // MANUSEIO DAS DEPENDÊNCIAS
     @FXML
     private void handleAdicionarDep() {
         moverItemEntreListas(listTemasDisponiveis, listDependencias);
@@ -187,11 +190,11 @@ public class ProfTemasController {
             List<Tema> itens = listDependencias.getItems();
 
             for (int i = 0; i < itens.size(); i++) {
-                DependenciaTema dep = new DependenciaTema();
-                dep.setTema_id(temaSelecionado.getId_tema());
-                dep.setTema_dependencia_id(itens.get(i).getId_tema());
-                dep.setOrdem(i + 1);
-                dependencias.add(dep);
+                DependenciaTema db = new DependenciaTema();
+                db.setTema_id(temaSelecionado.getId_tema());
+                db.setTema_dependencia_id(itens.get(i).getId_tema());
+                db.setOrdem(i + 1);
+                dependencias.add(db);
             }
 
             dependenciaTemaDAO.salvarDependencias(
@@ -208,11 +211,11 @@ public class ProfTemasController {
 
     // HELPERS PRIVADOS
 
-    /** Constrói um Tema a partir dos valores atuais do formulário. */
+    // MODIFICADO: Agora injeta também o ID do Semestre Letivo no objeto Tema antes de salvar
     private Tema construirTemaDoFormulario() {
         Tema tema = new Tema();
-        tema.setDisciplina_id(1);
-        tema.setSemestre_letivo_id(3);
+        tema.setDisciplina_id(idDisciplinaAtual);
+        tema.setSemestre_letivo_id(idSemestreAtual); // <-- Adicionado
         tema.setNome(tfTemaNome.getText());
         tema.setQtd_min_aulas(spTemaMin.getValue());
         tema.setQtd_max_aulas(spTemaMax.getValue());
@@ -222,7 +225,6 @@ public class ProfTemasController {
         return tema;
     }
 
-    /** Preenche o formulário com os dados de um Tema existente. */
     private void preencherFormulario(Tema tema) {
         tfTemaNome.setText(tema.getNome());
         spTemaMin      .getValueFactory().setValue(tema.getQtd_min_aulas());
@@ -245,22 +247,23 @@ public class ProfTemasController {
         return temaSelecionado != null && temaSelecionado.getId_tema() != null;
     }
 
+    // MODIFICADO: Validação defensiva de nulos e chamada ao novo método com dois parâmetros do DAO
     private void carregarTemas() {
-        tabelaTemas.getItems().setAll(temaDAO.listarTemas());
+        if (idDisciplinaAtual != null && idSemestreAtual != null) {
+            tabelaTemas.getItems().setAll(temaDAO.listarTemasPorDisciplinaESemestre(idDisciplinaAtual, idSemestreAtual));
+        } else {
+            tabelaTemas.getItems().clear();
+        }
     }
 
-    /*
-     * Atualiza as duas listas de dependências de uma vez.
-     * Substitui as chamadas separadas a carregarTemasDisponiveis()
-     * e listarDependenciasDoTemaSelecionado().
-     */
+    // MODIFICADO: Ajustado para usar o método combinado de listagem por Disciplina e Semestre
     private void atualizarPainelDependencias() {
         listTemasDisponiveis.getItems().clear();
         listDependencias    .getItems().clear();
 
-        if (temaSelecionado == null) return;
+        if (temaSelecionado == null || idDisciplinaAtual == null || idSemestreAtual == null) return;
 
-        List<Tema>            todos    = temaDAO.listarTemas();
+        List<Tema> todos = temaDAO.listarTemasPorDisciplinaESemestre(idDisciplinaAtual, idSemestreAtual);
         List<DependenciaTema> vinculos = dependenciaTemaDAO
                 .listarDependenciasTema(temaSelecionado.getId_tema());
 
@@ -275,7 +278,6 @@ public class ProfTemasController {
                     .ifPresent(listDependencias.getItems()::add);
         }
 
-        // Os que não são dependência vão para disponíveis
         for (Tema t : todos) {
             if (!t.getId_tema().equals(temaSelecionado.getId_tema())
                     && !idsDependentes.contains(t.getId_tema())) {
@@ -284,7 +286,6 @@ public class ProfTemasController {
         }
     }
 
-    /** Move o item selecionado de uma ListView para outra. */
     private void moverItemEntreListas(ListView<Tema> origem, ListView<Tema> destino) {
         Tema selecionado = origem.getSelectionModel().getSelectedItem();
         if (selecionado != null) {
@@ -293,7 +294,6 @@ public class ProfTemasController {
         }
     }
 
-    /** Desloca o item selecionado dentro da lista (delta: -1 sobe, +1 desce). */
     private void reordenarItem(ListView<Tema> lista, int delta) {
         int index = lista.getSelectionModel().getSelectedIndex();
         int novoIndex = index + delta;
@@ -303,5 +303,14 @@ public class ProfTemasController {
         Tema tema = lista.getItems().remove(index);
         lista.getItems().add(novoIndex, tema);
         lista.getSelectionModel().select(novoIndex);
+    }
+
+    // MODIFICADO: O método antigo 'setDisciplinaId(Integer)' foi substituído por este,
+    // que recebe as duas variáveis necessárias de uma só vez do MainShellController.
+    public void setDadosIniciais(Integer idDisciplina, Integer idSemestre) {
+        this.idDisciplinaAtual = idDisciplina;
+        this.idSemestreAtual = idSemestre;
+        handleNovoTema();
+        carregarTemas();
     }
 }
