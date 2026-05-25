@@ -2,6 +2,7 @@ package org.example.demo3.dao;
 
 import org.example.demo3.DatabaseConnection;
 import org.example.demo3.entity.HorarioCurso;
+import org.example.demo3.entity.TemplateHorarioTurno;
 
 import java.sql.*;
 import java.util.ArrayList;
@@ -10,11 +11,39 @@ import java.util.List;
 public class HorarioCursoDAO {
 
     private Connection connection;
+    private PreparedStatement ps;
 
     public HorarioCursoDAO() {
         this.connection = DatabaseConnection.getConnection();
     }
 
+    public void inserirTemplateHorarioCurso(List<TemplateHorarioTurno> thtLista,
+                                            Integer cursoId, Integer slId) throws SQLException{
+
+        try{
+            for (TemplateHorarioTurno tht: thtLista) {
+                String sql = """
+                        INSERT INTO horario_curso (
+                    curso_id, semestre_letivo_id, tipo, numero_ordem, hora_inicio, hora_fim)
+                VALUES (?, ?, ?, ?, ?, ?);
+                """;
+
+                ps = connection.prepareStatement(sql);
+                ps.setInt(1, cursoId);
+                ps.setInt(2, slId);
+                ps.setString(3, tht.getTipo());
+                ps.setInt(4, tht.getNumero_ordem());
+                ps.setObject(5, tht.getHora_inicio());
+                ps.setObject(6, tht.getHora_fim());
+                ps.executeUpdate();
+            }
+
+        } catch (SQLException e){
+            e.printStackTrace();
+        } finally {
+            connection.close();
+        }
+    }
 
     public void inserirHorarioCurso(HorarioCurso horario) {
 
