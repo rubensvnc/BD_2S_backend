@@ -119,5 +119,21 @@ public class DependenciaTemaDAO {
         }
     }
 
+    // DELETA TODAS AS DEPENDÊNCIAS DE UM TEMA
+    public void deletarDependenciasPorTema(Integer temaId) {
+        String sql = "DELETE FROM dependencia_tema WHERE tema_id = ?";
+
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            stmt.setInt(1, temaId);
+            stmt.executeUpdate();
+            System.out.println("Dependências do tema " + temaId + " removidas.");
+
+        } catch (SQLException e) {
+            System.out.println("Erro ao deletar dependências: " + e.getMessage());
+        }
+    }
+
 }
 
