@@ -82,39 +82,75 @@ public class CursoDAO {
         return lista;
     }
 
-    public void inserirCurso(String nomeCurso, String turno, Integer qtdSemestre) throws SQLException{
+    public Integer inserirCursoRetornaId(String nomeCurso, String turno, Integer qtdSemestre) throws SQLException{
         try {
             String q = "INSERT INTO curso(nome, turno, qtd_semestres)" +
                     "VALUES (?, ?, ?);";
-            ps = connection.prepareStatement(q);
+            ps = connection.prepareStatement(q, Statement.RETURN_GENERATED_KEYS);
             ps.setString(1, nomeCurso);
             ps.setString(2, turno);
             ps.setInt(3, qtdSemestre);
             ps.executeUpdate();
 
+            try {
+                ResultSet rs = ps.getGeneratedKeys();
+                if (rs.next()){
+                    return rs.getInt(1);
+                }
+            } catch (Exception e){
+                e.printStackTrace();
+            }
+
         } catch (SQLException e){
+            e.printStackTrace();
+        } finally {
+            connection.close();
+        }
+        return null;
+    }
+
+    public void deletarCursoProcessando(Integer idCurso) throws SQLException{
+        String sql = "DELETE FROM curso WHERE id_curso = ?";
+
+        try {
+            ps = connection.prepareStatement(sql);
+            ps.setInt(1, idCurso);
+
+            ps.executeUpdate();
+
+        } catch (SQLException e) {
             e.printStackTrace();
         } finally {
             connection.close();
         }
     }
 
-    public void inserirCurso(Integer idCoord, String nomeCurso, String turno, Integer qtdSemestre) throws SQLException{
+    public Integer inserirCursoRetornaId(Integer idCoord, String nomeCurso, String turno, Integer qtdSemestre) throws SQLException{
         try {
             String q = "INSERT INTO curso(coordenador_id, nome, turno, qtd_semestres)" +
                     "VALUES (?, ?, ?, ?);";
-            ps = connection.prepareStatement(q);
+            ps = connection.prepareStatement(q, Statement.RETURN_GENERATED_KEYS);
             ps.setInt(1, idCoord);
             ps.setString(2, nomeCurso);
             ps.setString(3, turno);
             ps.setInt(4, qtdSemestre);
             ps.executeUpdate();
 
+            try {
+                ResultSet rs = ps.getGeneratedKeys();
+                if (rs.next()){
+                    return rs.getInt(1);
+                }
+            } catch (Exception e){
+                e.printStackTrace();
+            }
+
         } catch (SQLException e){
             e.printStackTrace();
         } finally {
             connection.close();
         }
+        return null;
     }
 
     public void inserirCurso(Curso curso) {
