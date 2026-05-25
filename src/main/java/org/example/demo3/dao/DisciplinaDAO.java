@@ -22,7 +22,7 @@ public class DisciplinaDAO {
             AS ap INNER JOIN semestre_letivo AS sl ON sl.id_semestre_letivo = ap.semestre_letivo_id 
             INNER JOIN disciplina AS d ON ap.disciplina_id = d.id_disciplina 
             INNER JOIN curso AS c ON d.curso_id = c.id_curso WHERE ap.professor_id = ? 
-            AND sl.ano = ? AND sl.numero_semestre = ? AND c.nome = ?;
+            AND sl.ano = ? AND sl.numero_semestre = ? AND c.nome = ?
         """;
         Connection conn = null;
         PreparedStatement ps = null;
