@@ -16,7 +16,7 @@ public class SemestreLetivoDAO{
             SELECT DISTINCT sl.id_semestre_letivo, sl.ano, sl.numero_semestre 
             FROM atribuicao_professor AS ap 
             INNER JOIN semestre_letivo AS sl ON sl.id_semestre_letivo = ap.semestre_letivo_id 
-            WHERE ap.professor_id = ? ORDER BY sl.ano ASC
+            WHERE ap.professor_id = ? ORDER BY sl.ano ASC;
             """;
         Connection conn = null;
         PreparedStatement ps = null;
@@ -47,9 +47,36 @@ public class SemestreLetivoDAO{
         return lista;
     }
 
+    public Integer getIdSemestreLetivo(Integer ano, Integer semestreAno) throws SQLException{
+        String sql = """
+            SELECT id_semestre_letivo FROM semestre_letivo WHERE ano = ? AND numero_semestre = ?;
+            """;
+        Connection conn = null;
+        PreparedStatement ps = null;
+        ResultSet rs = null;
+
+        try {
+            conn = DatabaseConnection.getConnection();
+            ps = conn.prepareStatement(sql);
+            ps.setInt(1, ano);
+            ps.setInt(2, semestreAno);
+
+            rs = ps.executeQuery();
+            if (rs.next()) {
+                return rs.getInt("id_semestre_letivo");
+            }
+        } catch (SQLException e) {
+            System.err.println("Erro ao listar temas: " + e.getMessage());
+            throw e;
+        } finally {
+            DatabaseConnection.closeConnection();
+        }
+        return null;
+    }
+
     public List<SemestreLetivo> listarAdmsAnoESemestreAno() throws SQLException {
         String sql = """
-            SELECT DISTINCT id_semestre_letivo, ano, numero_semestre FROM semestre_letivo
+            SELECT DISTINCT id_semestre_letivo, ano, numero_semestre FROM semestre_letivo;
             """;
         Connection conn = null;
         PreparedStatement ps = null;
@@ -83,7 +110,7 @@ public class SemestreLetivoDAO{
         String sql = """
             SELECT DISTINCT sl.id_semestre_letivo, sl.ano, sl.numero_semestre FROM horario_curso AS hc INNER JOIN 
             semestre_letivo AS sl ON hc.semestre_letivo_id = sl.id_semestre_letivo 
-            INNER JOIN curso AS c ON c.id_curso = hc.curso_id WHERE c.coordenador_id = ?
+            INNER JOIN curso AS c ON c.id_curso = hc.curso_id WHERE c.coordenador_id = ?;
             """;
         Connection conn = null;
         PreparedStatement ps = null;
