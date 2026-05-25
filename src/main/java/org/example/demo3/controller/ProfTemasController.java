@@ -62,10 +62,16 @@ public class ProfTemasController {
     }
 
     private void configurarSpinners() {
-        spTemaMin.setValueFactory(
-                new SpinnerValueFactory.IntegerSpinnerValueFactory(1, 100, 1));
-        spTemaMax.setValueFactory(
-                new SpinnerValueFactory.IntegerSpinnerValueFactory(1, 100, 1));
+        //SPINNER DE QUANTIDADE MÍNIMA AGORA NÃO PODE ULTRAPASSAR O VALOR DO SPINNER COM QUANTIDADE MÁXIMA
+        SpinnerValueFactory.IntegerSpinnerValueFactory factoryMin =
+                new SpinnerValueFactory.IntegerSpinnerValueFactory(1, 100, 1);
+        SpinnerValueFactory.IntegerSpinnerValueFactory factoryMax =
+                new SpinnerValueFactory.IntegerSpinnerValueFactory(1, 100, 1);
+        factoryMin.maxProperty().bind(factoryMax.valueProperty());
+        spTemaMin.setValueFactory(factoryMin);
+        spTemaMax.setValueFactory(factoryMax);
+
+        //O DE PRIORIDADE CONTINUA DO JEITO QUE ESTAVA ANTES
         spTemaPrioridade.setValueFactory(
                 new SpinnerValueFactory.IntegerSpinnerValueFactory(1, 999, 1));
     }
