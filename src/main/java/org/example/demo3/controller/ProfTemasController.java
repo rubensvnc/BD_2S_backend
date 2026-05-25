@@ -108,6 +108,12 @@ public class ProfTemasController {
     private void handleSalvarTema() {
         if (tfTemaNome.getText().isBlank()) {
             errTemaNome.setText("Digite o nome do tema.");
+            exibirAlerta(Alert.AlertType.ERROR,"Erro", "Preencha todos os campos.");
+            return;
+        }
+
+        if (idDisciplinaAtual == null) {
+            exibirAlerta(Alert.AlertType.ERROR,"Erro", "Selecione a disciplina antes de salvar um Tema.");
             return;
         }
 
@@ -119,11 +125,13 @@ public class ProfTemasController {
                 temaDAO.editarTema(tema);
                 temaSelecionado = tema;
                 lblFeedbackTema.setText("Tema atualizado com sucesso!");
+                exibirAlerta(Alert.AlertType.WARNING,"Atenção", "Tema alterado com sucesso.");
             } else {
                 Integer idGerado = temaDAO.inserirTemaRetornandoId(tema);
                 tema.setId_tema(idGerado);
                 temaSelecionado = tema;
-                lblFeedbackTema.setText("Tema saved com sucesso!");
+                lblFeedbackTema.setText("Tema salvo com sucesso!");
+                exibirAlerta(Alert.AlertType.WARNING,"Atenção", "Tema salvo com sucesso.");
             }
 
             carregarTemas();
@@ -131,12 +139,17 @@ public class ProfTemasController {
 
         } catch (Exception e) {
             lblFeedbackTema.setText("Erro ao salvar tema.");
+            exibirAlerta(Alert.AlertType.ERROR,"Erro", "Falha ao salvar tema.");
             System.out.println(e.getMessage());
         }
     }
 
     @FXML
     private void handleNovoTema() {
+        if (idDisciplinaAtual == null) {
+                exibirAlerta(Alert.AlertType.ERROR,"Erro", "Selecione a disciplina antes de adicionar um novo Tema.");
+                return;
+        }
         temaSelecionado = null;
         lblTituloFormTema.setText("Novo Tema");
         lblTemaSelecionadoDep.setText("—");
@@ -186,8 +199,9 @@ public class ProfTemasController {
 
     @FXML
     private void handleSalvarDependencias() {
-        if (temaSelecionado == null) {
+        if (listTemasDisponiveis.getItems().isEmpty()) {
             lblFeedbackTema.setText("Selecione um tema.");
+            exibirAlerta(Alert.AlertType.ERROR,"Erro", "Tabela de Temas disponíveis está vazia.");
             return;
         }
 
@@ -208,9 +222,11 @@ public class ProfTemasController {
             );
 
             lblFeedbackTema.setText("Dependências salvas!");
+            exibirAlerta(Alert.AlertType.WARNING,"Atenção", "Dependência(s) salva(s).");
 
         } catch (Exception e) {
             lblFeedbackTema.setText("Erro ao salvar dependências.");
+            exibirAlerta(Alert.AlertType.ERROR,"Erro", "Falha ao salvar dependência(s).");
             System.out.println(e.getMessage());
         }
     }
@@ -319,4 +335,15 @@ public class ProfTemasController {
         handleNovoTema();
         carregarTemas();
     }
+
+
+    private void exibirAlerta(Alert.AlertType tipo, String titulo, String mensagem ) {
+        Alert alerta = new Alert(tipo);
+        alerta.setTitle(titulo);
+        alerta.setHeaderText(null);
+        alerta.setContentText(mensagem);
+        alerta.showAndWait();
+    }
+
+
 }
