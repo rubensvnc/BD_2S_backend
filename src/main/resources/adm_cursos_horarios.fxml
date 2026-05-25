@@ -32,7 +32,7 @@
                      Editor de horários do curso selecionado
          Cobre: 6.4 (Cursos) e 6.5 (Horários)  -->
     <center>
-        <SplitPane dividerPositions="0.37">
+        <SplitPane dividerPositions="0.42813307493540054">
 
             <!-- ═══════════════════════════════
                  PAINEL ESQUERDO — Lista de Cursos
@@ -93,8 +93,9 @@
 
                         <HBox alignment="CENTER_RIGHT" spacing="8" GridPane.columnIndex="0" GridPane.columnSpan="2" GridPane.rowIndex="4">
                             <Button onAction="#handleCancelarCurso" text="Cancelar" />
-                            <Button onAction="#handleSalvarCurso" style="-fx-background-color: #2980b9; -fx-text-fill: white;" text="Salvar Curso" />
+                            <Button fx:id="btnSalvarCurso" onAction="#handleSalvarCurso" style="-fx-background-color: #2980b9; -fx-text-fill: white;" text="Salvar Curso" />
                         </HBox>
+                        <Label fx:id="lblProcessoSalvarCurso" text="Para poder editar quaisquer valores, pressione 'Cancelar' ou pressione 'Salvar Horários'." GridPane.columnSpan="2" textFill="RED" visible="false" managed="false" GridPane.columnIndex="0" GridPane.rowIndex="5" />
                         <columnConstraints>
                             <ColumnConstraints />
                             <ColumnConstraints hgrow="ALWAYS" />
