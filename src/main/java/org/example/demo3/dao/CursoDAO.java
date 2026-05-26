@@ -10,6 +10,23 @@ public class CursoDAO {
 
     public CursoDAO() {}
 
+    public Integer listarIdCurso(String nomeCurso) throws SQLException{
+        String sql = "SELECT id_curso FROM curso WHERE nome = ?;";
+        Integer id;
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, nomeCurso);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+
+                    id = rs.getInt("id_curso");
+                    return id;
+                }
+            }
+        }
+        return null;
+    }
+
     public Curso buscarCursoCoordenador(int coordenadorId) throws SQLException {
         String sql = "SELECT nome FROM curso WHERE coordenador_id = ?;";
         Curso c = new Curso();
