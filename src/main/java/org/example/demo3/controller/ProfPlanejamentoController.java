@@ -12,6 +12,7 @@ import javafx.scene.layout.HBox;
 import org.example.demo3.DatabaseConnection;
 import org.example.demo3.UsuarioAtual;
 import org.example.demo3.SlotPlanejamento;
+import org.example.demo3.dao.PlanejamentoDAO;
 import org.example.demo3.dao.SlotPlanejamentoDAO;
 import org.example.demo3.entity.Planejamento;
 
@@ -53,6 +54,8 @@ public class ProfPlanejamentoController {
 
     private MainShellController mainShellController;
 
+    private UsuarioAtual logado = UsuarioAtual.getInstancia();
+
     @FXML
     public void initialize() {
         lblTotalTemas.textProperty().bind(totalTemas.asString());
@@ -77,9 +80,9 @@ public class ProfPlanejamentoController {
     @FXML
     public void handleGerarPlanejamento() {
         if (mainShellController == null ||
-                mainShellController.getAnoSelecionado() == null ||
-                mainShellController.getCursoEscolhido() == null ||
-                mainShellController.getDisciplinaEscolhida() == null) {
+                logado.getAno() == null ||
+                logado.getIdCurso() == null ||
+                logado.getIdDisciplina() == null) {
 
             Alert alert = new Alert(Alert.AlertType.WARNING);
             alert.setTitle("Filtros insuficientes");
@@ -89,21 +92,13 @@ public class ProfPlanejamentoController {
             return;
         }
 
-        int ano = mainShellController.getAnoSelecionado();
-        int semestre = mainShellController.getSemestreAnoEscolhido();
-        String nomeCurso = mainShellController.getCursoEscolhido();
-        String nomeDisciplina = mainShellController.getDisciplinaEscolhida();
-
-        int idCurso = descobrirIdCursoPorNome(nomeCurso);
-        int idDisciplina = descobrirIdDisciplinaPorNome(nomeDisciplina);
-
         progressGeracao.setManaged(true);
         progressGeracao.setVisible(true);
         itensSelecionadosAulas.clear();
         atualizarBarraLote();
 
         try {
-            List<Map<String, Object>> dadosBrutos = slotDAO.buscarDadosMixados(ano, semestre, idCurso, idDisciplina);
+            List<Map<String, Object>> dadosBrutos = slotDAO.buscarDadosMixados(logado.getAno(), logado.getAnoSemestre(), logado.getIdCurso(), logado.getIdDisciplina());
 
             List<SlotVisual> listaVisuais = dadosBrutos.stream().map(map -> new SlotVisual(
                     (SlotPlanejamento) map.get("entidade"),
@@ -149,7 +144,7 @@ public class ProfPlanejamentoController {
             }
 
             treePlanejamento.setRoot(rootNode);
-            carregarEstatisticasContexto(ano, semestre, nomeCurso, nomeDisciplina);
+            carregarEstatisticasContexto(logado.getAno(), logado.getAnoSemestre(), logado.getIdCurso(), logado.getIdDisciplina());
 
         } catch (Exception e) {
             e.printStackTrace();
@@ -159,12 +154,13 @@ public class ProfPlanejamentoController {
         }
     }
 
-    public void carregarEstatisticasContexto(int ano, int semestreAno, String nomeCurso, String nomeDisciplina) {
+    public void carregarEstatisticasContexto(int ano, int semestreAno, Integer id_curso, Integer id_disciplina) {
         Integer idProfessor = UsuarioAtual.getInstancia().getId_usuario();
         if (idProfessor == null) return;
 
         try {
-            Map<String, Object> metricas = Planejamento.obterEstatisticasGlobais(ano, semestreAno, nomeCurso, nomeDisciplina, idProfessor);
+            PlanejamentoDAO pDao = new PlanejamentoDAO();
+            Map<String, Object> metricas = pDao.obterEstatisticasGlobais(ano, semestreAno, id_curso, id_disciplina, idProfessor);
 
             if (metricas != null && !metricas.isEmpty()) {
                 int totalAulas = (int) metricas.getOrDefault("totalAulas", 0);
