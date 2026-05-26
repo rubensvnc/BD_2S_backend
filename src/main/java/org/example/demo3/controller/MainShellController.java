@@ -54,17 +54,16 @@ public class MainShellController {
     private List<Disciplina> listaD;
     private List<Curso> listaCursos;
 
-    UsuarioAtual logado = UsuarioAtual.getInstancia();
+    private List<Integer> ordemIdDisciplinas = new ArrayList<>();
 
-    //TAMBÉM FAZ PARTE DO PROF TEMAS CONTROLLER
-    private ProfTemasController controllerAtivo;
+    UsuarioAtual logado = UsuarioAtual.getInstancia();
 
     @FXML
     public void initialize(){
         tbSem1.setDisable(true);
         tbSem2.setDisable(true);
 
-        logado.setId_usuario(2);
+        logado.setId_usuario(4);
         logado.setTipo("PROF");
 
         ObservableList<String> opcoesAno = FXCollections.observableArrayList();
@@ -154,7 +153,6 @@ public class MainShellController {
         try {
             FXMLLoader loader = new FXMLLoader(getClass().getResource(caminhoFxml));
             Parent novoConteudo = loader.load();
-            controllerAtivo = loader.getController();
             areaConteudo.getChildren().clear();
             areaConteudo.getChildren().add(novoConteudo);
         } catch (IOException e) {
@@ -217,12 +215,17 @@ public class MainShellController {
 
     @FXML
     public void handleTrocaCurso(){
-        logado.setCurso(cbCurso.getValue());
+        try {
+            CursoDAO cDAO = new CursoDAO();
+            logado.setIdCurso(cDAO.listarIdCurso(cbCurso.getValue()));
+        } catch (SQLException e){
+            e.printStackTrace();
+        }
 
         ObservableList<String> opcoesSemestreCurso = FXCollections.observableArrayList();
         DisciplinaDAO dDao = new DisciplinaDAO();
         try{
-            listaD = dDao.listarDisciplinasCurso(logado.getId_usuario(), logado.getAno(), logado.getAnoSemestre(), logado.getCurso());
+            listaD = dDao.listarDisciplinasCurso(logado.getId_usuario(), logado.getAno(), logado.getAnoSemestre(), logado.getIdCurso());
             for (Disciplina d: listaD){
                 if (!opcoesSemestreCurso.contains(d.getSemestre_curso().toString())) {
                     opcoesSemestreCurso.add(d.getSemestre_curso().toString());
@@ -240,9 +243,13 @@ public class MainShellController {
         logado.setSemestreCurso(Integer.parseInt(cbSemestreCurso.getValue()));
 
         ObservableList<String> opcoesDisciplina = FXCollections.observableArrayList();
+
+        ordemIdDisciplinas.clear();
         for (Disciplina d: listaD){
             if (d.getSemestre_curso().equals(logado.getSemestreCurso())){
                 opcoesDisciplina.add(d.getNome());
+
+                ordemIdDisciplinas.add(d.getId_disciplina());
             }
         }
         cbDisciplina.setItems(opcoesDisciplina);
@@ -250,8 +257,12 @@ public class MainShellController {
 
     @FXML
     public void handleTrocaDisciplina(){
-        logado.setDisciplina(cbDisciplina.getValue());
-        descobrirIdDisciplina();
+        Integer index = cbDisciplina.getSelectionModel().getSelectedIndex();
+        System.out.println("cbDis: "+ index);
+        logado.setIdDisciplina(ordemIdDisciplinas.get(index));
+        System.out.println(ordemIdDisciplinas.toString());
+        System.out.println("Logado: "+logado.getIdDisciplina());
+
     }
 
     @FXML void handleLogout(ActionEvent event) {
@@ -274,13 +285,7 @@ public class MainShellController {
     @FXML void navCursosHorarios() { carregarConteudo("/adm_cursos_horarios.fxml"); }
     @FXML void navCoordenaodresAdms() { carregarConteudo("/adm_coordenadores_adms.fxml"); }
     @FXML void navCoordPainel() { carregarConteudo("/coord_painel.fxml"); }
-
-
-    @FXML void navTemas() {
-        carregarConteudo("/prof_temas.fxml");
-        // Como o carregarConteudo cria um controller do zero, isso força ele a receber os dados atuais do comboBox
-        descobrirIdDisciplina();
-    }
+    @FXML void navTemas() {carregarConteudo("/prof_temas.fxml");}
 
     @FXML
     void navPlanejamento() {
@@ -298,11 +303,6 @@ public class MainShellController {
             e.printStackTrace();
         }
     }
-
-    public Integer getAnoSelecionado() { return logado.getAno(); }
-    public Integer getSemestreAnoEscolhido() { return logado.getAnoSemestre(); }
-    public String getCursoEscolhido() { return logado.getCurso(); }
-    public String getDisciplinaEscolhida() { return logado.getDisciplina(); }
 
     private int descobrirIdCursoPorNome(String nomeCurso) {
         String sql = "SELECT id_curso FROM curso WHERE nome = ?";
@@ -332,37 +332,4 @@ public class MainShellController {
         return 0;
     }
 
-
-    // ------------------PROF TEMAS CONTROLLER ---------------------------------------
-    //MÉTODOS UTILIZADOS PARA CAPTURAR O ID DO SEMESTRE E DISCIPLINA QUE ESTÃO SETADOS NA TELA PRINCIPAL
-    private Integer descobrirIdSemestreLetivoAtivo() {
-        if (listaSl == null || logado == null || logado.getAno() == null || logado.getAnoSemestre() == null) {
-            return null;
-        }
-        for (SemestreLetivo sl : listaSl) {
-            // Compara Ano e Número do semestre (1 ou 2) com os dados do usuário logado
-            if (sl.getAno().equals(logado.getAno()) && sl.getNumero_semestre() == logado.getAnoSemestre()) {
-                return sl.getId_semestre_letivo(); // <-- Ajuste o nome do getter se na sua entidade for diferente
-            }
-        }
-        return null;
-    }
-    private void descobrirIdDisciplina() {
-        String disciplinaSelecionada = cbDisciplina.getValue();
-        if (disciplinaSelecionada == null || listaD == null) return;
-
-        // Busca o objeto Disciplina correspondente ao texto selecionado no ComboBox
-        Disciplina disciplina = listaD.stream()
-                .filter(d -> d.getNome().equals(disciplinaSelecionada))
-                .findFirst()
-                .orElse(null);
-
-        // Se achou a disciplina e a tela atual ativa for a de Temas, envia os dados
-        if (disciplina != null && controllerAtivo instanceof ProfTemasController) {
-            ProfTemasController telaTemas = (ProfTemasController) controllerAtivo;
-
-            Integer idSemestre = descobrirIdSemestreLetivoAtivo();
-            telaTemas.setDadosIniciais(disciplina.getId_disciplina(), idSemestre);
-        }
-    }
 }
