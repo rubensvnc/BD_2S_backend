@@ -74,6 +74,7 @@ public class ProfTemasController {
                 (obs, velho, novo) -> {
             if (novo != null) {
                 this.idDisciplinaAtual = novo;
+                carregarTemas();
             }
         });
 
@@ -96,7 +97,6 @@ public class ProfTemasController {
         configurarSpinners();
         configurarTabela();
         configurarListViews();
-        carregarTemas();
 
         tabelaTemas.getSelectionModel()
                 .selectedItemProperty()
