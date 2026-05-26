@@ -4,16 +4,19 @@ import javafx.beans.property.SimpleStringProperty;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
+import javafx.util.StringConverter;
 import org.example.demo3.UsuarioAtual;
 import org.example.demo3.dao.DependenciaTemaDAO;
 import org.example.demo3.dao.SemestreLetivoDAO;
 import org.example.demo3.dao.TemaDAO;
 import org.example.demo3.entity.DependenciaTema;
+import org.example.demo3.entity.SemestreLetivo;
 import org.example.demo3.entity.Tema;
 
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 public class ProfTemasController {
 
@@ -70,33 +73,47 @@ public class ProfTemasController {
 
     @FXML
     public void initialize() {
-        logado.idDisciplinaProperty().addListener(
-                (obs, velho, novo) -> {
+
+        // ── NOVO: captura os valores já selecionados antes de registrar os listeners ──
+        this.idDisciplinaAtual = logado.getIdDisciplina();
+        this.anoAtual          = logado.getAno();
+        this.anoSemestre       = logado.getAnoSemestre();
+
+        if (this.anoAtual != null && this.anoSemestre != null) {
+            try {
+                SemestreLetivoDAO slDao = new SemestreLetivoDAO();
+                this.idSemestreAtual = slDao.getIdSemestreLetivo(this.anoAtual, this.anoSemestre);
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+        }
+        // ────────────────────────────────────────────────────────────────────────────
+
+        logado.idDisciplinaProperty().addListener((obs, velho, novo) -> {
             if (novo != null) {
                 this.idDisciplinaAtual = novo;
                 carregarTemas();
             }
         });
 
-        logado.anoProperty().addListener(
-                (obs, velho, novo) -> {
-                    if (novo != null) {
-                        this.anoAtual = novo;
-                        atualizarIdSemestreLetivo();
-                    }
-                });
+        logado.anoProperty().addListener((obs, velho, novo) -> {
+            if (novo != null) {
+                this.anoAtual = novo;
+                atualizarIdSemestreLetivo();
+            }
+        });
 
-        logado.anoSemestreProperty().addListener(
-                (obs, velho, novo) -> {
-                    if (novo != null) {
-                        this.anoSemestre = novo;
-                        atualizarIdSemestreLetivo();
-                    }
-                });
+        logado.anoSemestreProperty().addListener((obs, velho, novo) -> {
+            if (novo != null) {
+                this.anoSemestre = novo;
+                atualizarIdSemestreLetivo();
+            }
+        });
 
         configurarSpinners();
         configurarTabela();
         configurarListViews();
+        carregarTemas(); // agora já tem idDisciplinaAtual e idSemestreAtual populados
 
         tabelaTemas.getSelectionModel()
                 .selectedItemProperty()
@@ -459,4 +476,127 @@ public class ProfTemasController {
         alerta.setContentText(mensagem);
         alerta.showAndWait();
     }
+
+
+
+    @FXML
+    private void handleImportarTemas() {
+        //OBSERVA SE A DISCIPLINA JÁ FOI SELECIONADA NA TELA PRINCIPAL.
+        if (idDisciplinaAtual == null || idSemestreAtual == null) {
+            exibirAlerta(Alert.AlertType.ERROR, "Erro", "Selecione uma disciplina antes de importar temas.");
+            return;
+        }
+
+        //BLOQUEIA A IMPORTAÇÃO SE A TABELA (ATUAL) ESTIVER COM TEMAS JÁ INSERIDOS.
+        List<Tema> temasAtuais = temaDAO.listarTemasPorDisciplinaESemestre(idDisciplinaAtual, idSemestreAtual);
+        if (!temasAtuais.isEmpty()) {
+            exibirAlerta(Alert.AlertType.WARNING, "Importação bloqueada",
+                    "A importação só é permitida quando não há nenhum tema cadastrado neste semestre.");
+            return;
+        }
+
+        //BUSCA OS SEMESTRES ANTERIORES DO PROFESSOR (IGNORANDO O SEMESTRE ATUAL)
+        List<SemestreLetivo> semestresDisponiveis;
+        try {
+            SemestreLetivoDAO slDao = new SemestreLetivoDAO();
+            semestresDisponiveis = slDao.listarProfessorAnoESemestreAno(logado.getId_usuario());
+
+            // --- NOVO: remove o semestre atual e todos de ano superior ao selecionado ---
+            semestresDisponiveis.removeIf(s ->
+                    s.getId_semestre_letivo() == idSemestreAtual ||
+                            s.getAno() > anoAtual
+            );
+
+        } catch (SQLException e) {
+            exibirAlerta(Alert.AlertType.ERROR, "Erro", "Falha ao carregar semestres letivos.");
+            e.printStackTrace();
+            return;
+        }
+
+        if (semestresDisponiveis.isEmpty()) {
+            exibirAlerta(Alert.AlertType.INFORMATION, "Sem semestres",
+                    "Não há semestres anteriores disponíveis para importação.");
+            return;
+        }
+
+        //To String PARA EXIBIÇÃO
+        StringConverter<SemestreLetivo> converter = new StringConverter<>() {
+            @Override
+            public String toString(SemestreLetivo sl) {
+                if (sl == null) return "";
+                return sl.getAno() + " - " + sl.getNumero_semestre() + "º semestre";
+            }
+            @Override
+            public SemestreLetivo fromString(String s) { return null; }
+        };
+
+        //DIALOG PARA ESCOLHER O SEMESTRE
+        ChoiceDialog<SemestreLetivo> dialog = new ChoiceDialog<>(semestresDisponiveis.get(0), semestresDisponiveis);
+        dialog.setTitle("Importar Temas");
+        dialog.setHeaderText("Selecione o semestre de origem:");
+        dialog.setContentText("Semestre:");
+
+        ComboBox<SemestreLetivo> comboBox = (ComboBox<SemestreLetivo>)
+                dialog.getDialogPane().lookup(".combo-box");
+        if (comboBox != null) {
+            comboBox.setConverter(converter);
+        }
+
+        Optional<SemestreLetivo> escolha = dialog.showAndWait();
+        if (escolha.isEmpty()) return;
+
+        SemestreLetivo semestreOrigem = escolha.get();
+
+        //BUSCA OS TEMAS DO SEMESTRE ESCOLHIDO NO TEMADAO.
+        List<Tema> temasOrigem = temaDAO.listarTemasPorDisciplinaESemestre(
+                idDisciplinaAtual, semestreOrigem.getId_semestre_letivo()
+        );
+
+        if (temasOrigem.isEmpty()) {
+            exibirAlerta(Alert.AlertType.WARNING, "Sem temas",
+                    "Não há temas cadastrados para esta disciplina no semestre selecionado.");
+            return;
+        }
+
+        //POP UP DE CONFIRMAÇÃO
+        Alert confirmacao = new Alert(Alert.AlertType.CONFIRMATION);
+        confirmacao.setTitle("Confirmar importação");
+        confirmacao.setHeaderText(null);
+        confirmacao.setContentText(
+                "Serão importados " + temasOrigem.size() + " tema(s) de \"" +
+                        converter.toString(semestreOrigem) + "\".\nDeseja continuar?"
+        );
+        Optional<ButtonType> resposta = confirmacao.showAndWait();
+        if (resposta.isEmpty() || resposta.get() != ButtonType.OK) return;
+
+        //INSERE OS TEMAS IMPORTADOS NA TABELA (QUE DEVE ESTAR VAZIA)
+        int importados = 0;
+
+        for (Tema original : temasOrigem) {
+            Tema novo = new Tema();
+            novo.setDisciplina_id(idDisciplinaAtual);
+            novo.setSemestre_letivo_id(idSemestreAtual);
+            novo.setNome(original.getNome());
+            novo.setQtd_min_aulas(original.getQtd_min_aulas());
+            novo.setQtd_max_aulas(original.getQtd_max_aulas());
+            novo.setPrioridade(original.getPrioridade());
+            novo.setEh_avaliacao(original.getEh_avaliacao());
+            novo.setEh_opcional(original.getEh_opcional());
+
+            try {
+                temaDAO.inserirTemaRetornandoId(novo);
+                importados++;
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+
+        //ATUALIZA A TABELA E MOSTRA A MENSAGEM
+        carregarTemas();
+        exibirAlerta(Alert.AlertType.INFORMATION, "Importação concluída",
+                importados + " tema(s) importado(s) com sucesso.");
+    }
+
+
+
 }
