@@ -5,7 +5,9 @@ import org.example.demo3.entity.Planejamento;
 
 import java.sql.*;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class PlanejamentoDAO {
 
@@ -13,6 +15,64 @@ public class PlanejamentoDAO {
 
     public PlanejamentoDAO() {
         this.connection = DatabaseConnection.getConnection();
+    }
+
+    public static Map<String, Object> obterEstatisticasGlobais(int ano, int semestreAno,
+                                                                Integer id_curso, Integer id_disciplina,
+                                                                Integer idProfessor) {
+        Map<String, Object> metricas = new HashMap<>();
+
+        String sql = """
+            SELECT 
+                COUNT(sp.id_slot_planejamento) AS total_aulas,
+                SUM(CASE WHEN sp.status = 'ministrada' THEN 1 ELSE 0 END) AS ministradas,
+                SUM(CASE WHEN sp.status = 'nao_ministrada' THEN 1 ELSE 0 END) AS pendentes,
+                SUM(CASE WHEN sp.status LIKE 'cancelada%' THEN 1 ELSE 0 END) AS canceladas,
+                IFNULL(d.carga_horaria_minima, 0) AS ch_minima,
+                COUNT(DISTINCT sp.tema_id) AS total_temas
+            FROM slot_planejamento sp
+            INNER JOIN planejamento p ON sp.planejamento_id = p.id_planejamento
+            INNER JOIN atribuicao_professor ap ON p.atribuicao_professor_id = ap.id_atribuicao_professor
+            INNER JOIN semestre_letivo sl ON ap.semestre_letivo_id = sl.id_semestre_letivo
+            INNER JOIN disciplina d ON ap.disciplina_id = d.id_disciplina
+            INNER JOIN curso c ON d.curso_id = c.id_curso
+            WHERE sl.ano = ? AND sl.numero_semestre = ? AND c.id_curso = ? AND d.id_disciplina = ? AND ap.professor_id = ?
+            GROUP BY d.carga_horaria_minima;
+            """;
+
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            ps.setInt(1, ano);
+            ps.setInt(2, semestreAno);
+            ps.setInt(3, id_curso);
+            ps.setInt(4, id_disciplina);
+            ps.setInt(5, idProfessor);
+
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    metricas.put("totalAulas", rs.getInt("total_aulas"));
+                    metricas.put("ministradas", rs.getInt("ministradas"));
+                    metricas.put("pendentes", rs.getInt("pendentes"));
+                    metricas.put("canceladas", rs.getInt("canceladas"));
+                    metricas.put("chMinima", rs.getInt("ch_minima"));
+                    metricas.put("totalTemas", rs.getInt("total_temas"));
+                    return metricas;
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        } finally {
+            DatabaseConnection.closeConnection();
+        }
+
+        metricas.put("totalAulas", 0);
+        metricas.put("ministradas", 0);
+        metricas.put("pendentes", 0);
+        metricas.put("canceladas", 0);
+        metricas.put("chMinima", 0);
+        metricas.put("totalTemas", 0);
+        return metricas;
     }
 
 
