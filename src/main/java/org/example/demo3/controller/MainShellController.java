@@ -11,6 +11,9 @@ import javafx.scene.control.Label;
 import javafx.scene.control.ToggleButton;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
+import javafx.stage.Stage;
+import javafx.scene.Scene;
+import javafx.scene.Node;
 import org.example.demo3.DatabaseConnection;
 import org.example.demo3.UsuarioAtual;
 import org.example.demo3.dao.CursoDAO;
@@ -251,7 +254,22 @@ public class MainShellController {
         descobrirIdDisciplina();
     }
 
-    @FXML void handleLogout() {}
+    @FXML void handleLogout(ActionEvent event) {
+        System.out.println("Botão clicado");
+        try{
+            Parent root = FXMLLoader.load(getClass().getResource("/login.fxml"));
+
+            Stage stage = (Stage) ((Node) event.getSource())
+                    .getScene()
+                    .getWindow();
+
+            Scene scene = new Scene(root);
+            stage.setScene(scene);
+            stage.show();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
     @FXML void navCalendario() { carregarConteudo("/adm_calendario_bloqueios.fxml"); }
     @FXML void navCursosHorarios() { carregarConteudo("/adm_cursos_horarios.fxml"); }
     @FXML void navCoordenaodresAdms() { carregarConteudo("/adm_coordenadores_adms.fxml"); }
