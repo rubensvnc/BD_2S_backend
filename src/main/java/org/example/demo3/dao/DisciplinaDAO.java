@@ -16,13 +16,13 @@ public class DisciplinaDAO {
         this.connection = DatabaseConnection.getConnection();
     }
 
-    public List<Disciplina> listarDisciplinasCurso(int professorId, int ano, int semestreAno, String cursoNome) throws SQLException {
+    public List<Disciplina> listarDisciplinasCurso(int professorId, int ano, int semestreAno, Integer id_curso) throws SQLException {
         String sql = """
             SELECT DISTINCT d.id_disciplina, d.semestre_curso, d.nome FROM atribuicao_professor 
             AS ap INNER JOIN semestre_letivo AS sl ON sl.id_semestre_letivo = ap.semestre_letivo_id 
             INNER JOIN disciplina AS d ON ap.disciplina_id = d.id_disciplina 
             INNER JOIN curso AS c ON d.curso_id = c.id_curso WHERE ap.professor_id = ? 
-            AND sl.ano = ? AND sl.numero_semestre = ? AND c.nome = ?
+            AND sl.ano = ? AND sl.numero_semestre = ? AND c.id_curso = ?
         """;
         Connection conn = null;
         PreparedStatement ps = null;
@@ -35,7 +35,7 @@ public class DisciplinaDAO {
             ps.setInt(1, professorId);
             ps.setInt(2, ano);
             ps.setInt(3, semestreAno);
-            ps.setString(4, cursoNome);
+            ps.setInt(4, id_curso);
 
             rs = ps.executeQuery();
             while (rs.next()) {
