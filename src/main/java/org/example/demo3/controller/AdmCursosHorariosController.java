@@ -26,7 +26,7 @@ public class AdmCursosHorariosController {
     @FXML private Spinner<Integer> spQtdSemestres;
     @FXML private ComboBox<String> cbProfessorCurso;
     @FXML private TitledPane painelFormCurso;
-    @FXML private CheckBox checkUsarProfessor;
+    @FXML private CheckBox checkUsarCadastroProfessor;
     @FXML private TableView<Curso> tabelaCursos;
     @FXML private Label lblTituloHorarios;
     @FXML private Button btnSalvarCurso;
@@ -39,9 +39,9 @@ public class AdmCursosHorariosController {
     @FXML private TableColumn<TemplateHorarioTurno, Void> colHAcao;
 
     private UsuarioAtual logado = UsuarioAtual.getInstancia();
+    private Integer ano;
+    private Integer anoSemestre;
 
-    private Integer anoAntes = 0;
-    private Integer anoSemestreAntes = 0;
     private Integer idCursoProcessando;
     private Integer idSemestreLetivoProcessando;
     private List<TemplateHorarioTurno> thtProcessando;
@@ -57,7 +57,23 @@ public class AdmCursosHorariosController {
 
     @FXML
     public void initialize(){
+
         logado.usuarioAdm();
+
+        logado.anoProperty().addListener(
+                (obs, velho, novo) -> {
+                    if (novo != null) {
+                        this.ano = novo;
+                    }
+                });
+
+        logado.anoSemestreProperty().addListener(
+                (obs, velho, novo) -> {
+                    if (novo != null) {
+                        this.anoSemestre = novo;
+                    }
+                });
+
         cbProfessorCurso.setDisable(true);
 
         colHTipo.setCellValueFactory(new PropertyValueFactory<>("tipo"));
@@ -92,7 +108,7 @@ public class AdmCursosHorariosController {
                 cDAO.deletarCursoProcessando(idCursoProcessando);
 
                 System.out.println(cbProfessorCurso.getValue());
-                if (checkUsarProfessor.isSelected() && idProfessorSelecionado != null) {
+                if (checkUsarCadastroProfessor.isSelected() && idProfessorSelecionado != null) {
                     utDao.removerUsuarioTipo(cbProfessorCurso.getValue(), "COORD");
                 }
 
@@ -111,25 +127,19 @@ public class AdmCursosHorariosController {
     }
 
     @FXML
-    public void usarProfessor(){
-        if (checkUsarProfessor.isSelected()){
+    public void usarCadastroProfessor(){
+        if (checkUsarCadastroProfessor.isSelected()){
             cbProfessorCurso.setDisable(false);
-            fillComboboxProfessor();
+            carregarProfs();
         } else {
             cbProfessorCurso.setDisable(true);
-        }
-    }
-
-    public void fillComboboxProfessor() {
-        if (!profsCarregados || !anoAntes.equals(logado.getAno()) || !anoSemestreAntes.equals(logado.getAnoSemestre())) {
-            carregarProfs();
         }
     }
 
     private void carregarProfs() {
         try {
             UsuarioDAO uDao = new UsuarioDAO();
-            List<Usuario> profs = uDao.listarProfSemestreLetivo(logado.getAno(), logado.getAnoSemestre());
+            List<Usuario> profs = uDao.listarProfSemestreLetivo(this.ano, this.anoSemestre);
 
             mapaProfessores.clear();
             ObservableList<String> opcoesProfs = FXCollections.observableArrayList();
@@ -141,8 +151,6 @@ public class AdmCursosHorariosController {
 
             // Atualiza controle
             profsCarregados = true;
-            anoAntes = logado.getAno();
-            anoSemestreAntes = logado.getAnoSemestre();
         } catch (SQLException e) {
             e.printStackTrace();
         }
@@ -150,7 +158,7 @@ public class AdmCursosHorariosController {
 
     @FXML
     public void handleSelecaoProfessor(){
-        if (checkUsarProfessor.isSelected()){
+        if (checkUsarCadastroProfessor.isSelected()){
             String emailSelecionado = cbProfessorCurso.getValue();
             if (emailSelecionado != null) {
                 this.idProfessorSelecionado = mapaProfessores.get(emailSelecionado);
@@ -165,11 +173,11 @@ public class AdmCursosHorariosController {
         tbManha.setDisable(estado);
         tbNoite.setDisable(estado);
         spQtdSemestres.setDisable(estado);
-        checkUsarProfessor.setDisable(estado);
-        if (checkUsarProfessor.isSelected()){
-            cbProfessorCurso.setDisable(true);
-        } else {
+        checkUsarCadastroProfessor.setDisable(estado);
+        if (checkUsarCadastroProfessor.isSelected()){
             cbProfessorCurso.setDisable(false);
+        } else {
+            cbProfessorCurso.setDisable(true);
         }
 
     }
@@ -188,7 +196,7 @@ public class AdmCursosHorariosController {
 
         try {
             CursoDAO cDao = new CursoDAO();
-            if (checkUsarProfessor.isSelected()){
+            if (checkUsarCadastroProfessor.isSelected()){
                 UsuarioTipoDAO utDao = new UsuarioTipoDAO();
 
                 utDao.inserirUsuarioTipo(new UsuarioTipo(idProfessorSelecionado, "COORD"));
