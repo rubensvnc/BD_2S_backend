@@ -86,7 +86,7 @@
 
                         <Label text="Professor:" GridPane.columnIndex="0" GridPane.rowIndex="3" />
                         <VBox GridPane.columnIndex="1" GridPane.hgrow="ALWAYS" GridPane.rowIndex="3">
-                            <CheckBox fx:id="checkUsarProfessor" mnemonicParsing="false" onAction="#usarProfessor" text="atribuir a Professor" />
+                            <CheckBox fx:id="checkUsarCadastroProfessor" mnemonicParsing="false" onAction="#usarCadastroProfessor" text="atribuir a Professor" />
                             <ComboBox fx:id="cbProfessorCurso" maxWidth="Infinity" onAction="#handleSelecaoProfessor" promptText="Selecione o professor" />
                             <Label fx:id="errProfessorCurso" managed="false" styleClass="error-label" visible="false" />
                         </VBox>
@@ -95,7 +95,7 @@
                             <Button onAction="#handleCancelarCurso" text="Cancelar" />
                             <Button fx:id="btnSalvarCurso" onAction="#handleSalvarCurso" style="-fx-background-color: #2980b9; -fx-text-fill: white;" text="Salvar Curso" />
                         </HBox>
-                        <Label fx:id="lblProcessoSalvarCurso" text="Para poder editar quaisquer valores, pressione 'Cancelar' ou pressione 'Salvar Horários'." GridPane.columnSpan="2" textFill="RED" visible="false" managed="false" GridPane.columnIndex="0" GridPane.rowIndex="5" />
+                        <Label fx:id="lblProcessoSalvarCurso" managed="false" text="Para poder editar quaisquer valores, pressione 'Cancelar' ou pressione 'Salvar Horários'." textFill="RED" visible="false" GridPane.columnIndex="0" GridPane.columnSpan="2" GridPane.rowIndex="5" />
                         <columnConstraints>
                             <ColumnConstraints />
                             <ColumnConstraints hgrow="ALWAYS" />
