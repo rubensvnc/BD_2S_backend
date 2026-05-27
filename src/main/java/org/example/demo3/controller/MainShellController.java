@@ -90,13 +90,6 @@ public class MainShellController {
         }
     }
 
-    private void configurarPreValoresSemestreCurso(){
-        processarDadosAnos();
-        popularComboBoxAnos();
-        cbAno.setValue(listaSl.getLast().getAno().toString());
-        logado.setAno(Integer.parseInt(cbAno.getValue()));
-    }
-
     private void configurarPreValoresCursos(){
         try {
             CursoDAO cDAO = new CursoDAO();
@@ -309,8 +302,10 @@ public class MainShellController {
         Object ativador = event.getSource();
         if (ativador == tbSem1){
             logado.setAnoSemestre(1);
+            tbSem2.setSelected(false);
         } else {
             logado.setAnoSemestre(2);
+            tbSem1.setSelected(false);
         }
 
         processarDadosCursos();
@@ -318,27 +313,35 @@ public class MainShellController {
 
     @FXML
     public void handleTrocaCurso(){
-        try {
-            CursoDAO cDAO = new CursoDAO();
-            logado.setIdCurso(cDAO.listarIdCurso(cbCurso.getValue()));
-        } catch (SQLException e){
-            e.printStackTrace();
+        String cursoSelecionado = cbCurso.getValue();
+        if (cursoSelecionado != null) {
+            try {
+                CursoDAO cDAO = new CursoDAO();
+                logado.setIdCurso(cDAO.listarIdCurso(cursoSelecionado));
+                processarDadosCursoSemestresEDisciplinas();
+            } catch (SQLException e){
+                e.printStackTrace();
+            }
         }
-
-        processarDadosCursoSemestresEDisciplinas();
     }
 
     @FXML
     public void handleTrocaSemestreCurso(){
-        logado.setSemestreCurso(Integer.parseInt(cbSemestreCurso.getValue()));
+        String valor = cbSemestreCurso.getValue();
 
-        popularComboboxDisciplinas();
+        if (valor != null && !valor.isEmpty()) {
+            logado.setSemestreCurso(Integer.parseInt(valor));
+            popularComboboxDisciplinas();
+        }
     }
 
     @FXML
     public void handleTrocaDisciplina(){
         int index = cbDisciplina.getSelectionModel().getSelectedIndex();
-        logado.setIdDisciplina(ordemIdDisciplinas.get(index));
+
+        if (index >= 0 && index < ordemIdDisciplinas.size()) {
+            logado.setIdDisciplina(ordemIdDisciplinas.get(index));
+        }
     }
 
     @FXML void handleLogout(ActionEvent event) {
