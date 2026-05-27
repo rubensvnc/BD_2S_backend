@@ -1,6 +1,7 @@
 package org.example.demo3.dao;
 
 import org.example.demo3.DatabaseConnection;
+import org.example.demo3.dto.AdmCursoExibicao;
 import org.example.demo3.entity.Curso;
 import java.sql.*;
 import java.util.ArrayList;
@@ -27,20 +28,53 @@ public class CursoDAO {
         return null;
     }
 
-    public Curso buscarCursoCoordenador(int coordenadorId) throws SQLException {
-        String sql = "SELECT nome FROM curso WHERE coordenador_id = ?;";
-        Curso c = new Curso();
+    public List<AdmCursoExibicao> listarCursosDTO(Integer ano, Integer semestreAno) throws SQLException{
+        String sql = """
+            SELECT DISTINCT c.nome, c.turno, c.qtd_semestres, u.nome 
+            FROM curso AS c INNER JOIN usuario AS u ON c.coordenador_id = u.id_usuario 
+            INNER JOIN horario_curso AS hc ON hc.curso_id = c.id_curso 
+            INNER JOIN semestre_letivo AS sl ON 
+            sl.id_semestre_letivo = hc.semestre_letivo_id 
+            WHERE sl.ano = ? AND sl.numero_semestre = ?;
+        """;
 
+        List<AdmCursoExibicao> listaCDto = new ArrayList<>();
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, ano);
+            ps.setInt(2, semestreAno);
+
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    AdmCursoExibicao cDto = new AdmCursoExibicao(
+                            rs.getString("c.nome"),
+                            rs.getString("c.turno"),
+                            rs.getInt("c.qtd_semestres"),
+                            rs.getString("u.nome")
+                    );
+                    listaCDto.add(cDto);
+                }
+            }
+        }
+        return listaCDto;
+    }
+
+    public List<Curso> buscarCursoCoordenador(int coordenadorId) throws SQLException {
+        String sql = "SELECT nome FROM curso WHERE coordenador_id = ?;";
+
+        List<Curso> listaC = new ArrayList<>();
         try (Connection conn = DatabaseConnection.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1, coordenadorId);
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
+                    Curso c = new Curso();
                     c.setNome(rs.getString("nome"));
+                    listaC.add(c);
                 }
             }
         }
-        return c;
+        return listaC;
     }
 
     public void removerCoordenadorDeCurso(Integer idCurso) throws SQLException {
