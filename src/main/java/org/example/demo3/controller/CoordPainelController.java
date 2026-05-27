@@ -115,7 +115,9 @@ public class CoordPainelController {
         colDiscCH.setCellValueFactory(new PropertyValueFactory<>("carga_horaria_minima"));
         colDiscProf.setCellValueFactory(new PropertyValueFactory<>("nome"));
     }
-    private void configurarSpinnerDisciplina() {spDiscCH.getValueFactory(new SpinnerValueFactory.IntegerSpinnerValueFactory(1, 999, 1));
+    private void configurarSpinnerDisciplina() {
+        spDiscCH.setValueFactory(
+                new SpinnerValueFactory.IntegerSpinnerValueFactory(1, 999, 1));
     }
 
 
