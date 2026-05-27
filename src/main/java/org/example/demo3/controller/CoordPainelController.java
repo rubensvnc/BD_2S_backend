@@ -75,7 +75,12 @@ public class CoordPainelController {
 
     @FXML
     private void handleLimparDisc() {
-        // TODO: Limpar todos os campos do formulário de disciplinas
+        if (disciplinaSelecionadaTabela == null) {
+            lblTituloFormDisc.setText("Nova Disciplina");
+        }
+        tfDiscNome.clear();
+        cbDiscSemestreCurso.getSelectionModel().clearSelection();
+        spDiscCH.getValueFactory().setValue(1);
     }
 
     @FXML
@@ -150,6 +155,10 @@ public class CoordPainelController {
         disciplinaSelecionadaTabela = null;
         lblTituloFormDisc.setText("Nova Disciplina");
         limparCamposDisc();
+    }
+
+    private void handleDeletarDisciplina() {
+
     }
 
     @FXML
@@ -232,7 +241,7 @@ public class CoordPainelController {
     }
     private void configurarSpinnerDisciplina() {
         spDiscCH.setValueFactory(
-                new SpinnerValueFactory.IntegerSpinnerValueFactory(1, 999, 1));
+                new SpinnerValueFactory.IntegerSpinnerValueFactory(80, 999, 80));
     }
     private void limparCamposDisc() {
         tfDiscNome.clear();
