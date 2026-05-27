@@ -59,94 +59,221 @@ public class MainShellController {
     UsuarioAtual logado = UsuarioAtual.getInstancia();
 
     @FXML
-    public void initialize(){
+    public void initialize() {
+        configurarResetInicial();
+
+        // Simulação de login
+        logado.setId_usuario(1);
+        logado.setTipo("ADM");
+
+        configurarInterfacePorPerfil(logado.getTipo());
+        configurarValoresPreProgramados();
+        processarDadosAnos();
+    }
+
+    private void configurarPreValoresAnos(){
+        processarDadosAnos();
+        popularComboBoxAnos();
+        cbAno.setValue(listaSl.getLast().getAno().toString());
+        logado.setAno(Integer.parseInt(cbAno.getValue()));
+    }
+
+    private void configurarPreValoresAnoSemestre(){
+        if (listaSl.getLast().getNumero_semestre().equals(1)){
+            tbSem1.setDisable(false);
+            tbSem1.setSelected(true);
+            logado.setAnoSemestre(1);
+        } else {
+            tbSem2.setDisable(false);
+            tbSem2.setSelected(true);
+            logado.setAnoSemestre(2);
+        }
+    }
+
+    private void configurarPreValoresSemestreCurso(){
+        processarDadosAnos();
+        popularComboBoxAnos();
+        cbAno.setValue(listaSl.getLast().getAno().toString());
+        logado.setAno(Integer.parseInt(cbAno.getValue()));
+    }
+
+    private void configurarPreValoresCursos(){
+        try {
+            CursoDAO cDAO = new CursoDAO();
+
+            processarDadosCursos();
+            popularComboboxCursos();
+            cbCurso.setValue(listaCursos.getLast().getNome());
+            logado.setIdCurso(cDAO.listarIdCurso(cbCurso.getValue()));
+
+        } catch (SQLException e){
+            e.printStackTrace();
+        }
+    }
+
+    private void configurarPreValoresCursoSemestresEDisciplinas(){
+        int index;
+
+        processarDadosCursoSemestresEDisciplinas();
+        popularComboboxCursoSemestres();
+        cbSemestreCurso.setValue(listaD.getLast().getSemestre_curso().toString());
+        logado.setSemestreCurso(Integer.parseInt(cbSemestreCurso.getValue()));
+        popularComboboxDisciplinas();
+        cbDisciplina.setValue(listaD.getLast().getNome());
+
+        index = cbDisciplina.getSelectionModel().getSelectedIndex();
+        logado.setIdDisciplina(ordemIdDisciplinas.get(index));
+    }
+
+
+    private void configurarValoresPreProgramados(){
+        configurarPreValoresAnos();
+        configurarPreValoresAnoSemestre();
+
+        if (logado.getTipo().equals("PROF")){
+            configurarPreValoresCursos();
+            configurarPreValoresCursoSemestresEDisciplinas();
+        }
+
+    }
+
+    private void configurarResetInicial() {
         tbSem1.setDisable(true);
         tbSem2.setDisable(true);
+    }
 
-        logado.setId_usuario(4);
-        logado.setTipo("PROF");
+    private void configurarInterfacePorPerfil(String tipo) {
+        esconderTodasSecoes();
 
-        ObservableList<String> opcoesAno = FXCollections.observableArrayList();
-        SemestreLetivoDAO slDao = new SemestreLetivoDAO();
-
-        if (logado.getTipo() == "PROF"){
+        if ("PROF".equals(tipo)) {
             carregarConteudo("/prof_temas.fxml");
-            secaoProfessor.setVisible(true);
-            secaoProfessor.setManaged(true);
+            exibirSecao(secaoProfessor);
+        } else if ("COORD".equals(tipo)) {
+            carregarConteudo("/coord_painel.fxml");
+            exibirSecao(secaoCoordenador);
+            configurarVisibilidadeFiltros(false);
+        } else if ("ADM".equals(tipo)) {
+            carregarConteudo("/adm_cursos_horarios.fxml");
+            exibirSecao(secaoAdm);
+            configurarVisibilidadeFiltros(false);
+        }
+    }
 
-            try{
-                listaSl = slDao.listarProfessorAnoESemestreAno(logado.getId_usuario());
-                for (SemestreLetivo sl: listaSl){
-                    String anoStr = sl.getAno().toString();
-                    if (!opcoesAno.contains(anoStr)) {
-                        opcoesAno.add(anoStr);
-                    }
-                }
-                cbAno.setItems(opcoesAno);
+    private void processarDadosAnos() {
+        SemestreLetivoDAO slDao = new SemestreLetivoDAO();
+        try {
+            listaSl = switch (logado.getTipo()) {
+                case "PROF" -> slDao.listarProfessorAnoESemestreAno(logado.getId_usuario());
+                case "COORD" -> slDao.listarCoordenadorAnoESemestreAno(logado.getId_usuario());
+                case "ADM" -> slDao.listarAdmsAnoESemestreAno();
+                default -> new ArrayList<>();
+            };
 
-            } catch (SQLException e){
-                e.printStackTrace();
+            if (listaSl != null && !listaSl.isEmpty()) {
+                popularComboBoxAnos();
             }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
 
-        } else {
-            if (logado.getTipo() == "COORD") {
-                carregarConteudo("/coord_painel.fxml");
-                secaoCoordenador.setVisible(true);
-                secaoCoordenador.setManaged(true);
-                lblSemestreCurso.setVisible(false);
-                lblSemestreCurso.setManaged(false);
-                cbSemestreCurso.setVisible(false);
-                cbSemestreCurso.setManaged(false);
-                lblDisciplina.setVisible(false);
-                lblDisciplina.setManaged(false);
-                cbDisciplina.setVisible(false);
-                cbDisciplina.setManaged(false);
+    private void processarDadosCursos(){
+        CursoDAO cDao = new CursoDAO();
+        try {
+            listaCursos = cDao.listarCursosProfessor(
+                    logado.getId_usuario(), logado.getAno(), logado.getAnoSemestre());
 
-                try{
-                    listaSl = slDao.listarCoordenadorAnoESemestreAno(logado.getId_usuario());
-                    for (SemestreLetivo sl: listaSl){
-                        if (!opcoesAno.contains(sl.getAno().toString())){
-                            opcoesAno.add(sl.getAno().toString());
-                        }
-                    }
-                    cbAno.setItems(opcoesAno);
+            if (listaCursos != null && !listaCursos.isEmpty()) {
+                popularComboboxCursos();
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
 
-                } catch (SQLException e){
-                    e.printStackTrace();
-                }
+    private void processarDadosCursoSemestresEDisciplinas(){
+        DisciplinaDAO dDao = new DisciplinaDAO();
+        try{
+            listaD = dDao.listarDisciplinasCurso(
+                    logado.getId_usuario(), logado.getAno(),
+                    logado.getAnoSemestre(), logado.getIdCurso());
 
-            } else {
-                carregarConteudo("/adm_cursos_horarios.fxml");
-                secaoAdm.setVisible(true);
-                secaoAdm.setManaged(true);
+            if (listaD != null && !listaD.isEmpty()) {
+                popularComboboxCursoSemestres();
+            }
+        } catch (SQLException e){
+            e.printStackTrace();
+        }
+    }
 
-                lblCurso.setVisible(false);
-                lblCurso.setManaged(false);
-                cbCurso.setVisible(false);
-                cbCurso.setManaged(false);
-                lblSemestreCurso.setVisible(false);
-                lblSemestreCurso.setManaged(false);
-                cbSemestreCurso.setVisible(false);
-                cbSemestreCurso.setManaged(false);
-                lblDisciplina.setVisible(false);
-                lblDisciplina.setManaged(false);
-                cbDisciplina.setVisible(false);
-                cbDisciplina.setManaged(false);
 
-                try{
-                    listaSl = slDao.listarAdmsAnoESemestreAno();
-                    for (SemestreLetivo sl: listaSl){
-                        if (!opcoesAno.contains(sl.getAno().toString())){
-                            opcoesAno.add(sl.getAno().toString());
-                        }
-                    }
-                    cbAno.setItems(opcoesAno);
-
-                } catch (SQLException e){
-                    e.printStackTrace();
-                }
+    private void popularComboBoxAnos() {
+        ObservableList<String> opcoesAno = FXCollections.observableArrayList();
+        for (SemestreLetivo sl : listaSl) {
+            String anoStr = sl.getAno().toString();
+            if (!opcoesAno.contains(anoStr)) {
+                opcoesAno.add(anoStr);
             }
         }
+        cbAno.setItems(opcoesAno);
+    }
+
+    private void popularComboboxCursos(){
+        ObservableList<String> opcoesCurso = FXCollections.observableArrayList();
+        for (Curso c : listaCursos) {
+            opcoesCurso.add(c.getNome());
+        }
+        cbCurso.setItems(opcoesCurso);
+    }
+
+    private void popularComboboxCursoSemestres(){
+        ObservableList<String> opcoesSemestreCurso = FXCollections.observableArrayList();
+        for (Disciplina d: listaD){
+            if (!opcoesSemestreCurso.contains(d.getSemestre_curso().toString())) {
+                opcoesSemestreCurso.add(d.getSemestre_curso().toString());
+            }
+        }
+        cbSemestreCurso.setItems(opcoesSemestreCurso);
+    }
+
+    private void popularComboboxDisciplinas(){
+        ObservableList<String> opcoesDisciplina = FXCollections.observableArrayList();
+        ordemIdDisciplinas.clear();
+
+        for (Disciplina d: listaD){
+            if (d.getSemestre_curso().equals(logado.getSemestreCurso())){
+                opcoesDisciplina.add(d.getNome());
+
+                ordemIdDisciplinas.add(d.getId_disciplina());
+            }
+        }
+        cbDisciplina.setItems(opcoesDisciplina);
+    }
+
+    private void esconderTodasSecoes() {
+        VBox[] secoes = {secaoProfessor, secaoCoordenador, secaoAdm};
+        for (VBox s : secoes) {
+            if (s != null) {
+                s.setVisible(false);
+                s.setManaged(false);
+            }
+        }
+    }
+
+    private void exibirSecao(VBox secao) {
+        secao.setVisible(true);
+        secao.setManaged(true);
+    }
+
+    private void configurarVisibilidadeFiltros(boolean visivel) {
+        lblCurso.setVisible(visivel); lblCurso.setManaged(visivel);
+        cbCurso.setVisible(visivel);  cbCurso.setManaged(visivel);
+
+        lblSemestreCurso.setVisible(visivel); lblSemestreCurso.setManaged(visivel);
+        cbSemestreCurso.setVisible(visivel);  cbSemestreCurso.setManaged(visivel);
+
+        lblDisciplina.setVisible(visivel); lblDisciplina.setManaged(visivel);
+        cbDisciplina.setVisible(visivel);  cbDisciplina.setManaged(visivel);
     }
 
     private void carregarConteudo(String caminhoFxml) {
@@ -163,6 +290,7 @@ public class MainShellController {
     @FXML
     public void handleTrocaAno() {
         logado.setAno(Integer.parseInt(cbAno.getValue()));
+
         tbSem1.setDisable(true);
         tbSem2.setDisable(true);
         for (SemestreLetivo sl: listaSl){
@@ -185,32 +313,7 @@ public class MainShellController {
             logado.setAnoSemestre(2);
         }
 
-        ObservableList<String> opcoesCurso = FXCollections.observableArrayList();
-        CursoDAO cDao = new CursoDAO();
-
-        if (logado.getTipo() == "PROF"){
-            try{
-                listaCursos = cDao.listarCursosProfessor(logado.getId_usuario(), logado.getAno(), logado.getAnoSemestre());
-                for (Curso c: listaCursos){
-                    opcoesCurso.add(c.getNome());
-                }
-                cbCurso.setItems(opcoesCurso);
-
-            } catch (SQLException e){
-                e.printStackTrace();
-            }
-        } else if (logado.getTipo() == "COORD"){
-            try{
-                Curso c = cDao.buscarCursoCoordenador(logado.getId_usuario());
-                listaCursos = new ArrayList<>();
-                listaCursos.add(c);
-                opcoesCurso.add(c.getNome());
-                cbCurso.setItems(opcoesCurso);
-
-            } catch (SQLException e){
-                e.printStackTrace();
-            }
-        }
+        processarDadosCursos();
     }
 
     @FXML
@@ -222,47 +325,20 @@ public class MainShellController {
             e.printStackTrace();
         }
 
-        ObservableList<String> opcoesSemestreCurso = FXCollections.observableArrayList();
-        DisciplinaDAO dDao = new DisciplinaDAO();
-        try{
-            listaD = dDao.listarDisciplinasCurso(logado.getId_usuario(), logado.getAno(), logado.getAnoSemestre(), logado.getIdCurso());
-            for (Disciplina d: listaD){
-                if (!opcoesSemestreCurso.contains(d.getSemestre_curso().toString())) {
-                    opcoesSemestreCurso.add(d.getSemestre_curso().toString());
-                }
-            }
-            cbSemestreCurso.setItems(opcoesSemestreCurso);
-
-        } catch (SQLException e){
-            e.printStackTrace();
-        }
+        processarDadosCursoSemestresEDisciplinas();
     }
 
     @FXML
     public void handleTrocaSemestreCurso(){
         logado.setSemestreCurso(Integer.parseInt(cbSemestreCurso.getValue()));
 
-        ObservableList<String> opcoesDisciplina = FXCollections.observableArrayList();
-
-        ordemIdDisciplinas.clear();
-        for (Disciplina d: listaD){
-            if (d.getSemestre_curso().equals(logado.getSemestreCurso())){
-                opcoesDisciplina.add(d.getNome());
-
-                ordemIdDisciplinas.add(d.getId_disciplina());
-            }
-        }
-        cbDisciplina.setItems(opcoesDisciplina);
+        popularComboboxDisciplinas();
     }
 
     @FXML
     public void handleTrocaDisciplina(){
-        Integer index = cbDisciplina.getSelectionModel().getSelectedIndex();
-        System.out.println("cbDis: "+ index);
+        int index = cbDisciplina.getSelectionModel().getSelectedIndex();
         logado.setIdDisciplina(ordemIdDisciplinas.get(index));
-        System.out.println(ordemIdDisciplinas.toString());
-        System.out.println("Logado: "+logado.getIdDisciplina());
-
     }
 
     @FXML void handleLogout(ActionEvent event) {
@@ -281,6 +357,7 @@ public class MainShellController {
             e.printStackTrace();
         }
     }
+
     @FXML void navCalendario() { carregarConteudo("/adm_calendario_bloqueios.fxml"); }
     @FXML void navCursosHorarios() { carregarConteudo("/adm_cursos_horarios.fxml"); }
     @FXML void navCoordenaodresAdms() { carregarConteudo("/adm_coordenadores_adms.fxml"); }
