@@ -57,7 +57,6 @@ public class AdmCursosHorariosController {
     private String turnoProcessando;
     private Integer qtdSemestresProcessando;
 
-    private Boolean profsCarregados = false;
     private Map<String, Integer> mapaProfessores = new HashMap<>();
     private Integer idProfessorSelecionado;
 
@@ -176,8 +175,6 @@ public class AdmCursosHorariosController {
             }
             cbProfessorCurso.setItems(opcoesProfs);
 
-            // Atualiza controle
-            profsCarregados = true;
         } catch (SQLException e) {
             e.printStackTrace();
         }
