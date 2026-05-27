@@ -1,86 +1,125 @@
 package org.example.demo3.controller;
 
 import javafx.fxml.FXML;
+import javafx.scene.control.*;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.input.MouseEvent;
+import javafx.scene.layout.GridPane;
+import javafx.scene.layout.VBox;
+import org.example.demo3.entity.Disciplina;
+import org.example.demo3.entity.Usuario;
+import org.example.demo3.entity.UsuarioTipo;
+
+import java.awt.event.ActionEvent;
 
 public class CoordPainelController {
 
-    // ═════════════════════════════════════════════════════════════════════════
-    // ABA 1 — DISCIPLINAS
-    // ═════════════════════════════════════════════════════════════════════════
+    //ABA DE DISCIPLINAS
+    @FXML private TableView<Disciplina> tabelaDisciplinas;
+    @FXML private TableColumn<Disciplina, String> colDiscNome;
+    @FXML private TableColumn<Disciplina, Integer> colDiscSemCurso;
+    @FXML private TableColumn<Disciplina, Integer> colDiscCH;
+    @FXML private TableColumn<Disciplina, String> colDiscProf;
+    @FXML private TableColumn<Disciplina, Void> colDiscAcoes;
+    @FXML private Label lblTituloFormDisc;
+    @FXML private TextField tfDiscNome;
+    @FXML private Label errDiscNome;
+    @FXML private ComboBox<Integer> cbDiscSemestreCurso;
+    @FXML private Spinner<Integer> spDiscCH;
+    @FXML private Label lblFeedbackDisc;
+
+    //ABA DE PROFESSORES
+    @FXML private TableView<Usuario> tabelaProfessores;
+    @FXML private TableColumn<Usuario, String> colProfNome;
+    @FXML private TableColumn<Usuario, String> colProfEmail;
+    @FXML private TableColumn<Usuario, Void> colProfAcoes;
+    @FXML private Label lblTituloFormProf;
+    @FXML private Button btnAtribuirMesmo;
+    @FXML private TextField tfProfNome;
+    @FXML private Label errProfNome;
+    @FXML private TextField tfProfEmail;
+    @FXML private Label avisoEmailDup;
+    @FXML private Label errProfEmail;
+    @FXML private PasswordField pfProfSenha;
+    @FXML private Label errProfSenha;
+    @FXML private Label lblFeedbackProf;
+
+    //ABA DE ATRIBUIÇÕES
+    @FXML private ComboBox<Usuario> cbAtribProf;
+    @FXML private ComboBox<Disciplina> cbAtribDisc;
+    @FXML private GridPane gradeAtribuicao;
+    @FXML private Label lblConflito;
+    @FXML private Label lblFeedbackAtrib;
+    @FXML private Button btnSalvarAtrib;
+
+    //PLANEJAMENTOS
+    @FXML private Label lblTituloCoordVisor;
+    @FXML private TabPane tabVisorCoord;
+    @FXML private TreeView<?> treePlanoCoord;
+    @FXML private VBox painelEstatCoord;
 
     @FXML
-    public void handleNovaDisciplina() {
-        // TODO: Lógica para preparar o formulário para uma nova disciplina
+    public void initialize() {
+
+    }
+
+    //MÉTODOS DA ABA DE DISCIPLINAS
+    @FXML
+    void handleNovaDisciplina(ActionEvent event) {
+        // Lógica para preparar formulário de nova disciplina
     }
 
     @FXML
-    public void handleSelecionarDisciplina(MouseEvent event) {
-        // TODO: Lógica para carregar os dados da linha clicada no formulário lateral
+    void handleSelecionarDisciplina(MouseEvent event) {
+        // Lógica ao clicar na tabela (popular campos para edição)
     }
 
     @FXML
-    public void handleLimparDisc() {
-        // TODO: Lógica para limpar os campos do formulário de disciplinas
+    void handleLimparDisc(ActionEvent event) {
+        // Limpar campos de texto e seletores
     }
 
     @FXML
-    public void handleSalvarDisciplina() {
-        // TODO: Lógica para validar e salvar/atualizar a disciplina no banco
+    void handleSalvarDisciplina(ActionEvent event) {
+        // Validar e persistir os dados da disciplina
     }
 
-    // ═════════════════════════════════════════════════════════════════════════
-    // ABA 2 — PROFESSORES
-    // ═════════════════════════════════════════════════════════════════════════
 
-    @FXML
-    public void handleNovoProfessor() {
-        // TODO: Lógica para preparar o formulário para um novo professor
-    }
 
+    //MÉTODOS DA ABA DE PROFESSORES
     @FXML
-    public void handleSelecionarProfessor(MouseEvent event) {
-        // TODO: Lógica para carregar os dados do professor selecionado no formulário
+    void handleNovoProfessor(ActionEvent event) {
+        // Resetar formulário de professor
     }
 
     @FXML
-    public void handleAtribuirMesmo() {
-        // TODO: Lógica para puxar os dados do coordinator logado para o formulário
+    void handleSelecionarProfessor(MouseEvent event) {
+        // Carregar dados do professor selecionado nos campos
     }
 
     @FXML
-    public void handleVerificarEmailProf(KeyEvent event) {
-        // TODO: Lógica executada a cada tecla solta para checar duplicidade de e-mail
+    void handleAtribuirMesmo(ActionEvent event) {
+        // Lógica para usar dados do coordenador atual como professor
     }
 
     @FXML
-    public void handleLimparProf() {
-        // TODO: Lógica para limpar os campos do formulário de professores
+    void handleVerificarEmailProf(KeyEvent event) {
+        // Validação em tempo real (onKeyReleased)
     }
 
     @FXML
-    public void handleSalvarProfessor() {
-        // TODO: Lógica para salvar o novo professor ou atualizar o existente
-    }
-
-    // ═════════════════════════════════════════════════════════════════════════
-    // ABA 3 — ATRIBUIÇÕES
-    // ═════════════════════════════════════════════════════════════════════════
-
-    @FXML
-    public void handleAtribContextChange() {
-        // TODO: Lógica acionada ao mudar o ComboBox de Professor ou Disciplina
-        // Usada para recarregar a grade semanal baseada no novo contexto selecionado
+    void handleLimparProf(ActionEvent event) {
+        // Limpar campos de cadastro de professor
     }
 
     @FXML
-    public void handleLimparGrade() {
-        // TODO: Lógica para desmarcar todos os CheckBoxes da grade semanal
+    void handleSalvarProfessor(ActionEvent event) {
+        // Gravar novo professor ou atualizar existente
     }
 
-    @FXML
-    public void handleSalvarAtribuicao() {
-        // TODO: Lógica para salvar a relação do professor, disciplina e horários marcados
-    }
+
+    //MÉTODOS DE ATRIBUIÇÕES
+
+
+
 }
