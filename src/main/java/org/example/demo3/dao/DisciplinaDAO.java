@@ -172,7 +172,7 @@ public class DisciplinaDAO {
             stmt.setInt(6, disciplina.getId_disciplina());
 
             stmt.executeUpdate();
-            System.out.println("Disciplina atualizada com sucesso!");
+            System.out.println("Disciplina updated com sucesso!");
 
         } catch (SQLException e) {
             System.out.println("Erro ao atualizar disciplina: " + e.getMessage());
@@ -197,5 +197,25 @@ public class DisciplinaDAO {
         } catch (SQLException e) {
             System.out.println("Erro ao remover disciplina: " + e.getMessage());
         }
+    }
+
+
+    public int descobrirIdDisciplinaPorNome(String nomeDisciplina) throws SQLException {
+        String sql = "SELECT id_disciplina FROM disciplina WHERE nome = ? AND deletado_em IS NULL";
+
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            ps.setString(1, nomeDisciplina);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getInt("id_disciplina");
+                }
+            }
+        } catch (SQLException e) {
+            System.err.println("Erro ao descobrir ID da disciplina por nome: " + e.getMessage());
+            throw e;
+        }
+        return 0;
     }
 }
