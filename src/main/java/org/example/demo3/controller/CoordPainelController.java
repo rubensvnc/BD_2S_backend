@@ -2,10 +2,13 @@ package org.example.demo3.controller;
 
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
+import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.VBox;
+import org.example.demo3.UsuarioAtual;
+import org.example.demo3.dao.DisciplinaDAO;
 import org.example.demo3.entity.Disciplina;
 import org.example.demo3.entity.Usuario;
 import org.example.demo3.entity.UsuarioTipo;
@@ -58,8 +61,22 @@ public class CoordPainelController {
     @FXML private TreeView<?> treePlanoCoord;
     @FXML private VBox painelEstatCoord;
 
+    //DAOS
+    DisciplinaDAO disciplinaDAO = new DisciplinaDAO();
+
+    //ATRIBUTOS DE OUTRAS ENTIDADES
+    private UsuarioAtual logado = UsuarioAtual.getInstancia();
+    private Integer anoAtual;
+    private Integer anoSemestre;
+    private Integer idDisciplinaAtual;
+    private Integer idSemestreAtual;
+
+
+
     @FXML
     public void initialize() {
+        configurarTabelaDisciplinas();
+        configurarSpinnerDisciplina();
 
     }
 
@@ -81,7 +98,24 @@ public class CoordPainelController {
 
     @FXML
     void handleSalvarDisciplina(ActionEvent event) {
-        // Validar e persistir os dados da disciplina
+        if (tfDiscNome.getText().isBlank() || cbDiscSemestreCurso.getItems().isEmpty()) {
+            exibirAlerta(Alert.AlertType.ERROR,"Erro", "Preencha os campos antes de inserir uma disciplina.");
+            return;
+        }
+        if (idDisciplinaAtual == null) {
+            exibirAlerta(Alert.AlertType.ERROR, "Erro", "Selecione a disciplina antes de salvar um Tema.");
+            return;
+        }
+
+    }
+
+    private void configurarTabelaDisciplinas() {
+        colDiscNome.setCellValueFactory(new PropertyValueFactory<>("disciplina"));
+        colDiscSemCurso.setCellValueFactory(new PropertyValueFactory<>("semestre_curso"));
+        colDiscCH.setCellValueFactory(new PropertyValueFactory<>("carga_horaria_minima"));
+        colDiscProf.setCellValueFactory(new PropertyValueFactory<>("nome"));
+    }
+    private void configurarSpinnerDisciplina() {spDiscCH.getValueFactory(new SpinnerValueFactory.IntegerSpinnerValueFactory(1, 999, 1));
     }
 
 
@@ -119,7 +153,32 @@ public class CoordPainelController {
 
 
     //MÉTODOS DE ATRIBUIÇÕES
+    @FXML
+    void handleAtribContextChange(ActionEvent event) {
+        // Atualizar grade quando mudar o professor ou disciplina selecionados
+    }
 
+    @FXML
+    void handleLimparGrade(ActionEvent event) {
+        // Desmarcar todos os horários da grade
+    }
+
+    @FXML
+    void handleSalvarAtribuicao(ActionEvent event) {
+        // Salvar o mapeamento de horários no banco de dados
+    }
+
+
+
+    //MÉTODOS PARA SEREM CHAMADOS
+
+    private void exibirAlerta(Alert.AlertType tipo, String titulo, String mensagem) {
+        Alert alerta = new Alert(tipo);
+        alerta.setTitle(titulo);
+        alerta.setHeaderText(null);
+        alerta.setContentText(mensagem);
+        alerta.showAndWait();
+    }
 
 
 }
