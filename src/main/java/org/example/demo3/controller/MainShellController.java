@@ -14,7 +14,6 @@ import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 import javafx.scene.Scene;
 import javafx.scene.Node;
-import org.example.demo3.DatabaseConnection;
 import org.example.demo3.UsuarioAtual;
 import org.example.demo3.dao.CursoDAO;
 import org.example.demo3.dao.DisciplinaDAO;
@@ -24,9 +23,6 @@ import org.example.demo3.entity.Disciplina;
 import org.example.demo3.entity.SemestreLetivo;
 
 import java.io.IOException;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
@@ -54,17 +50,23 @@ public class MainShellController {
     private List<Disciplina> listaD;
     private List<Curso> listaCursos;
 
-    private List<Integer> ordemIdDisciplinas = new ArrayList<>();
-
-    UsuarioAtual logado = UsuarioAtual.getInstancia();
+    private final List<Integer> ordemIdDisciplinas = new ArrayList<>();
+    private final UsuarioAtual logado = UsuarioAtual.getInstancia();
 
     @FXML
     public void initialize() {
         configurarResetInicial();
 
-        // Simulação de login
-        logado.setId_usuario(1);
-        logado.setTipo("ADM");
+        // PROTEÇÃO: Se ninguém fez login (teste direto da tela), assume ADM padrão para não dar NullPointerException
+        if (logado.getTipo() == null) {
+            logado.setId_usuario(1);
+            logado.setTipo("ADM");
+        }
+
+        // Configuração visual do perfil que veio do Login
+        if (lblPerfilUsuario != null) {
+            lblPerfilUsuario.setText("Perfil: " + logado.getTipo());
+        }
 
         configurarInterfacePorPerfil(logado.getTipo());
         configurarValoresPreProgramados();
@@ -74,60 +76,64 @@ public class MainShellController {
     private void configurarPreValoresAnos(){
         processarDadosAnos();
         popularComboBoxAnos();
-        cbAno.setValue(listaSl.getLast().getAno().toString());
-        logado.setAno(Integer.parseInt(cbAno.getValue()));
+        if (listaSl != null && !listaSl.isEmpty()) {
+            cbAno.setValue(listaSl.getLast().getAno().toString());
+            logado.setAno(Integer.parseInt(cbAno.getValue()));
+        }
     }
 
     private void configurarPreValoresAnoSemestre(){
-        if (listaSl.getLast().getNumero_semestre().equals(1)){
-            tbSem1.setDisable(false);
-            tbSem1.setSelected(true);
-            logado.setAnoSemestre(1);
-        } else {
-            tbSem2.setDisable(false);
-            tbSem2.setSelected(true);
-            logado.setAnoSemestre(2);
+        if (listaSl != null && !listaSl.isEmpty()) {
+            if (listaSl.getLast().getNumero_semestre().equals(1)){
+                tbSem1.setDisable(false);
+                tbSem1.setSelected(true);
+                logado.setAnoSemestre(1);
+            } else {
+                tbSem2.setDisable(false);
+                tbSem2.setSelected(true);
+                logado.setAnoSemestre(2);
+            }
         }
     }
 
     private void configurarPreValoresCursos(){
         try {
             CursoDAO cDAO = new CursoDAO();
-
             processarDadosCursos();
             popularComboboxCursos();
-            cbCurso.setValue(listaCursos.getLast().getNome());
-            logado.setIdCurso(cDAO.listarIdCurso(cbCurso.getValue()));
-
+            if (listaCursos != null && !listaCursos.isEmpty()) {
+                cbCurso.setValue(listaCursos.getLast().getNome());
+                logado.setIdCurso(cDAO.listarIdCurso(cbCurso.getValue()));
+            }
         } catch (SQLException e){
             e.printStackTrace();
         }
     }
 
     private void configurarPreValoresCursoSemestresEDisciplinas(){
-        int index;
-
         processarDadosCursoSemestresEDisciplinas();
         popularComboboxCursoSemestres();
-        cbSemestreCurso.setValue(listaD.getLast().getSemestre_curso().toString());
-        logado.setSemestreCurso(Integer.parseInt(cbSemestreCurso.getValue()));
-        popularComboboxDisciplinas();
-        cbDisciplina.setValue(listaD.getLast().getNome());
+        if (listaD != null && !listaD.isEmpty()) {
+            cbSemestreCurso.setValue(listaD.getLast().getSemestre_curso().toString());
+            logado.setSemestreCurso(Integer.parseInt(cbSemestreCurso.getValue()));
+            popularComboboxDisciplinas();
+            cbDisciplina.setValue(listaD.getLast().getNome());
 
-        index = cbDisciplina.getSelectionModel().getSelectedIndex();
-        logado.setIdDisciplina(ordemIdDisciplinas.get(index));
+            int index = cbDisciplina.getSelectionModel().getSelectedIndex();
+            if (index >= 0 && index < ordemIdDisciplinas.size()) {
+                logado.setIdDisciplina(ordemIdDisciplinas.get(index));
+            }
+        }
     }
-
 
     private void configurarValoresPreProgramados(){
         configurarPreValoresAnos();
         configurarPreValoresAnoSemestre();
 
-        if (logado.getTipo().equals("PROF")){
+        if ("PROF".equals(logado.getTipo())){
             configurarPreValoresCursos();
             configurarPreValoresCursoSemestresEDisciplinas();
         }
-
     }
 
     private void configurarResetInicial() {
@@ -141,6 +147,7 @@ public class MainShellController {
         if ("PROF".equals(tipo)) {
             carregarConteudo("/prof_temas.fxml");
             exibirSecao(secaoProfessor);
+            configurarVisibilidadeFiltros(true);
         } else if ("COORD".equals(tipo)) {
             carregarConteudo("/coord_painel.fxml");
             exibirSecao(secaoCoordenador);
@@ -199,13 +206,14 @@ public class MainShellController {
         }
     }
 
-
     private void popularComboBoxAnos() {
         ObservableList<String> opcoesAno = FXCollections.observableArrayList();
-        for (SemestreLetivo sl : listaSl) {
-            String anoStr = sl.getAno().toString();
-            if (!opcoesAno.contains(anoStr)) {
-                opcoesAno.add(anoStr);
+        if (listaSl != null) {
+            for (SemestreLetivo sl : listaSl) {
+                String anoStr = sl.getAno().toString();
+                if (!opcoesAno.contains(anoStr)) {
+                    opcoesAno.add(anoStr);
+                }
             }
         }
         cbAno.setItems(opcoesAno);
@@ -213,17 +221,21 @@ public class MainShellController {
 
     private void popularComboboxCursos(){
         ObservableList<String> opcoesCurso = FXCollections.observableArrayList();
-        for (Curso c : listaCursos) {
-            opcoesCurso.add(c.getNome());
+        if (listaCursos != null) {
+            for (Curso c : listaCursos) {
+                opcoesCurso.add(c.getNome());
+            }
         }
         cbCurso.setItems(opcoesCurso);
     }
 
     private void popularComboboxCursoSemestres(){
         ObservableList<String> opcoesSemestreCurso = FXCollections.observableArrayList();
-        for (Disciplina d: listaD){
-            if (!opcoesSemestreCurso.contains(d.getSemestre_curso().toString())) {
-                opcoesSemestreCurso.add(d.getSemestre_curso().toString());
+        if (listaD != null) {
+            for (Disciplina d: listaD){
+                if (!opcoesSemestreCurso.contains(d.getSemestre_curso().toString())) {
+                    opcoesSemestreCurso.add(d.getSemestre_curso().toString());
+                }
             }
         }
         cbSemestreCurso.setItems(opcoesSemestreCurso);
@@ -233,11 +245,12 @@ public class MainShellController {
         ObservableList<String> opcoesDisciplina = FXCollections.observableArrayList();
         ordemIdDisciplinas.clear();
 
-        for (Disciplina d: listaD){
-            if (d.getSemestre_curso().equals(logado.getSemestreCurso())){
-                opcoesDisciplina.add(d.getNome());
-
-                ordemIdDisciplinas.add(d.getId_disciplina());
+        if (listaD != null) {
+            for (Disciplina d: listaD){
+                if (d.getSemestre_curso().equals(logado.getSemestreCurso())){
+                    opcoesDisciplina.add(d.getNome());
+                    ordemIdDisciplinas.add(d.getId_disciplina());
+                }
             }
         }
         cbDisciplina.setItems(opcoesDisciplina);
@@ -254,8 +267,10 @@ public class MainShellController {
     }
 
     private void exibirSecao(VBox secao) {
-        secao.setVisible(true);
-        secao.setManaged(true);
+        if (secao != null) {
+            secao.setVisible(true);
+            secao.setManaged(true);
+        }
     }
 
     private void configurarVisibilidadeFiltros(boolean visivel) {
@@ -282,16 +297,20 @@ public class MainShellController {
 
     @FXML
     public void handleTrocaAno() {
-        logado.setAno(Integer.parseInt(cbAno.getValue()));
+        if (cbAno.getValue() != null) {
+            logado.setAno(Integer.parseInt(cbAno.getValue()));
 
-        tbSem1.setDisable(true);
-        tbSem2.setDisable(true);
-        for (SemestreLetivo sl: listaSl){
-            if (sl.getAno().equals(logado.getAno())){
-                if (sl.getNumero_semestre() == 1){
-                    tbSem1.setDisable(false);
-                } else if (sl.getNumero_semestre() == 2){
-                    tbSem2.setDisable(false);
+            tbSem1.setDisable(true);
+            tbSem2.setDisable(true);
+            if (listaSl != null) {
+                for (SemestreLetivo sl: listaSl){
+                    if (sl.getAno().equals(logado.getAno())){
+                        if (sl.getNumero_semestre() == 1){
+                            tbSem1.setDisable(false);
+                        } else if (sl.getNumero_semestre() == 2){
+                            tbSem2.setDisable(false);
+                        }
+                    }
                 }
             }
         }
@@ -307,7 +326,6 @@ public class MainShellController {
             logado.setAnoSemestre(2);
             tbSem1.setSelected(false);
         }
-
         processarDadosCursos();
     }
 
@@ -328,7 +346,6 @@ public class MainShellController {
     @FXML
     public void handleTrocaSemestreCurso(){
         String valor = cbSemestreCurso.getValue();
-
         if (valor != null && !valor.isEmpty()) {
             logado.setSemestreCurso(Integer.parseInt(valor));
             popularComboboxDisciplinas();
@@ -338,21 +355,15 @@ public class MainShellController {
     @FXML
     public void handleTrocaDisciplina(){
         int index = cbDisciplina.getSelectionModel().getSelectedIndex();
-
         if (index >= 0 && index < ordemIdDisciplinas.size()) {
             logado.setIdDisciplina(ordemIdDisciplinas.get(index));
         }
     }
 
     @FXML void handleLogout(ActionEvent event) {
-        System.out.println("Botão clicado");
         try{
             Parent root = FXMLLoader.load(getClass().getResource("/login.fxml"));
-
-            Stage stage = (Stage) ((Node) event.getSource())
-                    .getScene()
-                    .getWindow();
-
+            Stage stage = (Stage) ((Node) event.getSource()).getScene().getWindow();
             Scene scene = new Scene(root);
             stage.setScene(scene);
             stage.show();
@@ -365,7 +376,7 @@ public class MainShellController {
     @FXML void navCursosHorarios() { carregarConteudo("/adm_cursos_horarios.fxml"); }
     @FXML void navCoordenaodresAdms() { carregarConteudo("/adm_coordenadores_adms.fxml"); }
     @FXML void navCoordPainel() { carregarConteudo("/coord_painel.fxml"); }
-    @FXML void navTemas() {carregarConteudo("/prof_temas.fxml");}
+    @FXML void navTemas() { carregarConteudo("/prof_temas.fxml"); }
 
     @FXML
     void navPlanejamento() {
@@ -378,38 +389,8 @@ public class MainShellController {
 
             areaConteudo.getChildren().clear();
             areaConteudo.getChildren().add(novoConteudo);
-
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
-
-    private int descobrirIdCursoPorNome(String nomeCurso) {
-        String sql = "SELECT id_curso FROM curso WHERE nome = ?";
-        try (Connection conn = DatabaseConnection.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
-            ps.setString(1, nomeCurso);
-            try (ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) return rs.getInt("id_curso");
-            }
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-        return 0;
-    }
-
-    private int descobrirIdDisciplinaPorNome(String nomeDisciplina) {
-        String sql = "SELECT id_disciplina FROM disciplina WHERE nome = ?";
-        try (Connection conn = DatabaseConnection.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
-            ps.setString(1, nomeDisciplina);
-            try (ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) return rs.getInt("id_disciplina");
-            }
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-        return 0;
-    }
-
 }
