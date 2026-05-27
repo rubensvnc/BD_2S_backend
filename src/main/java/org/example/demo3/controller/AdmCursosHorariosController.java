@@ -65,6 +65,9 @@ public class AdmCursosHorariosController {
 
         logado.usuarioAdm();
 
+        this.ano = logado.getAno();
+        this.anoSemestre = logado.getAnoSemestre();
+
         logado.anoProperty().addListener(
                 (obs, velho, novo) -> {
                     if (novo != null) {
@@ -80,6 +83,10 @@ public class AdmCursosHorariosController {
                         carregarCursos();
                     }
                 });
+
+        if (this.ano != null && this.anoSemestre != null) {
+            carregarCursos();
+        }
 
         cbProfessorCurso.setDisable(true);
 
