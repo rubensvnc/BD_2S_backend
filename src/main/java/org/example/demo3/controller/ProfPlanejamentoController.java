@@ -9,17 +9,11 @@ import javafx.scene.chart.PieChart;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.CheckBoxTreeCell;
 import javafx.scene.layout.HBox;
-import org.example.demo3.DatabaseConnection;
 import org.example.demo3.UsuarioAtual;
 import org.example.demo3.SlotPlanejamento;
 import org.example.demo3.dao.PlanejamentoDAO;
 import org.example.demo3.dao.SlotPlanejamentoDAO;
-import org.example.demo3.entity.Planejamento;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.time.LocalDate;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -53,7 +47,6 @@ public class ProfPlanejamentoController {
     private final List<CheckBoxTreeItem<Object>> itensSelecionadosAulas = new ArrayList<>();
 
     private MainShellController mainShellController;
-
     private UsuarioAtual logado = UsuarioAtual.getInstancia();
 
     @FXML
@@ -240,34 +233,6 @@ public class ProfPlanejamentoController {
             slotDAO.atualizarStatusEmLote(ids, "cancelada_professor", motivo);
             handleGerarPlanejamento();
         });
-    }
-
-    private int descobrirIdCursoPorNome(String nomeCurso) {
-        String sql = "SELECT id_curso FROM curso WHERE nome = ?";
-        try (Connection conn = DatabaseConnection.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
-            ps.setString(1, nomeCurso);
-            try (ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) return rs.getInt("id_curso");
-            }
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-        return 0;
-    }
-
-    private int descobrirIdDisciplinaPorNome(String nomeDisciplina) {
-        String sql = "SELECT id_disciplina FROM disciplina WHERE nome = ?";
-        try (Connection conn = DatabaseConnection.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
-            ps.setString(1, nomeDisciplina);
-            try (ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) return rs.getInt("id_disciplina");
-            }
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-        return 0;
     }
 
     private static class SlotVisual {
