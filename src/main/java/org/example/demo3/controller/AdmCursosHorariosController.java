@@ -8,6 +8,7 @@ import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.input.MouseEvent;
 import org.example.demo3.UsuarioAtual;
 import org.example.demo3.dao.*;
+import org.example.demo3.dto.AdmCursoExibicao;
 import org.example.demo3.entity.Curso;
 import org.example.demo3.entity.TemplateHorarioTurno;
 import org.example.demo3.entity.Usuario;
@@ -27,7 +28,11 @@ public class AdmCursosHorariosController {
     @FXML private ComboBox<String> cbProfessorCurso;
     @FXML private TitledPane painelFormCurso;
     @FXML private CheckBox checkUsarCadastroProfessor;
-    @FXML private TableView<Curso> tabelaCursos;
+    @FXML private TableView<AdmCursoExibicao> tabelaCursos;
+    @FXML private TableColumn<AdmCursoExibicao, String> colCNome;
+    @FXML private TableColumn<AdmCursoExibicao, String> colCTurno;
+    @FXML private TableColumn<AdmCursoExibicao, Integer> colCQtdSemestres;
+    @FXML private TableColumn<AdmCursoExibicao, String> colCCoordNome;
     @FXML private Label lblTituloHorarios;
     @FXML private Button btnSalvarCurso;
     @FXML private Label lblProcessoSalvarCurso;
@@ -75,6 +80,11 @@ public class AdmCursosHorariosController {
                 });
 
         cbProfessorCurso.setDisable(true);
+
+        //colCNome.setCellValueFactory(new PropertyValueFactory<>("nome"));
+        //colCTurno.setCellValueFactory(new PropertyValueFactory<>("turno"));
+        //colCQtdSemestres.setCellValueFactory(new PropertyValueFactory<>("qtd_semestres"));
+        //colCCoordNome.setCellValueFactory(new PropertyValueFactory<>("nome_coord"));
 
         colHTipo.setCellValueFactory(new PropertyValueFactory<>("tipo"));
         colHNumero.setCellValueFactory(new PropertyValueFactory<>("numero_ordem"));
@@ -136,6 +146,17 @@ public class AdmCursosHorariosController {
         }
     }
 
+    private void carregarCursos(){
+        try{
+            CursoDAO cDao = new CursoDAO();
+            List<AdmCursoExibicao> lista = cDao.listarCursosDTO(this.ano, this.anoSemestre);
+            ObservableList linhasCurso = FXCollections.observableArrayList(lista);
+            tabelaCursos.setItems(linhasCurso);
+        } catch (SQLException e){
+            e.printStackTrace();
+        }
+    }
+
     private void carregarProfs() {
         try {
             UsuarioDAO uDao = new UsuarioDAO();
@@ -163,9 +184,11 @@ public class AdmCursosHorariosController {
             if (emailSelecionado != null) {
                 this.idProfessorSelecionado = mapaProfessores.get(emailSelecionado);
             }
+            System.out.println("email: "+emailSelecionado);
         } else {
             this.idProfessorSelecionado = null;
         }
+
     }
 
     public void alterarEstadoEdicaoDadosCurso(Boolean estado){
@@ -198,6 +221,8 @@ public class AdmCursosHorariosController {
             CursoDAO cDao = new CursoDAO();
             if (checkUsarCadastroProfessor.isSelected()){
                 UsuarioTipoDAO utDao = new UsuarioTipoDAO();
+
+                System.out.println("IdPROFESSOr: "+idProfessorSelecionado);
 
                 utDao.inserirUsuarioTipo(new UsuarioTipo(idProfessorSelecionado, "COORD"));
                 this.idCursoProcessando = cDao.inserirCursoRetornaId(idProfessorSelecionado,
@@ -260,6 +285,7 @@ public class AdmCursosHorariosController {
             btnSalvarCurso.setDisable(false);
             lblProcessoSalvarCurso.setVisible(false);
             lblProcessoSalvarCurso.setManaged(false);
+            carregarCursos();
         } catch (SQLException e){
 
         }
