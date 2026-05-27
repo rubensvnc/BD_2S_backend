@@ -1,12 +1,13 @@
 package org.example.demo3.dao;
 
 import org.example.demo3.DatabaseConnection;
-import org.example.demo3.entity.SemestreLetivo;
 import org.example.demo3.entity.Usuario;
 
 import java.sql.*;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class UsuarioDAO {
 
@@ -14,6 +15,37 @@ public class UsuarioDAO {
 
     public UsuarioDAO() {
         this.connection = DatabaseConnection.getConnection();
+    }
+
+    public Map<String, Object> buscarUsuarioPorEmail(String email) throws SQLException {
+        String sql = """
+        SELECT u.id_usuario, u.nome, u.senha_hash, ut.tipo 
+        FROM usuario u 
+        INNER JOIN usuario_tipo ut ON u.id_usuario = ut.usuario_id 
+        WHERE u.email = ? AND u.deletado_em IS NULL
+        """;
+
+        // CORREÇÃO: Abre a conexão direto no try (Auto-Closeable)
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            ps.setString(1, email);
+
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    Map<String, Object> usuario = new HashMap<>();
+                    usuario.put("id_usuario", rs.getInt("id_usuario"));
+                    usuario.put("nome", rs.getString("nome"));
+                    usuario.put("senha_hash", rs.getString("senha_hash"));
+                    usuario.put("tipo", rs.getString("tipo"));
+                    return usuario;
+                }
+            }
+        } catch (SQLException e) {
+            System.err.println("Erro ao buscar usuário por e-mail: " + e.getMessage());
+            throw e;
+        }
+        return null;
     }
 
     public List<Usuario> listarCoordSemestreLetivo (Integer ano, Integer anoSemestre) throws SQLException{
