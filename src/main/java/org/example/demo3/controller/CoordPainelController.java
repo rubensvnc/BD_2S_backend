@@ -1,5 +1,6 @@
 package org.example.demo3.controller;
 
+import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
@@ -12,7 +13,6 @@ import org.example.demo3.dao.DisciplinaDAO;
 import org.example.demo3.entity.Disciplina;
 import org.example.demo3.entity.Usuario;
 
-import java.awt.event.ActionEvent;
 
 public class CoordPainelController {
 
@@ -73,6 +73,69 @@ public class CoordPainelController {
     private Disciplina disciplinaSelecionadaTabela; // null = modo inserção, não-null = modo edição
 
 
+    @FXML
+    private void handleLimparDisc() {
+        // TODO: Limpar todos os campos do formulário de disciplinas
+    }
+
+    @FXML
+    private void handleSalvarDisciplina() {
+        // TODO: Validar e persistir os dados da disciplina (nacional ou alteração)
+    }
+
+    // ════════════════════════════════════════════════════════════════════════
+    // ABA 2 — PROFESSORES
+    // ════════════════════════════════════════════════════════════════════════
+
+    @FXML
+    private void handleNovoProfessor() {
+        // TODO: Preparar o formulário para o cadastro de um novo professor
+    }
+
+    @FXML
+    private void handleSelecionarProfessor(MouseEvent event) {
+        // TODO: Carregar os dados do professor selecionado na tabela para o formulário
+    }
+
+    @FXML
+    private void handleAtribuirMesmo() {
+        // TODO: Preencher o formulário com os dados do coordenador logado
+    }
+
+    @FXML
+    private void handleVerificarEmailProf(KeyEvent event) {
+        // TODO: Verificar em tempo real se o e-mail digitado já existe no sistema
+    }
+
+    @FXML
+    private void handleLimparProf() {
+        // TODO: Limpar todos os campos do formulário de professores
+    }
+
+    @FXML
+    private void handleSalvarProfessor() {
+        // TODO: Validar e salvar os dados do professor no banco de dados
+    }
+
+    // ════════════════════════════════════════════════════════════════════════
+    // ABA 3 — ATRIBUIÇÕES
+    // ════════════════════════════════════════════════════════════════════════
+
+    @FXML
+    private void handleAtribContextChange() {
+        // TODO: Atualizar a grade de horários ao trocar o professor ou a disciplina selecionada
+    }
+
+    @FXML
+    private void handleLimparGrade() {
+        // TODO: Desmarcar todos os CheckBoxes da grade de atribuição atual
+    }
+
+    @FXML
+    private void handleSalvarAtribuicao() {
+        // TODO: Salvar o vínculo entre professor, disciplina e horários selecionados
+    }
+
 
     @FXML
     public void initialize() {
@@ -83,7 +146,7 @@ public class CoordPainelController {
 
     //MÉTODOS DA ABA DE DISCIPLINAS
     @FXML
-    private void handleNovaDisciplina(ActionEvent event) {
+    private void handleNovaDisciplina() {
         disciplinaSelecionadaTabela = null;
         lblTituloFormDisc.setText("Nova Disciplina");
         limparCamposDisc();
@@ -111,7 +174,6 @@ public class CoordPainelController {
         lblTituloFormDisc.setText("Nova Disciplina");
         limparCamposDisc();
     }
-
 
     @FXML
     private void handleSalvarDisciplina(ActionEvent event) {
@@ -212,18 +274,8 @@ public class CoordPainelController {
     }
 
     @FXML
-    void handleSelecionarProfessor(MouseEvent event) {
-        // Carregar dados do professor selecionado nos campos
-    }
-
-    @FXML
     void handleAtribuirMesmo(ActionEvent event) {
         // Lógica para usar dados do coordenador atual como professor
-    }
-
-    @FXML
-    void handleVerificarEmailProf(KeyEvent event) {
-        // Validação em tempo real (onKeyReleased)
     }
 
     @FXML
