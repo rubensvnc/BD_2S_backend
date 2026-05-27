@@ -29,10 +29,11 @@ public class AdmCursosHorariosController {
     @FXML private TitledPane painelFormCurso;
     @FXML private CheckBox checkUsarCadastroProfessor;
     @FXML private TableView<AdmCursoExibicao> tabelaCursos;
-    @FXML private TableColumn<AdmCursoExibicao, String> colCNome;
-    @FXML private TableColumn<AdmCursoExibicao, String> colCTurno;
-    @FXML private TableColumn<AdmCursoExibicao, Integer> colCQtdSemestres;
-    @FXML private TableColumn<AdmCursoExibicao, String> colCCoordNome;
+    @FXML private TableColumn<AdmCursoExibicao, String> colCursoNome;
+    @FXML private TableColumn<AdmCursoExibicao, String> colCursoTurno;
+    @FXML private TableColumn<AdmCursoExibicao, Integer> colCursoSemestres;
+    @FXML private TableColumn<AdmCursoExibicao, String> colCursoCoordenador;
+    @FXML private TableColumn<AdmCursoExibicao, String> colCursoAcoes;
     @FXML private Label lblTituloHorarios;
     @FXML private Button btnSalvarCurso;
     @FXML private Label lblProcessoSalvarCurso;
@@ -69,6 +70,7 @@ public class AdmCursosHorariosController {
                 (obs, velho, novo) -> {
                     if (novo != null) {
                         this.ano = novo;
+                        carregarCursos();
                     }
                 });
 
@@ -76,20 +78,22 @@ public class AdmCursosHorariosController {
                 (obs, velho, novo) -> {
                     if (novo != null) {
                         this.anoSemestre = novo;
+                        carregarCursos();
                     }
                 });
 
         cbProfessorCurso.setDisable(true);
 
-        //colCNome.setCellValueFactory(new PropertyValueFactory<>("nome"));
-        //colCTurno.setCellValueFactory(new PropertyValueFactory<>("turno"));
-        //colCQtdSemestres.setCellValueFactory(new PropertyValueFactory<>("qtd_semestres"));
-        //colCCoordNome.setCellValueFactory(new PropertyValueFactory<>("nome_coord"));
+        colCursoNome.setCellValueFactory(new PropertyValueFactory<>("nome"));
+        colCursoTurno.setCellValueFactory(new PropertyValueFactory<>("turno"));
+        colCursoSemestres.setCellValueFactory(new PropertyValueFactory<>("qtd_semestres"));
+        colCursoCoordenador.setCellValueFactory(new PropertyValueFactory<>("nome_coord"));
 
         colHTipo.setCellValueFactory(new PropertyValueFactory<>("tipo"));
         colHNumero.setCellValueFactory(new PropertyValueFactory<>("numero_ordem"));
         colHInicio.setCellValueFactory(new PropertyValueFactory<>("hora_inicio"));
         colHFim.setCellValueFactory(new PropertyValueFactory<>("hora_fim"));
+
     }
 
 
@@ -147,13 +151,15 @@ public class AdmCursosHorariosController {
     }
 
     private void carregarCursos(){
-        try{
-            CursoDAO cDao = new CursoDAO();
-            List<AdmCursoExibicao> lista = cDao.listarCursosDTO(this.ano, this.anoSemestre);
-            ObservableList linhasCurso = FXCollections.observableArrayList(lista);
-            tabelaCursos.setItems(linhasCurso);
-        } catch (SQLException e){
-            e.printStackTrace();
+        if (this.ano != null && this.anoSemestre != null) {
+            try {
+                CursoDAO cDao = new CursoDAO();
+                List<AdmCursoExibicao> lista = cDao.listarCursosDTO(this.ano, this.anoSemestre);
+                ObservableList linhasCurso = FXCollections.observableArrayList(lista);
+                tabelaCursos.setItems(linhasCurso);
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
         }
     }
 
