@@ -13,152 +13,97 @@ import org.example.demo3.dao.DisciplinaDAO;
 import org.example.demo3.entity.Disciplina;
 import org.example.demo3.entity.Usuario;
 
-
 public class CoordPainelController {
 
-    //ABA DE DISCIPLINAS
-    @FXML private TableView<Disciplina> tabelaDisciplinas;
-    @FXML private TableColumn<Disciplina, String> colDiscNome;
+    // ════════════════════════════════════════════════════════════════════════
+    // CAMPOS FXML — ABA 1: DISCIPLINAS
+    // ════════════════════════════════════════════════════════════════════════
+
+    @FXML private TableView<Disciplina>          tabelaDisciplinas;
+    @FXML private TableColumn<Disciplina, String>  colDiscNome;
     @FXML private TableColumn<Disciplina, Integer> colDiscSemCurso;
     @FXML private TableColumn<Disciplina, Integer> colDiscCH;
-    @FXML private TableColumn<Disciplina, String> colDiscProf;
-    @FXML private TableColumn<Disciplina, Void> colDiscAcoes;
-    @FXML private Label lblTituloFormDisc;
-    @FXML private TextField tfDiscNome;
-    @FXML private Label errDiscNome;
+    @FXML private TableColumn<Disciplina, String>  colDiscProf;
+    @FXML private TableColumn<Disciplina, Void>    colDiscAcoes;
+    @FXML private Label           lblTituloFormDisc;
+    @FXML private TextField       tfDiscNome;
+    @FXML private Label           errDiscNome;
     @FXML private ComboBox<Integer> cbDiscSemestreCurso;
-    @FXML private Spinner<Integer> spDiscCH;
-    @FXML private Label lblFeedbackDisc;
+    @FXML private Spinner<Integer>  spDiscCH;
+    @FXML private Label           lblFeedbackDisc;
 
-    //ABA DE PROFESSORES
-    @FXML private TableView<Usuario> tabelaProfessores;
+    // ════════════════════════════════════════════════════════════════════════
+    // CAMPOS FXML — ABA 2: PROFESSORES
+    // ════════════════════════════════════════════════════════════════════════
+
+    @FXML private TableView<Usuario>           tabelaProfessores;
     @FXML private TableColumn<Usuario, String> colProfNome;
     @FXML private TableColumn<Usuario, String> colProfEmail;
-    @FXML private TableColumn<Usuario, Void> colProfAcoes;
-    @FXML private Label lblTituloFormProf;
-    @FXML private Button btnAtribuirMesmo;
-    @FXML private TextField tfProfNome;
-    @FXML private Label errProfNome;
-    @FXML private TextField tfProfEmail;
-    @FXML private Label avisoEmailDup;
-    @FXML private Label errProfEmail;
+    @FXML private TableColumn<Usuario, Void>   colProfAcoes;
+    @FXML private Label         lblTituloFormProf;
+    @FXML private Button        btnAtribuirMesmo;
+    @FXML private TextField     tfProfNome;
+    @FXML private Label         errProfNome;
+    @FXML private TextField     tfProfEmail;
+    @FXML private Label         avisoEmailDup;
+    @FXML private Label         errProfEmail;
     @FXML private PasswordField pfProfSenha;
-    @FXML private Label errProfSenha;
-    @FXML private Label lblFeedbackProf;
+    @FXML private Label         errProfSenha;
+    @FXML private Label         lblFeedbackProf;
 
-    //ABA DE ATRIBUIÇÕES
-    @FXML private ComboBox<Usuario> cbAtribProf;
+    // ════════════════════════════════════════════════════════════════════════
+    // CAMPOS FXML — ABA 3: ATRIBUIÇÕES
+    // ════════════════════════════════════════════════════════════════════════
+
+    @FXML private ComboBox<Usuario>    cbAtribProf;
     @FXML private ComboBox<Disciplina> cbAtribDisc;
-    @FXML private GridPane gradeAtribuicao;
-    @FXML private Label lblConflito;
-    @FXML private Label lblFeedbackAtrib;
-    @FXML private Button btnSalvarAtrib;
+    @FXML private GridPane             gradeAtribuicao;
+    @FXML private Label                lblConflito;
+    @FXML private Label                lblFeedbackAtrib;
+    @FXML private Button               btnSalvarAtrib;
 
-    //PLANEJAMENTOS
-    @FXML private Label lblTituloCoordVisor;
-    @FXML private TabPane tabVisorCoord;
+    // ════════════════════════════════════════════════════════════════════════
+    // CAMPOS FXML — PLANEJAMENTOS
+    // ════════════════════════════════════════════════════════════════════════
+
+    @FXML private Label      lblTituloCoordVisor;
+    @FXML private TabPane    tabVisorCoord;
     @FXML private TreeView<?> treePlanoCoord;
-    @FXML private VBox painelEstatCoord;
-
-    //DAOS
-    DisciplinaDAO disciplinaDAO = new DisciplinaDAO();
-
-    //ATRIBUTOS DE OUTRAS ENTIDADES
-    private UsuarioAtual logado = UsuarioAtual.getInstancia();
-    private Integer anoAtual;
-    private Integer anoSemestre;
-    private Integer idDisciplinaAtual;
-    private Integer idSemestreAtual;
-    // No bloco de atributos — adicione esta linha junto com os outros campos de estado:
-    private Disciplina disciplinaSelecionadaTabela; // null = modo inserção, não-null = modo edição
-
-
-    @FXML
-    private void handleLimparDisc() {
-        if (disciplinaSelecionadaTabela == null) {
-            lblTituloFormDisc.setText("Nova Disciplina");
-        }
-        tfDiscNome.clear();
-        cbDiscSemestreCurso.getSelectionModel().clearSelection();
-        spDiscCH.getValueFactory().setValue(1);
-    }
-
-    @FXML
-    private void handleSalvarDisciplina() {
-        // TODO: Validar e persistir os dados da disciplina (nacional ou alteração)
-    }
+    @FXML private VBox       painelEstatCoord;
 
     // ════════════════════════════════════════════════════════════════════════
-    // ABA 2 — PROFESSORES
+    // ESTADO / DAOs
     // ════════════════════════════════════════════════════════════════════════
 
-    @FXML
-    private void handleNovoProfessor() {
-        // TODO: Preparar o formulário para o cadastro de um novo professor
-    }
+    private final DisciplinaDAO disciplinaDAO = new DisciplinaDAO();
+    private final UsuarioAtual  logado        = UsuarioAtual.getInstancia();
+    private Integer    anoAtual;
+    private Integer    anoSemestre;
+    private Integer    idDisciplinaAtual;
+    private Integer    idSemestreAtual;
 
-    @FXML
-    private void handleSelecionarProfessor(MouseEvent event) {
-        // TODO: Carregar os dados do professor selecionado na tabela para o formulário
-    }
-
-    @FXML
-    private void handleAtribuirMesmo() {
-        // TODO: Preencher o formulário com os dados do coordenador logado
-    }
-
-    @FXML
-    private void handleVerificarEmailProf(KeyEvent event) {
-        // TODO: Verificar em tempo real se o e-mail digitado já existe no sistema
-    }
-
-    @FXML
-    private void handleLimparProf() {
-        // TODO: Limpar todos os campos do formulário de professores
-    }
-
-    @FXML
-    private void handleSalvarProfessor() {
-        // TODO: Validar e salvar os dados do professor no banco de dados
-    }
+    // null = modo inserção; não-null = modo edição
+    private Disciplina disciplinaSelecionadaTabela;
 
     // ════════════════════════════════════════════════════════════════════════
-    // ABA 3 — ATRIBUIÇÕES
+    // INICIALIZAÇÃO
     // ════════════════════════════════════════════════════════════════════════
-
-    @FXML
-    private void handleAtribContextChange() {
-        // TODO: Atualizar a grade de horários ao trocar o professor ou a disciplina selecionada
-    }
-
-    @FXML
-    private void handleLimparGrade() {
-        // TODO: Desmarcar todos os CheckBoxes da grade de atribuição atual
-    }
-
-    @FXML
-    private void handleSalvarAtribuicao() {
-        // TODO: Salvar o vínculo entre professor, disciplina e horários selecionados
-    }
-
 
     @FXML
     public void initialize() {
         configurarTabelaDisciplinas();
         configurarSpinnerDisciplina();
-
     }
 
-    //MÉTODOS DA ABA DE DISCIPLINAS
+    // ════════════════════════════════════════════════════════════════════════
+    // ABA 1 — DISCIPLINAS  (handlers de botão)
+    // ════════════════════════════════════════════════════════════════════════
+
     @FXML
     private void handleNovaDisciplina() {
         disciplinaSelecionadaTabela = null;
         lblTituloFormDisc.setText("Nova Disciplina");
         limparCamposDisc();
-    }
-
-    private void handleDeletarDisciplina() {
-
     }
 
     @FXML
@@ -186,7 +131,7 @@ public class CoordPainelController {
 
     @FXML
     private void handleSalvarDisciplina(ActionEvent event) {
-        // ── Validações ───────────────────────────────────────────────────────────
+        // ── Validações ──────────────────────────────────────────────────────
         if (tfDiscNome.getText().isBlank()) {
             errDiscNome.setText("O nome da disciplina é obrigatório.");
             errDiscNome.setVisible(true);
@@ -201,7 +146,7 @@ public class CoordPainelController {
             return;
         }
 
-        // ── Monta entidade ───────────────────────────────────────────────────────
+        // ── Monta entidade ──────────────────────────────────────────────────
         Disciplina disciplina = new Disciplina();
         disciplina.setCurso_id(logado.getIdCurso());
         disciplina.setNome(tfDiscNome.getText().trim());
@@ -211,13 +156,13 @@ public class CoordPainelController {
 
         try {
             if (disciplinaSelecionadaTabela != null) {
-                // ── EDIÇÃO ───────────────────────────────────────────────────────
+                // ── EDIÇÃO ───────────────────────────────────────────────────
                 disciplina.setId_disciplina(disciplinaSelecionadaTabela.getId_disciplina());
                 disciplinaDAO.atualizarDisciplina(disciplina);
                 disciplinaSelecionadaTabela = disciplina;
                 exibirAlerta(Alert.AlertType.INFORMATION, "Sucesso", "Disciplina alterada com sucesso.");
             } else {
-                // ── INSERÇÃO ─────────────────────────────────────────────────────
+                // ── INSERÇÃO ─────────────────────────────────────────────────
                 disciplinaDAO.inserirDisciplina(disciplina);
                 exibirAlerta(Alert.AlertType.INFORMATION, "Sucesso", "Disciplina cadastrada com sucesso.");
             }
@@ -230,19 +175,25 @@ public class CoordPainelController {
         }
     }
 
+    @FXML
+    private void handleDeletarDisciplina() {
+        // TODO: remover disciplina selecionada (soft-delete)
+    }
 
+    // ── Helpers — ABA 1 ─────────────────────────────────────────────────────
 
-    //EVENTOS (QUE NÃO SÃO BOTÕES) DA DISCIPLINA
     private void configurarTabelaDisciplinas() {
-        colDiscNome.setCellValueFactory(new PropertyValueFactory<>("disciplina"));
+        colDiscNome.setCellValueFactory(new PropertyValueFactory<>("nome"));
         colDiscSemCurso.setCellValueFactory(new PropertyValueFactory<>("semestre_curso"));
         colDiscCH.setCellValueFactory(new PropertyValueFactory<>("carga_horaria_minima"));
         colDiscProf.setCellValueFactory(new PropertyValueFactory<>("nome"));
     }
+
     private void configurarSpinnerDisciplina() {
         spDiscCH.setValueFactory(
                 new SpinnerValueFactory.IntegerSpinnerValueFactory(80, 999, 80));
     }
+
     private void limparCamposDisc() {
         tfDiscNome.clear();
         cbDiscSemestreCurso.getSelectionModel().clearSelection();
@@ -270,53 +221,62 @@ public class CoordPainelController {
         lblFeedbackDisc.setManaged(true);
     }
 
+    // ════════════════════════════════════════════════════════════════════════
+    // ABA 2 — PROFESSORES  (handlers de botão)
+    // ════════════════════════════════════════════════════════════════════════
 
-
-
-
-
-
-    //MÉTODOS DA ABA DE PROFESSORES
     @FXML
-    void handleNovoProfessor(ActionEvent event) {
-        // Resetar formulário de professor
+    private void handleNovoProfessor(ActionEvent event) {
+        // TODO: Preparar o formulário para o cadastro de um novo professor
     }
 
     @FXML
-    void handleAtribuirMesmo(ActionEvent event) {
-        // Lógica para usar dados do coordenador atual como professor
+    private void handleSelecionarProfessor(MouseEvent event) {
+        // TODO: Carregar os dados do professor selecionado na tabela para o formulário
     }
 
     @FXML
-    void handleLimparProf(ActionEvent event) {
-        // Limpar campos de cadastro de professor
+    private void handleAtribuirMesmo(ActionEvent event) {
+        // TODO: Preencher o formulário com os dados do coordenador logado
     }
 
     @FXML
-    void handleSalvarProfessor(ActionEvent event) {
-        // Gravar novo professor ou atualizar existente
-    }
-
-
-    //MÉTODOS DE ATRIBUIÇÕES
-    @FXML
-    void handleAtribContextChange(ActionEvent event) {
-        // Atualizar grade quando mudar o professor ou disciplina selecionados
+    private void handleVerificarEmailProf(KeyEvent event) {
+        // TODO: Verificar em tempo real se o e-mail digitado já existe no sistema
     }
 
     @FXML
-    void handleLimparGrade(ActionEvent event) {
-        // Desmarcar todos os horários da grade
+    private void handleLimparProf(ActionEvent event) {
+        // TODO: Limpar todos os campos do formulário de professores
     }
 
     @FXML
-    void handleSalvarAtribuicao(ActionEvent event) {
-        // Salvar o mapeamento de horários no banco de dados
+    private void handleSalvarProfessor(ActionEvent event) {
+        // TODO: Validar e salvar os dados do professor no banco de dados
     }
 
+    // ════════════════════════════════════════════════════════════════════════
+    // ABA 3 — ATRIBUIÇÕES  (handlers de botão)
+    // ════════════════════════════════════════════════════════════════════════
 
+    @FXML
+    private void handleAtribContextChange(ActionEvent event) {
+        // TODO: Atualizar a grade de horários ao trocar o professor ou a disciplina selecionada
+    }
 
-    //MÉTODOS PARA SEREM CHAMADOS
+    @FXML
+    private void handleLimparGrade(ActionEvent event) {
+        // TODO: Desmarcar todos os CheckBoxes da grade de atribuição atual
+    }
+
+    @FXML
+    private void handleSalvarAtribuicao(ActionEvent event) {
+        // TODO: Salvar o vínculo entre professor, disciplina e horários selecionados
+    }
+
+    // ════════════════════════════════════════════════════════════════════════
+    // UTILITÁRIOS GERAIS
+    // ════════════════════════════════════════════════════════════════════════
 
     private void exibirAlerta(Alert.AlertType tipo, String titulo, String mensagem) {
         Alert alerta = new Alert(tipo);
@@ -325,6 +285,4 @@ public class CoordPainelController {
         alerta.setContentText(mensagem);
         alerta.showAndWait();
     }
-
-
 }
