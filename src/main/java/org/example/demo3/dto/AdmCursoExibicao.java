@@ -12,4 +12,36 @@ public class AdmCursoExibicao {
         this.qtd_semestres = qtd_semestres;
         this.nome_coord = nome_coord;
     }
+
+    public String getNome() {
+        return nome;
+    }
+
+    public void setNome(String nome) {
+        this.nome = nome;
+    }
+
+    public String getTurno() {
+        return turno;
+    }
+
+    public void setTurno(String turno) {
+        this.turno = turno;
+    }
+
+    public Integer getQtd_semestres() {
+        return qtd_semestres;
+    }
+
+    public void setQtd_semestres(Integer qtd_semestres) {
+        this.qtd_semestres = qtd_semestres;
+    }
+
+    public String getNome_coord() {
+        return nome_coord;
+    }
+
+    public void setNome_coord(String nome_coord) {
+        this.nome_coord = nome_coord;
+    }
 }
