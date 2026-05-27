@@ -51,7 +51,7 @@
                                 <Label text="Fim do Semestre *:" GridPane.columnIndex="2" GridPane.rowIndex="0" />
                                 <DatePicker fx:id="dpFimSemestre" GridPane.columnIndex="3" GridPane.rowIndex="0" />
 
-                                <Label text="Apresentação de TCC:" GridPane.columnIndex="0" GridPane.rowIndex="1" />
+                                <Label text="Apresentação de TG:" GridPane.columnIndex="0" GridPane.rowIndex="1" />
                                 <DatePicker fx:id="dpTcc" GridPane.columnIndex="1" GridPane.rowIndex="1" />
 
                                 <Label text="Feira de Soluções:" GridPane.columnIndex="2" GridPane.rowIndex="1" />
@@ -78,7 +78,7 @@
                                     <columns>
                                         <TableColumn fx:id="colSprintNum" prefWidth="70" text="Sprint" />
                                         <TableColumn fx:id="colSprintInicio" prefWidth="170" text="Data Início" />
-                                        <TableColumn fx:id="colSprintReview" prefWidth="190" text="Data Início Sprint Review" />
+                                        <TableColumn fx:id="colSprintReview" prefWidth="190" text="Data Início Semana de Planejamento" />
                                     </columns>
                                 </TableView>
                             </VBox>
