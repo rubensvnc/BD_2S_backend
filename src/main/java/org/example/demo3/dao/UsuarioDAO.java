@@ -191,6 +191,33 @@ public class UsuarioDAO {
         }
     }
 
+    //INSERE USUÁRIO RETORNANDO ID
+    public int inserirUsuarioRetornandoId(Usuario usuario) {
+        String sql = """
+        INSERT INTO usuario (nome, email, senha_hash, criado_em)
+        VALUES (?, ?, ?, ?)
+        """;
+
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+
+            stmt.setString(1, usuario.getNome());
+            stmt.setString(2, usuario.getEmail());
+            stmt.setString(3, usuario.getSenha_hash());
+            stmt.setDate(4, Date.valueOf(usuario.getCriado_em()));
+            stmt.executeUpdate();
+
+            try (ResultSet keys = stmt.getGeneratedKeys()) {
+                if (keys.next()) return keys.getInt(1); // retorna o id gerado
+            }
+
+        } catch (SQLException e) {
+            System.out.println("Erro ao inserir usuário: " + e.getMessage());
+        }
+        return -1;
+    }
+
+
     public List<Usuario> listarUsuarios() {
 
         List<Usuario> usuarios = new ArrayList<>();
