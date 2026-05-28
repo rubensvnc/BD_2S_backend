@@ -130,7 +130,7 @@
                             <TableColumn fx:id="colHNumero" prefWidth="40" text="Nº" />
                             <TableColumn fx:id="colHInicio" prefWidth="100" text="Início" />
                             <TableColumn fx:id="colHFim" prefWidth="100" text="Fim" />
-                            <TableColumn fx:id="colHAcao" prefWidth="40" text="" />
+                            <TableColumn fx:id="colHAcao" prefWidth="40" text="Ação" />
                         </columns>
                         <placeholder>
                             <Label text="Selecione um curso ou clique em '+ Adicionar Linha'." />
@@ -139,9 +139,10 @@
 
                     <HBox alignment="CENTER_LEFT" spacing="8">
                         <Button onAction="#handleAdicionarLinhaHorario" text="+ Adicionar Linha" />
+                        <Button fx:id="btnDeletarHorarios" onAction="#deletarTodosHorarios" style="-fx-background-color: #c0392b; -fx-text-fill: white;" text="Deletar Horarios" managed="false" visible="false"/>
                         <Region HBox.hgrow="ALWAYS" />
                         <Label fx:id="lblFeedbackHorario" managed="false" styleClass="feedback-label" visible="false" />
-                        <Button onAction="#handleSalvarHorarios" style="-fx-background-color: #27ae60; -fx-text-fill: white;" text="💾 Salvar Horários" />
+                        <Button fx:id="btnSalvarHorario" onAction="#handleSalvarHorarios" style="-fx-background-color: #27ae60; -fx-text-fill: white;" text="💾 Salvar Horários" />
                     </HBox>
                 </VBox>
             </VBox>
