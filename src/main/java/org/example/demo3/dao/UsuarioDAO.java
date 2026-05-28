@@ -1,9 +1,11 @@
 package org.example.demo3.dao;
 
 import org.example.demo3.DatabaseConnection;
+import org.example.demo3.entity.Curso;
 import org.example.demo3.entity.Usuario;
 
 import java.sql.*;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -44,6 +46,30 @@ public class UsuarioDAO {
         } catch (SQLException e) {
             System.err.println("Erro ao buscar usuário por e-mail: " + e.getMessage());
             throw e;
+        }
+        return null;
+    }
+
+    public Usuario buscarUsuarioPorEmailUnico(String email) throws SQLException {
+        String sql = """
+            SELECT u.id_usuario, u.nome, u.senha_hash 
+            FROM usuario u WHERE u.email = ? AND u.deletado_em IS NULL;
+        """;
+
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, email);
+
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    Usuario u = new Usuario();
+                    u.setId_usuario(rs.getInt("u.id_usuario"));
+                    u.setNome(rs.getString("u.nome"));
+                    u.setSenha_hash(rs.getString("u.senha_hash"));
+
+                    return u;
+                }
+            }
         }
         return null;
     }
