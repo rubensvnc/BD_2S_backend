@@ -129,6 +129,38 @@ public class CursoDAO {
         return null;
     }
 
+    public void alterarCurso(AdmCursoExibicao cDto, Integer coord_id, String nomeAntigo){
+        String sql = """
+        UPDATE curso SET coordenador_id = ?, nome = ?, turno = ?, qtd_semestres = ? WHERE nome = ?;
+        """;
+
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            if (coord_id == null) {
+                stmt.setNull(1, java.sql.Types.INTEGER);
+            } else {
+                stmt.setInt(1, coord_id);
+            }
+
+            stmt.setString(2, cDto.getNome());
+            stmt.setString(3, cDto.getTurno());
+            stmt.setInt(4, cDto.getQtd_semestres());
+            stmt.setString(5, nomeAntigo);
+
+            int rowsAffected = stmt.executeUpdate();
+
+            if (rowsAffected > 0) {
+                System.out.println("Update realizado com sucesso!");
+            } else {
+                System.out.println("Nenhum registro encontrado com o Nome fornecido.");
+            }
+
+        } catch (SQLException e) {
+            System.err.println("Erro ao executar update: " + e.getMessage());
+        }
+    }
+
     public Integer inserirCursoRetornaId(Integer idCoord, String nomeCurso, String turno, Integer qtdSemestre) throws SQLException {
         String sql = "INSERT INTO curso(coordenador_id, nome, turno, qtd_semestres) VALUES (?, ?, ?, ?);";
 
