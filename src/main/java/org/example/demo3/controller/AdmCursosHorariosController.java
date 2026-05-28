@@ -88,18 +88,58 @@ public class AdmCursosHorariosController {
             carregarCursos();
         }
 
+        tabelaCursos.getSelectionModel().selectedItemProperty().addListener(
+                (observable, linhaAntiga, linhaSelecionadaCurso) -> {
+
+                    if (linhaSelecionadaCurso != null) {
+                        handleEditarCurso(linhaSelecionadaCurso);
+                    }
+
+                }
+        );
+
         cbProfessorCurso.setDisable(true);
 
         colCursoNome.setCellValueFactory(new PropertyValueFactory<>("nome"));
         colCursoTurno.setCellValueFactory(new PropertyValueFactory<>("turno"));
         colCursoSemestres.setCellValueFactory(new PropertyValueFactory<>("qtd_semestres"));
-        colCursoCoordenador.setCellValueFactory(new PropertyValueFactory<>("nome_coord"));
+        colCursoCoordenador.setCellValueFactory(new PropertyValueFactory<>("email"));
 
         colHTipo.setCellValueFactory(new PropertyValueFactory<>("tipo"));
         colHNumero.setCellValueFactory(new PropertyValueFactory<>("numero_ordem"));
         colHInicio.setCellValueFactory(new PropertyValueFactory<>("hora_inicio"));
         colHFim.setCellValueFactory(new PropertyValueFactory<>("hora_fim"));
 
+    }
+
+    public void handleEditarCurso(AdmCursoExibicao c){
+        System.out.println(c.getNome());
+        painelFormCurso.setExpanded(true);
+
+        tfCursoNome.setText(c.getNome());
+        if (c.getTurno().equals("manha")){
+            tbManha.setSelected(true);
+            tbNoite.setSelected(false);
+        } else {
+            tbNoite.setSelected(true);
+            tbManha.setSelected(false);
+        }
+
+        spQtdSemestres.getValueFactory().setValue(c.getQtd_semestres());
+
+        if (c.getEmail() != null){
+            checkUsarCadastroProfessor.setSelected(true);
+            cbProfessorCurso.setDisable(false);
+            cbProfessorCurso.setValue(c.getEmail());
+        } else {
+            checkUsarCadastroProfessor.setSelected(false);
+            cbProfessorCurso.setDisable(true);
+            cbProfessorCurso.setValue(c.getEmail());
+        }
+
+
+
+        lblTituloHorarios.setText("Horários — Curso selecionado: "+c.getNome());
     }
 
 
