@@ -9,7 +9,11 @@ import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.VBox;
 import org.example.demo3.UsuarioAtual;
+import org.example.demo3.dao.AtribuicaoProfessorDAO;
 import org.example.demo3.dao.DisciplinaDAO;
+import org.example.demo3.dao.UsuarioDAO;
+import org.example.demo3.dao.UsuarioTipoDAO;
+import org.example.demo3.entity.AtribuicaoProfessor;
 import org.example.demo3.entity.Disciplina;
 import org.example.demo3.entity.Usuario;
 
@@ -75,12 +79,17 @@ public class CoordPainelController {
     // ESTADO / DAOs
     // ════════════════════════════════════════════════════════════════════════
 
-    private final DisciplinaDAO disciplinaDAO = new DisciplinaDAO();
-    private final UsuarioAtual  logado        = UsuarioAtual.getInstancia();
-    private Integer    anoAtual;
-    private Integer    anoSemestre;
-    private Integer    idDisciplinaAtual;
-    private Integer    idSemestreAtual;
+    DisciplinaDAO disciplinaDAO = new DisciplinaDAO();
+    UsuarioDAO usuarioDAO = new UsuarioDAO();
+    UsuarioTipoDAO usuarioTipoDAO = new UsuarioTipoDAO();
+    AtribuicaoProfessorDAO atribuicaoProfessorDAO = new AtribuicaoProfessorDAO();
+    UsuarioAtual logado = UsuarioAtual.getInstancia();
+    private Integer anoAtual;
+    private Integer anoSemestre;
+    private Integer idDisciplinaAtual;
+    private Integer idSemestreAtual;
+    private Integer idCursoAtual;
+
 
     // null = modo inserção; não-null = modo edição
     private Disciplina disciplinaSelecionadaTabela;
@@ -91,8 +100,10 @@ public class CoordPainelController {
 
     @FXML
     public void initialize() {
+        configurarIds();
         configurarTabelaDisciplinas();
         configurarSpinnerDisciplina();
+        configurarTabelaProfessores();
     }
 
     // ════════════════════════════════════════════════════════════════════════
@@ -247,13 +258,42 @@ public class CoordPainelController {
 
     @FXML
     private void handleLimparProf(ActionEvent event) {
-        // TODO: Limpar todos os campos do formulário de professores
+        tfProfNome.clear();
+        tfProfEmail.clear();
+        pfProfSenha.clear();
     }
 
     @FXML
     private void handleSalvarProfessor(ActionEvent event) {
-        // TODO: Validar e salvar os dados do professor no banco de dados
+        //VERIFICAÇÕES
+        if (tfProfNome.getText().isBlank() || tfProfEmail.getText().isBlank() || pfProfSenha.getText().isBlank()) {
+            exibirAlerta(Alert.AlertType.ERROR, "Erro", "Preencha todos os campos do formulário.");
+            return;
+        }
+
+        if (cbDiscSemestreCurso.getValue() == null) {
+            exibirAlerta(Alert.AlertType.ERROR, "Erro", "Selecione o semestre do curso.");
+            return;
+        }
+
+        //MONTAR ENTIDADE
+        Usuario professor = new Usuario();
+        professor.setNome(tfProfNome.getText().trim());
+        professor.setEmail(tfProfEmail.getText().trim());
+        professor.setSenha_hash(pfProfSenha.getText());
+
+
     }
+
+    private void configurarTabelaProfessores() {
+        colProfNome.setCellValueFactory(new PropertyValueFactory<>("nome"));
+        colProfEmail.setCellValueFactory(new PropertyValueFactory<>("email"));
+    }
+
+
+
+
+
 
     // ════════════════════════════════════════════════════════════════════════
     // ABA 3 — ATRIBUIÇÕES  (handlers de botão)
@@ -284,5 +324,12 @@ public class CoordPainelController {
         alerta.setHeaderText(null);
         alerta.setContentText(mensagem);
         alerta.showAndWait();
+    }
+
+    private void configurarIds() {
+        this.idDisciplinaAtual = logado.getIdDisciplina();
+        this.idCursoAtual = logado.getIdCurso();
+        this.anoAtual = logado.getAno();
+        this.anoSemestre = logado.getAnoSemestre();
     }
 }
