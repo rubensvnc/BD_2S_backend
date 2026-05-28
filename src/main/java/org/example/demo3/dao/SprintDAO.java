@@ -9,11 +9,6 @@ import java.util.List;
 
 public class SprintDAO {
 
-    private Connection connection;
-
-    public SprintDAO() {
-        this.connection = DatabaseConnection.getConnection();
-    }
 
     public void inserirSprint(Sprint sprint) {
 
@@ -27,7 +22,8 @@ public class SprintDAO {
             ) VALUES (?, ?, ?, ?, ?)
             """;
 
-        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+        try (Connection connection = DatabaseConnection.getConnection();
+                PreparedStatement stmt = connection.prepareStatement(sql)) {
 
             stmt.setInt(1, sprint.getSemestre_letivo_id());
             stmt.setInt(2, sprint.getNumero());
@@ -53,8 +49,9 @@ public class SprintDAO {
             FROM sprint
             """;
 
-        try (PreparedStatement stmt = connection.prepareStatement(sql);
-             ResultSet rs = stmt.executeQuery()) {
+        try (Connection connection = DatabaseConnection.getConnection();
+                PreparedStatement stmt = connection.prepareStatement(sql);
+                ResultSet rs = stmt.executeQuery()) {
 
             while (rs.next()) {
 
@@ -89,7 +86,8 @@ public class SprintDAO {
             WHERE id_sprint = ?
             """;
 
-        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+        try (Connection connection = DatabaseConnection.getConnection();
+                PreparedStatement stmt = connection.prepareStatement(sql)) {
 
             stmt.setInt(1, sprint.getSemestre_letivo_id());
             stmt.setInt(2, sprint.getNumero());
@@ -114,7 +112,8 @@ public class SprintDAO {
             WHERE id_sprint = ?
             """;
 
-        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+        try (Connection connection = DatabaseConnection.getConnection();
+                PreparedStatement stmt = connection.prepareStatement(sql)) {
 
             stmt.setInt(1, idSprint);
 
