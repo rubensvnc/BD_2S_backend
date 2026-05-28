@@ -156,6 +156,25 @@ public class CursoDAO {
         }
     }
 
+    public Integer buscarQtdSemestresPorId(Curso curso) {
+        String sql = "SELECT qtd_semestres FROM curso WHERE id_curso = ?";
+
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            ps.setInt(1, curso.getId_curso());
+
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getInt("qtd_semestres");
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
     public void inserirCurso(Curso curso) throws SQLException {
         String sql = "INSERT INTO curso (coordenador_id, nome, turno, qtd_semestres, deletado_em) VALUES (?, ?, ?, ?, ?)";
         try (Connection conn = DatabaseConnection.getConnection();
