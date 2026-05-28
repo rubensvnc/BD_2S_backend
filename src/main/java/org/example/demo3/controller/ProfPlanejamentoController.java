@@ -72,16 +72,15 @@ public class ProfPlanejamentoController {
 
     @FXML
     public void handleGerarPlanejamento() {
+        // CORREÇÃO: Se a disciplina ou filtros estiverem nulos, limpa tudo visualmente da árvore e encerra
         if (mainShellController == null ||
                 logado.getAno() == null ||
+                logado.getAnoSemestre() == null ||
                 logado.getIdCurso() == null ||
                 logado.getIdDisciplina() == null) {
 
-            Alert alert = new Alert(Alert.AlertType.WARNING);
-            alert.setTitle("Filtros insuficientes");
-            alert.setHeaderText(null);
-            alert.setContentText("Por favor, selecione Ano, Semestre, Curso e Disciplina nos menus do topo antes de gerar.");
-            alert.showAndWait();
+            limparCamposEstatisticas();
+            treePlanejamento.setRoot(null);
             return;
         }
 
