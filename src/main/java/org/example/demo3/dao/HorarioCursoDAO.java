@@ -44,6 +44,37 @@ public class HorarioCursoDAO {
         return listaHc;
     }
 
+    public void removerHorarioOrdemCursoSL(Integer ordem, Integer curso_id, Integer sl) throws SQLException{
+        String sql = """
+                DELETE FROM horario_curso WHERE numero_ordem = ? AND curso_id = ? AND semestre_letivo_id = ?;
+            """;
+
+        try (Connection conexao = DatabaseConnection.getConnection();
+             PreparedStatement ps = conexao.prepareStatement(sql)) {
+
+            ps.setInt(1, ordem);
+            ps.setInt(2, curso_id);
+            ps.setInt(3, sl);
+            ps.executeUpdate();
+
+        }
+    }
+
+    public void removerHorariosCursoSL(Integer curso_id, Integer sl) throws SQLException{
+        String sql = """
+                DELETE FROM horario_curso WHERE curso_id = ? AND semestre_letivo_id = ?;
+            """;
+
+        try (Connection conexao = DatabaseConnection.getConnection();
+             PreparedStatement ps = conexao.prepareStatement(sql)) {
+
+            ps.setInt(1, curso_id);
+            ps.setInt(2, sl);
+            ps.executeUpdate();
+
+        }
+    }
+
     public void inserirTemplateHorarioCurso(List<TemplateHorarioTurno> thtLista,
                                             Integer cursoId, Integer slId) throws SQLException{
 
