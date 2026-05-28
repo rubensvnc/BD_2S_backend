@@ -277,12 +277,30 @@ public class AdmCursosHorariosController {
 
     @FXML
     public void handlePropagarTurno() {
-        // TODO: Replicar a grade de horários atual do curso para todos os outros cursos do mesmo turno
+        if (!linhasHorarios.isEmpty()){
+            List<TemplateHorarioTurno> novoTemplate = tabelaHorarios.getItems();
+            TemplateHorarioTurnoDAO thtDao = new TemplateHorarioTurnoDAO();
+            thtDao.deletarTemplateTurno("manha");
+            System.out.println("DELETADO COM SUCESSO");
+            thtDao.salvarListaTemplate(novoTemplate);
+            System.out.println("NOVO TEMPLATE SALVO NO BANCO");
+        }
     }
 
     @FXML
     public void handleAdicionarLinhaHorario() {
-        // TODO: Inserir uma nova linha vazia ou editável na TableView de horários
+        if (!linhasHorarios.isEmpty()){
+            TemplateHorarioTurno ultimo_item = tabelaHorarios.getItems().getLast();
+            TemplateHorarioTurno nova_linha = new TemplateHorarioTurno();
+            nova_linha.setTurno(ultimo_item.getTurno());
+            nova_linha.setTipo(ultimo_item.getTipo());
+            nova_linha.setNumero_ordem(ultimo_item.getNumero_ordem()+1);
+            nova_linha.setHora_inicio(ultimo_item.getHora_inicio());
+            nova_linha.setHora_fim(ultimo_item.getHora_fim());
+
+            linhasHorarios.add(nova_linha);
+            tabelaHorarios.setItems(linhasHorarios);
+        }
     }
 
     @FXML
