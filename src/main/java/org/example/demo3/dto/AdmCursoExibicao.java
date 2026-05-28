@@ -4,13 +4,13 @@ public class AdmCursoExibicao {
     private String nome;
     private String turno;
     private Integer qtd_semestres;
-    private String nome_coord;
+    private String email;
 
-    public AdmCursoExibicao(String nome, String turno, Integer qtd_semestres, String nome_coord) {
+    public AdmCursoExibicao(String nome, String turno, Integer qtd_semestres, String email) {
         this.nome = nome;
         this.turno = turno;
         this.qtd_semestres = qtd_semestres;
-        this.nome_coord = nome_coord;
+        this.email = email;
     }
 
     public String getNome() {
@@ -37,11 +37,11 @@ public class AdmCursoExibicao {
         this.qtd_semestres = qtd_semestres;
     }
 
-    public String getNome_coord() {
-        return nome_coord;
+    public String getEmail() {
+        return email;
     }
 
-    public void setNome_coord(String nome_coord) {
-        this.nome_coord = nome_coord;
+    public void setEmail(String email) {
+        this.email = email;
     }
 }
