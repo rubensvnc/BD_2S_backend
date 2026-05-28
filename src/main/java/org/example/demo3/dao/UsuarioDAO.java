@@ -326,4 +326,21 @@ public class UsuarioDAO {
             System.out.println("Erro ao excluir usuário: " + e.getMessage());
         }
     }
+
+    //VERIFICAR SE EMAIL JÁ EXISTE (CoordPainelController)
+    public boolean emailJaExiste(String email) throws SQLException {
+        String sql = "SELECT 1 FROM usuario WHERE email = ? AND deletado_em IS NULL";
+
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            ps.setString(1, email);
+
+            try (ResultSet rs = ps.executeQuery()) {
+                return rs.next();
+            }
+        }
+    }
+
+
 }
