@@ -10,12 +10,10 @@ import javafx.scene.input.MouseEvent;
 import org.example.demo3.UsuarioAtual;
 import org.example.demo3.dao.*;
 import org.example.demo3.dto.AdmCursoExibicao;
-import org.example.demo3.entity.Curso;
-import org.example.demo3.entity.TemplateHorarioTurno;
-import org.example.demo3.entity.Usuario;
-import org.example.demo3.entity.UsuarioTipo;
+import org.example.demo3.entity.*;
 
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -52,7 +50,7 @@ public class AdmCursosHorariosController {
     private Integer idCursoProcessando;
     private Integer idSemestreLetivoProcessando;
     private List<TemplateHorarioTurno> thtProcessando;
-    private ObservableList<TemplateHorarioTurno> linhasHorarios;
+    private ObservableList<TemplateHorarioTurno> linhasHorarios = FXCollections.observableArrayList();
 
     private String nomeCursoProcessando;
     private String turnoProcessando;
@@ -156,6 +154,35 @@ public class AdmCursosHorariosController {
         btnSalvarCurso.setOnAction(event -> {
             handleEditarCurso(linhaAnterior);
         });
+
+        //---- RELACIONADO AOS HORARIOS:
+        try{
+            HorarioCursoDAO hcDao = new HorarioCursoDAO();
+            CursoDAO cDao = new CursoDAO();
+            SemestreLetivoDAO slDao = new SemestreLetivoDAO();
+
+            Integer idCurso = cDao.listarIdCurso(c.getNome());
+            Integer sl = slDao.getIdSemestreLetivo(logado.getAno(), logado.getAnoSemestre());
+
+            List<HorarioCurso> listaHc = hcDao.listarHorariosPorCurso(idCurso, sl);
+            List<TemplateHorarioTurno> listaTht = new ArrayList<>();
+            for (HorarioCurso hc: listaHc){
+                TemplateHorarioTurno tht = new TemplateHorarioTurno();
+                tht.setTipo(hc.getTipo());
+                tht.setNumero_ordem(hc.getNumero_ordem());
+                tht.setHora_inicio(hc.getHora_inicio());
+                tht.setHora_fim(hc.getHora_fim());
+
+                listaTht.add(tht);
+            }
+
+            linhasHorarios.clear();
+            linhasHorarios.setAll(listaTht);
+
+            tabelaHorarios.setItems(linhasHorarios);
+        } catch (SQLException e){
+            e.printStackTrace();
+        }
     }
 
     public void handleEditarCurso(AdmCursoExibicao linhaAnterior){
@@ -204,6 +231,7 @@ public class AdmCursosHorariosController {
     @FXML
     public void handleNovoCurso() {
         reiniciarValoresDadosCurso();
+        tabelaHorarios.setItems(null);
         painelFormCurso.setExpanded(true);
 
         btnSalvarCurso.setStyle("-fx-background-color: #2980b9; -fx-text-fill: white;");
