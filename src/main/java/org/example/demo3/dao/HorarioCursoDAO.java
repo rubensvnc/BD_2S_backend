@@ -11,12 +11,6 @@ import java.util.List;
 
 public class HorarioCursoDAO {
 
-    private Connection connection;
-    private PreparedStatement ps;
-
-    public HorarioCursoDAO() {
-        this.connection = DatabaseConnection.getConnection();
-    }
 
     public List<HorarioCurso> listarHorariosPorCurso
             (Integer curso_id, Integer sl) throws SQLException{
@@ -53,15 +47,17 @@ public class HorarioCursoDAO {
     public void inserirTemplateHorarioCurso(List<TemplateHorarioTurno> thtLista,
                                             Integer cursoId, Integer slId) throws SQLException{
 
-        try{
-            for (TemplateHorarioTurno tht: thtLista) {
-                String sql = """
+        try (Connection connection = DatabaseConnection.getConnection()) {for (TemplateHorarioTurno tht: thtLista) {
+
+
+            String sql = """
                         INSERT INTO horario_curso (
                     curso_id, semestre_letivo_id, tipo, numero_ordem, hora_inicio, hora_fim)
-                VALUES (?, ?, ?, ?, ?, ?);
-                """;
+                                    VALUES (?, ?, ?, ?, ?, ?);
+    
+                       """;
+try (PreparedStatement ps = connection.prepareStatement(sql)) {
 
-                ps = connection.prepareStatement(sql);
                 ps.setInt(1, cursoId);
                 ps.setInt(2, slId);
                 ps.setString(3, tht.getTipo());
@@ -70,11 +66,11 @@ public class HorarioCursoDAO {
                 ps.setObject(6, tht.getHora_fim());
                 ps.executeUpdate();
             }
+        }
 
         } catch (SQLException e){
             e.printStackTrace();
-        } finally {
-            connection.close();
+
         }
     }
 
@@ -87,7 +83,8 @@ public class HorarioCursoDAO {
                 VALUES (?, ?, ?, ?, ?, ?)
                 """;
 
-        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+        try (Connection connection = DatabaseConnection.getConnection();
+        PreparedStatement stmt = connection.prepareStatement(sql)) {
 
             stmt.setInt(1, horario.getCurso_id());
             stmt.setInt(2, horario.getSemestre_letivo_id());
@@ -112,8 +109,9 @@ public class HorarioCursoDAO {
 
         String sql = "SELECT * FROM horario_curso";
 
-        try (PreparedStatement stmt = connection.prepareStatement(sql);
-             ResultSet rs = stmt.executeQuery()) {
+        try (Connection connection = DatabaseConnection.getConnection();
+        PreparedStatement stmt = connection.prepareStatement(sql);
+        ResultSet rs = stmt.executeQuery()) {
 
             while (rs.next()) {
 
@@ -142,7 +140,8 @@ public class HorarioCursoDAO {
 
         String sql = "SELECT * FROM horario_curso WHERE id_horario_curso = ?";
 
-        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+        try (Connection connection = DatabaseConnection.getConnection();
+        PreparedStatement stmt = connection.prepareStatement(sql)) {
 
             stmt.setInt(1, id);
 
@@ -184,7 +183,8 @@ public class HorarioCursoDAO {
                 WHERE id_horario_curso = ?
                 """;
 
-        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+        try (Connection connection = DatabaseConnection.getConnection();
+                PreparedStatement stmt = connection.prepareStatement(sql)) {
 
             stmt.setInt(1, horario.getCurso_id());
             stmt.setInt(2, horario.getSemestre_letivo_id());
@@ -208,7 +208,8 @@ public class HorarioCursoDAO {
 
         String sql = "DELETE FROM horario_curso WHERE id_horario_curso = ?";
 
-        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+        try (Connection connection = DatabaseConnection.getConnection();
+             PreparedStatement stmt = connection.prepareStatement(sql)) {
 
             stmt.setInt(1, id);
 
