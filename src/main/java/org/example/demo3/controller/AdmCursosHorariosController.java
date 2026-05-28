@@ -2,6 +2,7 @@ package org.example.demo3.controller;
 
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
+import javafx.event.EventHandler;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
@@ -92,11 +93,15 @@ public class AdmCursosHorariosController {
                 (observable, linhaAntiga, linhaSelecionadaCurso) -> {
 
                     if (linhaSelecionadaCurso != null) {
-                        handleEditarCurso(linhaSelecionadaCurso);
+                        preencherDadosEdicaoCurso(linhaSelecionadaCurso);
                     }
 
                 }
         );
+
+        btnSalvarCurso.setOnAction(event -> {
+            handleSalvarCurso();
+        });
 
         cbProfessorCurso.setDisable(true);
 
@@ -112,7 +117,7 @@ public class AdmCursosHorariosController {
 
     }
 
-    public void handleEditarCurso(AdmCursoExibicao c){
+    public void preencherDadosEdicaoCurso(AdmCursoExibicao c){
         System.out.println(c.getNome());
         painelFormCurso.setExpanded(true);
 
@@ -137,15 +142,75 @@ public class AdmCursosHorariosController {
             cbProfessorCurso.setValue(c.getEmail());
         }
 
-
-
         lblTituloHorarios.setText("Horários — Curso selecionado: "+c.getNome());
+        btnSalvarCurso.setStyle("-fx-background-color: #e67e22; -fx-text-fill: white;");
+        btnSalvarCurso.setText("Editar Curso");
+
+        AdmCursoExibicao linhaAnterior = new AdmCursoExibicao(
+                c.getNome(),
+                c.getTurno(),
+                c.getQtd_semestres(),
+                c.getEmail()
+        );
+
+        btnSalvarCurso.setOnAction(event -> {
+            handleEditarCurso(linhaAnterior);
+        });
+    }
+
+    public void handleEditarCurso(AdmCursoExibicao linhaAnterior){
+        CursoDAO cDao = new CursoDAO();
+        UsuarioDAO uDao = new UsuarioDAO();
+
+        String turno;
+        String emailProf = null;
+        Integer idCoord = null;
+
+        if (tbManha.isSelected()){
+            turno = "manha";
+        } else {
+            turno = "noite";
+        }
+
+        if (checkUsarCadastroProfessor.isSelected()){
+            emailProf = cbProfessorCurso.getValue();
+        }
+
+
+        AdmCursoExibicao dadosAlterados = new AdmCursoExibicao(
+                tfCursoNome.getText(),
+                turno,
+                spQtdSemestres.getValueFactory().getValue(),
+                emailProf
+        );
+
+        try {
+            if (emailProf != null){
+                idCoord = uDao.buscarUsuarioPorEmailUnico(
+                        dadosAlterados.getEmail()).getId_usuario();
+            }
+
+            cDao.alterarCurso(dadosAlterados, idCoord, linhaAnterior.getNome());
+            painelFormCurso.setExpanded(false);
+            carregarCursos();
+
+        } catch (SQLException e){
+            e.printStackTrace();
+        }
+
     }
 
 
     @FXML
     public void handleNovoCurso() {
-        // TODO: Preparar e expandir o formulário lateral para a criação de um novo curso
+        reiniciarValoresDadosCurso();
+        painelFormCurso.setExpanded(true);
+
+        btnSalvarCurso.setStyle("-fx-background-color: #2980b9; -fx-text-fill: white;");
+        btnSalvarCurso.setText("Salvar Curso");
+        btnSalvarCurso.setOnAction(event -> {
+            handleSalvarCurso();
+        });
     }
 
     @FXML
@@ -253,6 +318,16 @@ public class AdmCursosHorariosController {
             cbProfessorCurso.setDisable(true);
         }
 
+    }
+
+    public void reiniciarValoresDadosCurso(){
+        tfCursoNome.setText("");
+        tbManha.setSelected(true);
+        tbNoite.setSelected(false);
+        spQtdSemestres.getValueFactory().setValue(1);
+        checkUsarCadastroProfessor.setSelected(false);
+        cbProfessorCurso.setDisable(true);
+        cbProfessorCurso.setItems(null);
     }
 
     @FXML
