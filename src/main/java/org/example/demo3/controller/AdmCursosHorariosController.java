@@ -5,8 +5,11 @@ import javafx.collections.ObservableList;
 import javafx.event.EventHandler;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
+import javafx.scene.control.cell.ComboBoxTableCell;
 import javafx.scene.control.cell.PropertyValueFactory;
+import javafx.scene.control.cell.TextFieldTableCell;
 import javafx.scene.input.MouseEvent;
+import javafx.util.Callback;
 import org.example.demo3.UsuarioAtual;
 import org.example.demo3.dao.*;
 import org.example.demo3.dto.AdmCursoExibicao;
@@ -35,6 +38,7 @@ public class AdmCursosHorariosController {
     @FXML private TableColumn<AdmCursoExibicao, String> colCursoAcoes;
     @FXML private Label lblTituloHorarios;
     @FXML private Button btnSalvarCurso;
+    @FXML private Button btnSalvarHorario;
     @FXML private Label lblProcessoSalvarCurso;
     @FXML private TableView<TemplateHorarioTurno> tabelaHorarios;
     @FXML private TableColumn<TemplateHorarioTurno, String> colHTipo;
@@ -42,6 +46,7 @@ public class AdmCursosHorariosController {
     @FXML private TableColumn<TemplateHorarioTurno, java.time.LocalTime> colHInicio;
     @FXML private TableColumn<TemplateHorarioTurno, java.time.LocalTime> colHFim;
     @FXML private TableColumn<TemplateHorarioTurno, Void> colHAcao;
+    @FXML private Button btnDeletarHorarios;
 
     private UsuarioAtual logado = UsuarioAtual.getInstancia();
     private Integer ano;
@@ -49,7 +54,7 @@ public class AdmCursosHorariosController {
 
     private Integer idCursoProcessando;
     private Integer idSemestreLetivoProcessando;
-    private List<TemplateHorarioTurno> thtProcessando;
+    private List<TemplateHorarioTurno> thtProcessando = new ArrayList<>();
     private ObservableList<TemplateHorarioTurno> linhasHorarios = FXCollections.observableArrayList();
 
     private String nomeCursoProcessando;
@@ -91,6 +96,8 @@ public class AdmCursosHorariosController {
                 (observable, linhaAntiga, linhaSelecionadaCurso) -> {
 
                     if (linhaSelecionadaCurso != null) {
+                        thtProcessando.clear();
+                        linhasHorarios.clear();
                         preencherDadosEdicaoCurso(linhaSelecionadaCurso);
                     }
 
@@ -107,12 +114,205 @@ public class AdmCursosHorariosController {
         colCursoTurno.setCellValueFactory(new PropertyValueFactory<>("turno"));
         colCursoSemestres.setCellValueFactory(new PropertyValueFactory<>("qtd_semestres"));
         colCursoCoordenador.setCellValueFactory(new PropertyValueFactory<>("email"));
+        colCursoAcoes.setCellFactory(new Callback<TableColumn<AdmCursoExibicao, String>, TableCell<AdmCursoExibicao, String>>() {
+            @Override
+            public TableCell<AdmCursoExibicao, String> call(TableColumn<AdmCursoExibicao, String> param) {
+                return new TableCell<>() {
+                    private final Button btnDeletar = new Button("Excluir");
 
+                    {
+                        // Estilização simples para o botão (opcional)
+                        btnDeletar.setStyle("-fx-background-color: #c0392b; -fx-text-fill: white;");
+
+                        // Ação do Botão
+                        btnDeletar.setOnAction(event -> {
+                            // Pega o objeto da linha atual da tabela
+                            AdmCursoExibicao cursoSelecionado = getTableView().getItems().get(getIndex());
+
+                            // Chama o seu método já existente passando o objeto
+                            handleDeletarCurso(cursoSelecionado);
+                        });
+                    }
+
+                    @Override
+                    protected void updateItem(String item, boolean empty) {
+                        super.updateItem(item, empty);
+                        if (empty) {
+                            setGraphic(null);
+                        } else {
+                            setGraphic(btnDeletar);
+                        }
+                    }
+                };
+            }
+        });
+
+        tabelaHorarios.setEditable(true);
         colHTipo.setCellValueFactory(new PropertyValueFactory<>("tipo"));
         colHNumero.setCellValueFactory(new PropertyValueFactory<>("numero_ordem"));
         colHInicio.setCellValueFactory(new PropertyValueFactory<>("hora_inicio"));
         colHFim.setCellValueFactory(new PropertyValueFactory<>("hora_fim"));
+        colHAcao.setCellFactory(new Callback<TableColumn<TemplateHorarioTurno, Void>, TableCell<TemplateHorarioTurno, Void>>() {
+            @Override
+            public TableCell<TemplateHorarioTurno, Void> call(TableColumn<TemplateHorarioTurno, Void> param) {
+                return new TableCell<>() {
+                    private final Button btnDeletar = new Button("Excluir");
 
+                    {
+                        // Estilização simples para o botão
+                        btnDeletar.setStyle("-fx-background-color: #c0392b; -fx-text-fill: white;");
+
+                        // Ação do Botão
+                        btnDeletar.setOnAction(event -> {
+                            // Pega o objeto da linha atual da tabela
+                            TemplateHorarioTurno thtSelecionado = getTableView().getItems().get(getIndex());
+
+                            // Chama o seu método
+                            handleDeletarHorario(thtSelecionado);
+                        });
+                    }
+
+                    @Override
+                    protected void updateItem(Void item, boolean empty) { // <--- CORRIGIDO AQUI (De String para Void)
+                        super.updateItem(item, empty); // <--- CORRIGIDO AQUI
+                        if (empty) {
+                            setGraphic(null);
+                        } else {
+                            setGraphic(btnDeletar);
+                        }
+                    }
+                };
+            }
+        });
+
+        habilitarEdicaoCelulaHorarios();
+    }
+
+    private void carregarHorarios() {
+        // Só tenta carregar se houver um curso sendo processado no momento
+        if (idCursoProcessando != null && idSemestreLetivoProcessando != null) {
+            try {
+                HorarioCursoDAO hcDao = new HorarioCursoDAO();
+                List<HorarioCurso> listaHc = hcDao.listarHorariosPorCurso(idCursoProcessando, idSemestreLetivoProcessando);
+
+                thtProcessando.clear();
+                for (HorarioCurso hc : listaHc) {
+                    TemplateHorarioTurno tht = new TemplateHorarioTurno();
+                    tht.setTipo(hc.getTipo());
+                    tht.setNumero_ordem(hc.getNumero_ordem());
+                    tht.setHora_inicio(hc.getHora_inicio());
+                    tht.setHora_fim(hc.getHora_fim());
+                    thtProcessando.add(tht);
+                }
+
+                linhasHorarios.clear();
+                linhasHorarios.setAll(thtProcessando);
+                tabelaHorarios.setItems(linhasHorarios);
+
+            } catch (SQLException e) {
+                e.printStackTrace();
+                exibirAlerta("Erro", "Não foi possível atualizar a tabela de horários.", Alert.AlertType.ERROR);
+            }
+        } else {
+            // Se limpar o curso selecionado, limpa a tabela de horários
+            linhasHorarios.clear();
+            tabelaHorarios.setItems(null);
+        }
+    }
+
+    public void handleDeletarCurso(AdmCursoExibicao linhaCurso){
+        Alert alertaConfirmacao = new Alert(Alert.AlertType.CONFIRMATION, "Deseja mesmo excluir o curso " + linhaCurso.getNome() + "?", ButtonType.YES, ButtonType.NO);
+        alertaConfirmacao.showAndWait();
+
+        if (alertaConfirmacao.getResult() == ButtonType.YES) {
+            try {
+                CursoDAO cDao = new CursoDAO();
+
+                int idCurso = cDao.listarIdCurso(linhaCurso.getNome());
+                cDao.deletarCursoProcessando(idCurso);
+
+                carregarCursos();
+
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    public void handleDeletarHorario(TemplateHorarioTurno tht){
+        Alert alertaConfirmacao = new Alert(Alert.AlertType.CONFIRMATION, "Deseja mesmo excluir esse Horario?", ButtonType.YES, ButtonType.NO);
+        alertaConfirmacao.showAndWait();
+
+        if (alertaConfirmacao.getResult() == ButtonType.YES) {
+            try {
+                HorarioCursoDAO hcDao = new HorarioCursoDAO();
+
+                hcDao.removerHorarioOrdemCursoSL(tht.getNumero_ordem(), idCursoProcessando, idSemestreLetivoProcessando);
+                carregarHorarios();
+            } catch (SQLException e) {
+                e.printStackTrace();
+                exibirAlerta("Erro ao deletar", "Não foi possível deletar o curso devido a dependências.", Alert.AlertType.ERROR);
+            }
+        }
+    }
+
+    @FXML
+    private void deletarTodosHorarios(){
+        Alert alertaConfirmacao = new Alert(Alert.AlertType.CONFIRMATION, "Deseja mesmo excluir todos os horários?", ButtonType.YES, ButtonType.NO);
+        alertaConfirmacao.showAndWait();
+
+        if (alertaConfirmacao.getResult() == ButtonType.YES) {
+            try {
+                HorarioCursoDAO hcDao = new HorarioCursoDAO();
+
+                hcDao.removerHorariosCursoSL(idCursoProcessando, idSemestreLetivoProcessando);
+                carregarHorarios();
+            } catch (SQLException e) {
+                e.printStackTrace();
+                exibirAlerta("Erro ao deletar", "Não foi possível deletar o curso devido a dependências.", Alert.AlertType.ERROR);
+            }
+        }
+    }
+
+    public void habilitarEdicaoCelulaHorarios(){
+        colHTipo.setCellFactory(ComboBoxTableCell.forTableColumn());
+        colHTipo.setCellFactory(ComboBoxTableCell.forTableColumn("aula", "intervalo"));
+        colHTipo.setOnEditCommit(event -> {
+            event.getRowValue().setTipo(event.getNewValue());
+            tabelaHorarios.refresh();
+        });
+
+        colHNumero.setCellFactory(TextFieldTableCell.forTableColumn(new javafx.util.converter.IntegerStringConverter()));
+        colHNumero.setOnEditCommit(event -> {
+            event.getRowValue().setNumero_ordem(event.getNewValue());
+            tabelaHorarios.refresh();
+        });
+
+        javafx.util.StringConverter<java.time.LocalTime> timeConverter = new javafx.util.StringConverter<>() {
+            @Override
+            public String toString(java.time.LocalTime time) {
+                return (time != null) ? time.toString() : "";
+            }
+            @Override
+            public java.time.LocalTime fromString(String string) {
+                try {
+                    return java.time.LocalTime.parse(string);
+                } catch (Exception ex) {
+                    return null;
+                }
+            }
+        };
+        colHInicio.setCellFactory(TextFieldTableCell.forTableColumn(timeConverter));
+        colHInicio.setOnEditCommit(event -> {
+            event.getRowValue().setHora_inicio(event.getNewValue());
+            tabelaHorarios.refresh();
+        });
+
+        colHFim.setCellFactory(TextFieldTableCell.forTableColumn(timeConverter));
+        colHFim.setOnEditCommit(event -> {
+            event.getRowValue().setHora_fim(event.getNewValue());
+            tabelaHorarios.refresh();
+        });
     }
 
     public void preencherDadosEdicaoCurso(AdmCursoExibicao c){
@@ -161,11 +361,12 @@ public class AdmCursosHorariosController {
             CursoDAO cDao = new CursoDAO();
             SemestreLetivoDAO slDao = new SemestreLetivoDAO();
 
-            Integer idCurso = cDao.listarIdCurso(c.getNome());
-            Integer sl = slDao.getIdSemestreLetivo(logado.getAno(), logado.getAnoSemestre());
+            idCursoProcessando = cDao.listarIdCurso(c.getNome());
+            idSemestreLetivoProcessando = slDao.getIdSemestreLetivo
+                    (logado.getAno(), logado.getAnoSemestre());
 
-            List<HorarioCurso> listaHc = hcDao.listarHorariosPorCurso(idCurso, sl);
-            List<TemplateHorarioTurno> listaTht = new ArrayList<>();
+            List<HorarioCurso> listaHc = hcDao.listarHorariosPorCurso(
+                    idCursoProcessando, idSemestreLetivoProcessando);
             for (HorarioCurso hc: listaHc){
                 TemplateHorarioTurno tht = new TemplateHorarioTurno();
                 tht.setTipo(hc.getTipo());
@@ -173,13 +374,24 @@ public class AdmCursosHorariosController {
                 tht.setHora_inicio(hc.getHora_inicio());
                 tht.setHora_fim(hc.getHora_fim());
 
-                listaTht.add(tht);
+                thtProcessando.add(tht);
             }
 
             linhasHorarios.clear();
-            linhasHorarios.setAll(listaTht);
+            linhasHorarios.setAll(thtProcessando);
 
             tabelaHorarios.setItems(linhasHorarios);
+
+
+            btnSalvarHorario.setStyle("-fx-background-color: #e67e22; -fx-text-fill: white;");
+            btnSalvarHorario.setText("Editar Horarios");
+
+            btnSalvarHorario.setOnAction(event -> {
+                handleEditarHorario();
+            });
+
+            btnDeletarHorarios.setManaged(true);
+            btnDeletarHorarios.setVisible(true);
         } catch (SQLException e){
             e.printStackTrace();
         }
@@ -227,6 +439,35 @@ public class AdmCursosHorariosController {
 
     }
 
+    public void handleEditarHorario(){
+        List<TemplateHorarioTurno> listaHorariosAlterados = tabelaHorarios.getItems();
+
+        HorarioCursoDAO hcDao = new HorarioCursoDAO();
+
+        try{
+            hcDao.removerHorariosCursoSL(idCursoProcessando, idSemestreLetivoProcessando);
+            hcDao.inserirTemplateHorarioCurso(
+                    listaHorariosAlterados, idCursoProcessando, idSemestreLetivoProcessando
+            );
+        } catch (SQLException e){
+            e.printStackTrace();
+            exibirAlerta(
+                    "Não é possível alterar",
+                    "Estes horários não podem ser alterados ou removidos porque existem outros registros (dependências) vinculados a eles.",
+                    Alert.AlertType.WARNING
+            );
+        }
+
+    }
+
+    private void exibirAlerta(String titulo, String mensagem, Alert.AlertType tipo) {
+        Alert alerta = new Alert(tipo);
+        alerta.setTitle(titulo);
+        alerta.setHeaderText(null);
+        alerta.setContentText(mensagem);
+        alerta.showAndWait();
+    }
+
 
     @FXML
     public void handleNovoCurso() {
@@ -239,6 +480,16 @@ public class AdmCursosHorariosController {
         btnSalvarCurso.setOnAction(event -> {
             handleSalvarCurso();
         });
+
+        btnSalvarHorario.setStyle("-fx-background-color: #27ae60; -fx-text-fill: white;");
+        btnSalvarHorario.setText("\uD83D\uDCBE Salvar Horários");
+
+        btnSalvarHorario.setOnAction(event -> {
+            handleSalvarHorarios();
+        });
+
+        btnDeletarHorarios.setManaged(false);
+        btnDeletarHorarios.setVisible(false);
     }
 
     @FXML
