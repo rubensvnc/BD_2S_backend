@@ -61,16 +61,16 @@ public class MainShellController {
         configurarResetInicial();
 
         if (logado.getTipo() == null) {
-            logado.setId_usuario(1);
-            logado.setTipo("ADM");
+            logado.setId_usuario(3);
+            logado.setTipo("COORD");
         }
 
         if (lblPerfilUsuario != null) {
             lblPerfilUsuario.setText("Perfil: " + logado.getTipo());
         }
 
-        configurarInterfacePorPerfil(logado.getTipo());
         configurarValoresPreProgramados();
+        configurarInterfacePorPerfil(logado.getTipo());
         processarDadosAnos();
     }
 
@@ -111,6 +111,19 @@ public class MainShellController {
         }
     }
 
+    private void configurarPreValoresCursoCoord() {
+        try {
+            CursoDAO cDAO = new CursoDAO();
+            listaCursos = cDAO.buscarCursoCoordenador(logado.getId_usuario());
+            if (listaCursos != null && !listaCursos.isEmpty()) {
+                Curso curso = listaCursos.get(0);
+                logado.setIdCurso(curso.getId_curso()); // ← seta o id diretamente, sem passar pelo combobox
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
     private void configurarPreValoresCursoSemestresEDisciplinas(){
         processarDadosCursoSemestresEDisciplinas();
         popularComboboxCursoSemestres();
@@ -134,6 +147,8 @@ public class MainShellController {
         if ("PROF".equals(logado.getTipo())){
             configurarPreValoresCursos();
             configurarPreValoresCursoSemestresEDisciplinas();
+        } else if ("COORD".equals(logado.getTipo())){
+            configurarPreValoresCursoCoord();
         }
     }
 
