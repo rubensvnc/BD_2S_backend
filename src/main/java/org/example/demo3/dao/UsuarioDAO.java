@@ -123,8 +123,6 @@ public class UsuarioDAO {
     }
 
     //  LISTA professores do curso
-
-
     public List<Usuario> listarProfessoresDoCurso(Integer idCurso, Integer ano, Integer anoSemestre) throws SQLException {
         List<Usuario> usuarios = new ArrayList<>();
         String sql = """
