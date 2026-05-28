@@ -1,6 +1,7 @@
 package org.example.demo3.dao;
 
 import org.example.demo3.DatabaseConnection;
+import org.example.demo3.dto.AdmCursoExibicao;
 import org.example.demo3.entity.HorarioCurso;
 import org.example.demo3.entity.TemplateHorarioTurno;
 
@@ -15,6 +16,38 @@ public class HorarioCursoDAO {
 
     public HorarioCursoDAO() {
         this.connection = DatabaseConnection.getConnection();
+    }
+
+    public List<HorarioCurso> listarHorariosPorCurso
+            (Integer curso_id, Integer sl) throws SQLException{
+
+        String sql = """
+            SELECT * FROM horario_curso WHERE curso_id = ? 
+            AND semestre_letivo_id = ? ORDER BY numero_ordem;
+        """;
+
+        List<HorarioCurso> listaHc = new ArrayList<>();
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, curso_id);
+            ps.setInt(2, sl);
+
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    HorarioCurso hc = new HorarioCurso(
+                            rs.getInt("id_horario_curso"),
+                            rs.getInt("curso_id"),
+                            rs.getInt("semestre_letivo_id"),
+                            rs.getString("tipo"),
+                            rs.getInt("numero_ordem"),
+                            rs.getObject("hora_inicio", java.time.LocalTime.class),
+                            rs.getObject("hora_fim", java.time.LocalTime.class)
+                    );
+                    listaHc.add(hc);
+                }
+            }
+        }
+        return listaHc;
     }
 
     public void inserirTemplateHorarioCurso(List<TemplateHorarioTurno> thtLista,
