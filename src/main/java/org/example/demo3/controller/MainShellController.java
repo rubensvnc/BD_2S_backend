@@ -61,8 +61,8 @@ public class MainShellController {
         configurarResetInicial();
 
         if (logado.getTipo() == null) {
-            logado.setId_usuario(5);
-            logado.setTipo("PROF");
+            logado.setId_usuario(1);
+            logado.setTipo("ADM");
         }
 
         if (lblPerfilUsuario != null) {
