@@ -60,15 +60,16 @@ public class CursoDAO {
     }
 
     public List<Curso> buscarCursoCoordenador(int coordenadorId) throws SQLException {
-        String sql = "SELECT nome FROM curso WHERE coordenador_id = ?;";
+        String sql = "SELECT id_curso, nome FROM curso WHERE coordenador_id = ?;"; // ← adiciona id_curso
 
         List<Curso> listaC = new ArrayList<>();
         try (Connection conn = DatabaseConnection.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1, coordenadorId);
             try (ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) {
+                while (rs.next()) {  // ← era if, troca para while
                     Curso c = new Curso();
+                    c.setId_curso(rs.getInt("id_curso")); // ← adiciona
                     c.setNome(rs.getString("nome"));
                     listaC.add(c);
                 }
