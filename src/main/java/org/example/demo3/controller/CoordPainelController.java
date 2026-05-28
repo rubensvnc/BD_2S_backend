@@ -17,6 +17,8 @@ import org.example.demo3.entity.AtribuicaoProfessor;
 import org.example.demo3.entity.Disciplina;
 import org.example.demo3.entity.Usuario;
 
+import java.sql.SQLException;
+
 public class CoordPainelController {
 
     // ════════════════════════════════════════════════════════════════════════
@@ -238,7 +240,8 @@ public class CoordPainelController {
 
     @FXML
     private void handleNovoProfessor(ActionEvent event) {
-        // TODO: Preparar o formulário para o cadastro de um novo professor
+        lblTituloFormProf.setText("Novo Professor");
+        handleLimparProf();
     }
 
     @FXML
@@ -253,21 +256,39 @@ public class CoordPainelController {
 
     @FXML
     private void handleVerificarEmailProf(KeyEvent event) {
-        // TODO: Verificar em tempo real se o e-mail digitado já existe no sistema
+        String email = tfProfEmail.getText().trim();
+        // Só consulta a partir de alguns caracteres para não spammar o banco
+        if (email.length() < 3) {
+            avisoEmailDup.setVisible(false);
+            avisoEmailDup.setManaged(false);
+            return;
+        }
+        try {
+            boolean existe = usuarioDAO.emailJaExiste(email);
+            avisoEmailDup.setVisible(existe);
+            avisoEmailDup.setManaged(existe);
+        } catch (SQLException e) {
+            System.err.println("Erro ao verificar e-mail: " + e.getMessage());
+        }
     }
 
     @FXML
-    private void handleLimparProf(ActionEvent event) {
+    private void handleLimparProf() {
         tfProfNome.clear();
         tfProfEmail.clear();
         pfProfSenha.clear();
     }
 
     @FXML
-    private void handleSalvarProfessor(ActionEvent event) {
+    private void handleSalvarProfessor() {
         //VERIFICAÇÕES
         if (tfProfNome.getText().isBlank() || tfProfEmail.getText().isBlank() || pfProfSenha.getText().isBlank()) {
             exibirAlerta(Alert.AlertType.ERROR, "Erro", "Preencha todos os campos do formulário.");
+            return;
+        }
+
+        if (avisoEmailDup.isVisible()) {
+            exibirAlerta(Alert.AlertType.ERROR, "Erro", "O e-mail informado já está cadastrado.");
             return;
         }
 
