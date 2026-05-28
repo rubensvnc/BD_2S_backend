@@ -11,11 +11,6 @@ import java.util.Map;
 
 public class PlanejamentoDAO {
 
-    private Connection connection;
-
-    public PlanejamentoDAO() {
-        this.connection = DatabaseConnection.getConnection();
-    }
 
     public static Map<String, Object> obterEstatisticasGlobais(int ano, int semestreAno,
                                                                 Integer id_curso, Integer id_disciplina,
@@ -84,7 +79,8 @@ public class PlanejamentoDAO {
                 VALUES (?, ?)
                 """;
 
-        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+        try (Connection connection = DatabaseConnection.getConnection();
+                PreparedStatement stmt = connection.prepareStatement(sql)) {
 
             stmt.setInt(1, planejamento.getAtribuicao_professor_id());
             stmt.setTimestamp(2, Timestamp.valueOf(planejamento.getGerado_em()));
@@ -105,8 +101,9 @@ public class PlanejamentoDAO {
 
         String sql = "SELECT * FROM planejamento";
 
-        try (PreparedStatement stmt = connection.prepareStatement(sql);
-             ResultSet rs = stmt.executeQuery()) {
+        try (Connection connection = DatabaseConnection.getConnection();
+                PreparedStatement stmt = connection.prepareStatement(sql);
+                ResultSet rs = stmt.executeQuery()) {
 
             while (rs.next()) {
 
@@ -131,7 +128,8 @@ public class PlanejamentoDAO {
 
         String sql = "SELECT * FROM planejamento WHERE id_planejamento = ?";
 
-        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+        try (Connection connection = DatabaseConnection.getConnection();
+                PreparedStatement stmt = connection.prepareStatement(sql)) {
 
             stmt.setInt(1, id);
 
@@ -165,7 +163,8 @@ public class PlanejamentoDAO {
                 WHERE id_planejamento = ?
                 """;
 
-        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+        try (Connection connection = DatabaseConnection.getConnection();
+                PreparedStatement stmt = connection.prepareStatement(sql)) {
 
             stmt.setInt(1, planejamento.getAtribuicao_professor_id());
             stmt.setTimestamp(2, Timestamp.valueOf(planejamento.getGerado_em()));
@@ -185,7 +184,8 @@ public class PlanejamentoDAO {
 
         String sql = "DELETE FROM planejamento WHERE id_planejamento = ?";
 
-        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+        try (Connection connection = DatabaseConnection.getConnection();
+                PreparedStatement stmt = connection.prepareStatement(sql)) {
 
             stmt.setInt(1, id);
 
