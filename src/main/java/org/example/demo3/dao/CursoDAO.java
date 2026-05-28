@@ -30,7 +30,7 @@ public class CursoDAO {
 
     public List<AdmCursoExibicao> listarCursosDTO(Integer ano, Integer semestreAno) throws SQLException{
         String sql = """
-            SELECT DISTINCT c.nome, c.turno, c.qtd_semestres, u.nome 
+            SELECT DISTINCT c.nome, c.turno, c.qtd_semestres, u.email 
             FROM curso AS c LEFT JOIN usuario AS u ON c.coordenador_id = u.id_usuario 
             INNER JOIN horario_curso AS hc ON hc.curso_id = c.id_curso 
             INNER JOIN semestre_letivo AS sl ON 
@@ -50,7 +50,7 @@ public class CursoDAO {
                             rs.getString("c.nome"),
                             rs.getString("c.turno"),
                             rs.getInt("c.qtd_semestres"),
-                            rs.getString("u.nome")
+                            rs.getString("u.email")
                     );
                     listaCDto.add(cDto);
                 }
