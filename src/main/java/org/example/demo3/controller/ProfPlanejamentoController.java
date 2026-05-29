@@ -11,9 +11,10 @@ import javafx.scene.control.cell.CheckBoxTreeCell;
 import javafx.scene.layout.HBox;
 import org.example.demo3.UsuarioAtual;
 import org.example.demo3.SlotPlanejamento;
-import org.example.demo3.dao.PlanejamentoDAO;
-import org.example.demo3.dao.SlotPlanejamentoDAO;
+import org.example.demo3.dao.*;
+import org.example.demo3.entity.*;
 
+import java.sql.SQLException;
 import java.time.LocalDate;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -49,6 +50,8 @@ public class ProfPlanejamentoController {
     private MainShellController mainShellController;
     private UsuarioAtual logado = UsuarioAtual.getInstancia();
 
+    private Integer idSemestreLetivo;
+
     @FXML
     public void initialize() {
         lblTotalTemas.textProperty().bind(totalTemas.asString());
@@ -70,8 +73,79 @@ public class ProfPlanejamentoController {
         this.mainShellController = mainShellController;
     }
 
+    public HashMap<Tema, List<Tema>> mapearTemaPrioEDependenciasOrd(){
+        HashMap<Tema, List<Tema>> hmapTemaPrioDepend =
+                new HashMap<>();
+        SemestreLetivoDAO slDao = new SemestreLetivoDAO();
+        TemaDAO tDao = new TemaDAO();
+        DependenciaTemaDAO dtDao = new DependenciaTemaDAO();
+
+        try{
+            idSemestreLetivo = slDao.getIdSemestreLetivo(
+                    logado.getAno(), logado.getAnoSemestre());
+
+            List<Tema> temasOrdPrioridade = tDao.listarTemasPorDisciplinaESemestre(
+                    logado.getIdDisciplina(),
+                    idSemestreLetivo
+            );
+
+            for (Tema tDepois: temasOrdPrioridade){
+                List<Tema> temasOrdDependencia = new ArrayList<>();
+                List<DependenciaTema> dependencias = dtDao.listarDependenciasTema(tDepois.getId_tema());
+
+                for (DependenciaTema dt: dependencias){
+                    Tema tVemAntes = new Tema();
+                    tVemAntes.setId_tema(dt.getTema_dependencia_id());
+                    temasOrdDependencia.add(tVemAntes);
+                }
+                hmapTemaPrioDepend.put(tDepois, temasOrdDependencia);
+            }
+
+        } catch (SQLException e){
+            e.printStackTrace();
+        }
+        return hmapTemaPrioDepend;
+    }
+
+    public HashMap<Integer, List<HorarioCurso>> mapearDiasSemanaHorarios() {
+        HashMap<Integer, List<HorarioCurso>> hmapDiaSemanaHorarios =
+                new HashMap<>();
+        AtribuicaoProfessorDAO apDao = new AtribuicaoProfessorDAO();
+        HorarioCursoDAO hcDao = new HorarioCursoDAO();
+        AtribuicaoHorarioDAO ahDao = new AtribuicaoHorarioDAO();
+
+        try {
+            AtribuicaoProfessor ap = apDao.buscarPorDisciplinaESemestre
+                    (logado.getIdDisciplina(), idSemestreLetivo);
+            Integer idAtribuicao = ap.getId_atribuicao_professor();
+
+            List<AtribuicaoHorario> listaAh = ahDao.listarPorAtribuicao(idAtribuicao);
+            for (AtribuicaoHorario ah: listaAh){
+                Integer diaSemana = ah.getDia_semana();
+                List<HorarioCurso> listaHorariosDiaSemana = hcDao.listarHorariosPorAtribuicaoDSemana(
+                        idAtribuicao,
+                        diaSemana
+                );
+                hmapDiaSemanaHorarios.put(diaSemana, listaHorariosDiaSemana);
+            }
+        } catch (SQLException e){
+            e.printStackTrace();
+        }
+        return hmapDiaSemanaHorarios;
+    }
+
+
+
     @FXML
     public void handleGerarPlanejamento() {
+        HashMap<Tema, List<Tema>> hmapTemaPrioDepend =
+                mapearTemaPrioEDependenciasOrd();
+        HashMap<Integer, List<HorarioCurso>> mapmapDiaSemanaHorarios =
+                mapearDiasSemanaHorarios();
+
+    }
+
+    public void atualizarDadosPlanejamento(){
         // CORREÇÃO: Se a disciplina ou filtros estiverem nulos, limpa tudo visualmente da árvore e encerra
         if (mainShellController == null ||
                 logado.getAno() == null ||
@@ -215,7 +289,7 @@ public class ProfPlanejamentoController {
         if (itensSelecionadosAulas.isEmpty()) return;
         List<Integer> ids = itensSelecionadosAulas.stream().map(item -> ((SlotVisual) item.getValue()).getSlot().getId_slot_planejamento()).collect(Collectors.toList());
         slotDAO.atualizarStatusEmLote(ids, "ministrada", null);
-        handleGerarPlanejamento();
+        atualizarDadosPlanejamento();
     }
 
     @FXML
@@ -230,7 +304,7 @@ public class ProfPlanejamentoController {
             if (motivo.trim().isEmpty()) return;
             List<Integer> ids = itensSelecionadosAulas.stream().map(item -> ((SlotVisual) item.getValue()).getSlot().getId_slot_planejamento()).collect(Collectors.toList());
             slotDAO.atualizarStatusEmLote(ids, "cancelada_professor", motivo);
-            handleGerarPlanejamento();
+            atualizarDadosPlanejamento();
         });
     }
 
