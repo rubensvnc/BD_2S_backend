@@ -1,12 +1,18 @@
 package org.example.demo3.controller;
 
-import javafx.event.ActionEvent;
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
+import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.input.MouseEvent;
 import org.example.demo3.dao.UsuarioDAO;
 import org.example.demo3.dao.UsuarioTipoDAO;
 import org.example.demo3.entity.Usuario;
+import org.example.demo3.entity.UsuarioTipo;
+
+import java.time.LocalDate;
+import java.util.List;
 
 public class AdmCoordenadoresAdmsController {
 
@@ -14,66 +20,104 @@ public class AdmCoordenadoresAdmsController {
     @FXML private TableColumn<Usuario, String> colCoordNome;
     @FXML private TableColumn<Usuario, String> colCoordEmail;
     @FXML private TableColumn<Usuario, String> colCoordCurso;
-    @FXML private TableColumn<Usuario, String> colCoordAcoes;
 
     @FXML private Label lblTituloFormCoord;
     @FXML private TextField tfCoordNome;
     @FXML private TextField tfCoordEmail;
-    @FXML private PasswordField pfCoordSenha; // Corrigido para PasswordField conforme o FXML
+    @FXML private PasswordField pfCoordSenha;
     @FXML private ComboBox<String> cbCoordCurso;
-
-    @FXML private Label errCoordNome;
-    @FXML private Label errCoordEmail;
-    @FXML private Label errCoordSenha;
-    @FXML private Label errCoordCurso;
-    @FXML private Label lblFeedbackCoord;
 
     @FXML private TableView<Usuario> tabelaAdms;
     @FXML private TableColumn<Usuario, String> colAdmNome;
     @FXML private TableColumn<Usuario, String> colAdmEmail;
-    @FXML private TableColumn<Usuario, String> colAdmAcoes;
 
     @FXML private Label lblTituloFormAdm;
     @FXML private TextField tfAdmNome;
     @FXML private TextField tfAdmEmail;
-    @FXML private PasswordField pfAdmSenha; // Corrigido para PasswordField conforme o FXML
+    @FXML private PasswordField pfAdmSenha;
 
-    @FXML private Label errAdmNome;
-    @FXML private Label errAdmEmail;
-    @FXML private Label errAdmSenha;
-    @FXML private Label lblFeedbackAdm;
-
-    // --- INSTÂNCIAS DOS DAOS ---
     private final UsuarioDAO usuarioDAO = new UsuarioDAO();
     private final UsuarioTipoDAO usuarioTipoDAO = new UsuarioTipoDAO();
+
+    private final ObservableList<Usuario> listaCoordenadoresFX = FXCollections.observableArrayList();
+    private final ObservableList<Usuario> listaAdmsFX = FXCollections.observableArrayList();
 
     private Usuario coordenadorSelecionado;
     private Usuario admSelecionado;
 
     @FXML
+    public void initialize() {
+        colCoordNome.setCellValueFactory(new PropertyValueFactory<>("nome"));
+        colCoordEmail.setCellValueFactory(new PropertyValueFactory<>("email"));
+        if (colCoordCurso != null) {
+            colCoordCurso.setCellValueFactory(new PropertyValueFactory<>("curso"));
+        }
+
+        colAdmNome.setCellValueFactory(new PropertyValueFactory<>("nome"));
+        colAdmEmail.setCellValueFactory(new PropertyValueFactory<>("email"));
+
+        tabelaCoordenadores.setItems(listaCoordenadoresFX);
+        tabelaAdms.setItems(listaAdmsFX);
+
+        atualizarTabelas();
+    }
+
+    private void atualizarTabelas() {
+        try {
+            listaCoordenadoresFX.clear();
+            listaAdmsFX.clear();
+
+            List<Usuario> todosUsuarios = usuarioDAO.listarUsuariosComTipo();
+
+            for (Usuario user : todosUsuarios) {
+
+                if ("COORD".equalsIgnoreCase(user.getTipo())) {
+                    listaCoordenadoresFX.add(user);
+                } else if ("ADM".equalsIgnoreCase(user.getTipo())) {
+                    listaAdmsFX.add(user);
+                }
+            }
+        } catch (Exception e) {
+            exibirAlerta("Erro", "Erro ao carregar dados do banco: " + e.getMessage());
+        }
+    }
+
+    @FXML
+    public void handleSelecionarCoordenador(MouseEvent event) {
+        Usuario selecionado = tabelaCoordenadores.getSelectionModel().getSelectedItem();
+        if (selecionado != null) {
+            coordenadorSelecionado = selecionado;
+            lblTituloFormCoord.setText("Editar Coordenador");
+            tfCoordNome.setText(coordenadorSelecionado.getNome());
+            tfCoordEmail.setText(coordenadorSelecionado.getEmail());
+            pfCoordSenha.clear();
+        }
+    }
+
+    @FXML
+    public void handleSelecionarAdm(MouseEvent event) {
+        Usuario selecionado = tabelaAdms.getSelectionModel().getSelectedItem();
+        if (selecionado != null) {
+            admSelecionado = selecionado;
+            lblTituloFormAdm.setText("Editar Administrador");
+            tfAdmNome.setText(admSelecionado.getNome());
+            tfAdmEmail.setText(admSelecionado.getEmail());
+            pfAdmSenha.clear();
+        }
+    }
+
+    @FXML
     public void handleNovoCoordenador() {
         coordenadorSelecionado = null;
+        tabelaCoordenadores.getSelectionModel().clearSelection();
         lblTituloFormCoord.setText("Novo Coordenador");
         handleLimparFormCoord();
     }
 
     @FXML
-    private void handleSelecionarCoordenador(MouseEvent event) {
-        if (tabelaCoordenadores != null) {
-            coordenadorSelecionado = tabelaCoordenadores.getSelectionModel().getSelectedItem();
-            if (coordenadorSelecionado != null) {
-                lblTituloFormCoord.setText("Editar Coordenador");
-                tfCoordNome.setText(coordenadorSelecionado.getNome());
-                tfCoordEmail.setText(coordenadorSelecionado.getEmail());
-                pfCoordSenha.clear(); // Senha em branco por segurança na edição
-            }
-        }
-    }
-
-    @FXML
     public void handleSalvarCoordenador() {
-        String nome = tfCoordNome.getText();
-        String email = tfCoordEmail.getText();
+        String nome = tfCoordNome.getText().trim();
+        String email = tfCoordEmail.getText().trim();
         String senha = pfCoordSenha.getText();
 
         if (nome.isEmpty() || email.isEmpty()) {
@@ -83,13 +127,28 @@ public class AdmCoordenadoresAdmsController {
 
         try {
             if (coordenadorSelecionado == null) {
+                if (usuarioDAO.emailJaExiste(email)) {
+                    exibirAlerta("Erro", "Este e-mail já está cadastrado.");
+                    return;
+                }
+
                 Usuario novoUsuario = new Usuario();
                 novoUsuario.setNome(nome);
                 novoUsuario.setEmail(email);
                 novoUsuario.setSenha_hash(senha);
+                novoUsuario.setCriado_em(LocalDate.now());
 
-                usuarioDAO.editarUsuario(novoUsuario);
-                exibirAlerta("Sucesso", "Coordenador cadastrado com sucesso!");
+                int novoId = usuarioDAO.inserirUsuarioRetornandoId(novoUsuario);
+                if (novoId != -1) {
+                    UsuarioTipo ut = new UsuarioTipo();
+                    ut.setUsuario_id(novoId);
+                    ut.setTipo("COORD");
+
+                    usuarioTipoDAO.inserirUsuarioTipo(ut);
+                    exibirAlerta("Sucesso", "Coordenador cadastrado com sucesso!");
+                } else {
+                    exibirAlerta("Erro", "Falha interna ao gerar chave para o Usuário.");
+                }
             } else {
                 coordenadorSelecionado.setNome(nome);
                 coordenadorSelecionado.setEmail(email);
@@ -98,9 +157,10 @@ public class AdmCoordenadoresAdmsController {
                 usuarioDAO.editarUsuario(coordenadorSelecionado);
                 exibirAlerta("Sucesso", "Dados do coordenador atualizados!");
             }
+            atualizarTabelas();
             handleNovoCoordenador();
         } catch (Exception e) {
-            exibirAlerta("Erro", "Erro ao salvar: " + e.getMessage());
+            exibirAlerta("Erro", "Erro ao salvar Coordenador: " + e.getMessage());
         }
     }
 
@@ -122,6 +182,7 @@ public class AdmCoordenadoresAdmsController {
             usuarioTipoDAO.excluirUsuarioTipo(coordenadorSelecionado.getId_usuario(), "COORD");
             usuarioDAO.excluirUsuario(coordenadorSelecionado.getId_usuario());
             exibirAlerta("Sucesso", "Coordenador removido do sistema.");
+            atualizarTabelas();
             handleNovoCoordenador();
         } catch (Exception e) {
             exibirAlerta("Erro", "Erro ao excluir: " + e.getMessage());
@@ -131,27 +192,15 @@ public class AdmCoordenadoresAdmsController {
     @FXML
     public void handleNovoAdm() {
         admSelecionado = null;
+        tabelaAdms.getSelectionModel().clearSelection();
         lblTituloFormAdm.setText("Novo Administrador");
         handleLimparFormAdm();
     }
 
     @FXML
-    private void handleSelecionarAdm(MouseEvent event) {
-        if (tabelaAdms != null) {
-            admSelecionado = tabelaAdms.getSelectionModel().getSelectedItem();
-            if (admSelecionado != null) {
-                lblTituloFormAdm.setText("Editar Administrador");
-                tfAdmNome.setText(admSelecionado.getNome());
-                tfAdmEmail.setText(admSelecionado.getEmail());
-                pfAdmSenha.clear();
-            }
-        }
-    }
-
-    @FXML
     public void handleSalvarAdm() {
-        String nome = tfAdmNome.getText();
-        String email = tfAdmEmail.getText();
+        String nome = tfAdmNome.getText().trim();
+        String email = tfAdmEmail.getText().trim();
         String senha = pfAdmSenha.getText();
 
         if (nome.isEmpty() || email.isEmpty()) {
@@ -161,13 +210,28 @@ public class AdmCoordenadoresAdmsController {
 
         try {
             if (admSelecionado == null) {
+                if (usuarioDAO.emailJaExiste(email)) {
+                    exibirAlerta("Erro", "Este e-mail já está cadastrado.");
+                    return;
+                }
+
                 Usuario novoAdm = new Usuario();
                 novoAdm.setNome(nome);
                 novoAdm.setEmail(email);
                 novoAdm.setSenha_hash(senha);
+                novoAdm.setCriado_em(LocalDate.now());
 
-                usuarioDAO.editarUsuario(novoAdm);
-                exibirAlerta("Sucesso", "Novo Administrador cadastrado!");
+                int novoId = usuarioDAO.inserirUsuarioRetornandoId(novoAdm);
+                if (novoId != -1) {
+                    UsuarioTipo ut = new UsuarioTipo();
+                    ut.setUsuario_id(novoId);
+                    ut.setTipo("ADM");
+
+                    usuarioTipoDAO.inserirUsuarioTipo(ut);
+                    exibirAlerta("Sucesso", "Novo Administrador cadastrado!");
+                } else {
+                    exibirAlerta("Erro", "Falha interna ao gerar chave para o Administrador.");
+                }
             } else {
                 admSelecionado.setNome(nome);
                 admSelecionado.setEmail(email);
@@ -176,9 +240,10 @@ public class AdmCoordenadoresAdmsController {
                 usuarioDAO.editarUsuario(admSelecionado);
                 exibirAlerta("Sucesso", "Administrador atualizado!");
             }
+            atualizarTabelas();
             handleNovoAdm();
         } catch (Exception e) {
-            exibirAlerta("Erro", "Erro ao processar: " + e.getMessage());
+            exibirAlerta("Erro", "Erro ao processar Administrador: " + e.getMessage());
         }
     }
 
@@ -199,6 +264,7 @@ public class AdmCoordenadoresAdmsController {
             usuarioTipoDAO.excluirUsuarioTipo(admSelecionado.getId_usuario(), "ADM");
             usuarioDAO.excluirUsuario(admSelecionado.getId_usuario());
             exibirAlerta("Sucesso", "Administrador removido.");
+            atualizarTabelas();
             handleNovoAdm();
         } catch (Exception e) {
             exibirAlerta("Erro", "Erro ao deletar: " + e.getMessage());

@@ -2,7 +2,6 @@ package org.example.demo3.dao;
 
 import org.example.demo3.DatabaseConnection;
 import org.example.demo3.entity.CancelamentoAdm;
-import org.example.demo3.entity.Tema;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -12,10 +11,10 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
-public class CancelamentoAdmDAO{
+public class CancelamentoAdmDAO {
 
-    public List<CancelamentoAdm> listarCancelamentos(Integer semestre_letivo_id) throws SQLException{
-        String sql = "SELECT * FROM cancelamento_adm WHERE semestre_letivo_id = ? ORDER BY criado_em ASC";
+    public List<CancelamentoAdm> listarCancelamentos(Integer semestre_letivo_id) throws SQLException {
+        String sql = "SELECT * FROM cancelamento_adm WHERE semestre_letivo_id = ? AND deletado_em IS NULL ORDER BY criado_em ASC";
         Connection conn = null;
         PreparedStatement ps = null;
         ResultSet rs = null;
@@ -31,7 +30,6 @@ public class CancelamentoAdmDAO{
                 CancelamentoAdm c = new CancelamentoAdm();
                 c.setId_cancelamento_adm(rs.getInt("id_cancelamento_adm"));
                 c.setAdm_id(rs.getInt("adm_id"));
-                c.setAdm_id(rs.getInt("adm_id"));
                 c.setSemestre_letivo_id(rs.getInt("semestre_letivo_id"));
                 c.setData(rs.getObject("data", LocalDate.class));
                 c.setTurno(rs.getString("turno"));
@@ -42,11 +40,60 @@ public class CancelamentoAdmDAO{
                 lista.add(c);
             }
         } catch (SQLException e) {
-            System.err.println("Erro ao listar temas: " + e.getMessage());
+            System.err.println("Erro ao listar cancelamentos: " + e.getMessage());
             throw e;
         } finally {
             DatabaseConnection.closeConnection();
         }
         return lista;
+    }
+
+    public void salvar(CancelamentoAdm c) throws SQLException {
+        String sql = """
+            INSERT INTO cancelamento_adm (adm_id, semestre_letivo_id, data, turno, dia_inteiro, motivo, criado_em) 
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+            """;
+        Connection conn = null;
+        PreparedStatement ps = null;
+
+        try {
+            conn = DatabaseConnection.getConnection();
+            ps = conn.prepareStatement(sql);
+            ps.setInt(1, c.getAdm_id());
+            ps.setInt(2, c.getSemestre_letivo_id());
+            ps.setObject(3, c.getData());
+            ps.setString(4, c.getTurno());
+            ps.setBoolean(5, c.getDia_inteiro());
+            ps.setString(6, c.getMotivo());
+            ps.setObject(7, LocalDate.now()); // criado_em recebe a data atual
+
+            ps.executeUpdate();
+        } catch (SQLException e) {
+            System.err.println("Erro ao salvar cancelamento: " + e.getMessage());
+            throw e;
+        } finally {
+            DatabaseConnection.closeConnection();
+        }
+    }
+
+    public void excluir(int idCancelamentoAdm) throws SQLException {
+        // Se o seu sistema faz exclusão lógica (update deletado_em), mude para o UPDATE correspondente.
+        // Aqui usaremos o DELETE físico para seguir a mesma lógica do DataBloqueadaDAO.
+        String sql = "DELETE FROM cancelamento_adm WHERE id_cancelamento_adm = ?";
+        Connection conn = null;
+        PreparedStatement ps = null;
+
+        try {
+            conn = DatabaseConnection.getConnection();
+            ps = conn.prepareStatement(sql);
+            ps.setInt(1, idCancelamentoAdm);
+
+            ps.executeUpdate();
+        } catch (SQLException e) {
+            System.err.println("Erro ao excluir cancelamento: " + e.getMessage());
+            throw e;
+        } finally {
+            DatabaseConnection.closeConnection();
+        }
     }
 }
