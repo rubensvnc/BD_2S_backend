@@ -13,7 +13,7 @@
     <VBox fx:id="loginPane" alignment="CENTER" spacing="16" maxWidth="360">
         <padding><Insets top="40" right="40" bottom="40" left="40"/></padding>
 
-        <Label text="SIGAP" style="-fx-font-size: 28px; -fx-font-weight: bold;"/>
+        <Label text="SwiftPlan" style="-fx-font-size: 28px; -fx-font-weight: bold;"/>
         <Label text="Sistema de Gestão e Planejamento Acadêmico"
                style="-fx-font-size: 12px; -fx-text-fill: #7f8c8d;" wrapText="true"/>
 
