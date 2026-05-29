@@ -218,4 +218,41 @@ public class DisciplinaDAO {
         }
         return 0;
     }
+
+    public List<Disciplina> listarDisciplinasPorCurso(Integer cursoId) throws SQLException {
+        String sql = """
+        SELECT id_disciplina, curso_id, nome, semestre_curso, carga_horaria_minima
+        FROM disciplina
+        WHERE curso_id = ? AND deletado_em IS NULL
+        ORDER BY semestre_curso, nome
+        """;
+
+        List<Disciplina> lista = new ArrayList<>();
+
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            ps.setInt(1, cursoId);
+
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    Disciplina d = new Disciplina();
+                    d.setId_disciplina(rs.getInt("id_disciplina"));
+                    d.setCurso_id(rs.getInt("curso_id"));
+                    d.setNome(rs.getString("nome"));
+                    d.setSemestre_curso(rs.getInt("semestre_curso"));
+                    d.setCarga_horaria_minima(rs.getInt("carga_horaria_minima"));
+                    lista.add(d);
+                }
+            }
+
+        } catch (SQLException e) {
+            System.err.println("Erro ao listar disciplinas por curso: " + e.getMessage());
+            throw e;
+        }
+
+        return lista;
+    }
+
+
 }
