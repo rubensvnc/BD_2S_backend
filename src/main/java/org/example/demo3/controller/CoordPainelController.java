@@ -449,7 +449,7 @@ public class CoordPainelController {
 
     @FXML
     private void handleSalvarAtribuicao(ActionEvent event) {
-        Usuario prof  = cbAtribProf.getValue();
+        Usuario    prof = cbAtribProf.getValue();
         Disciplina disc = cbAtribDisc.getValue();
 
         if (prof == null || disc == null) {
@@ -468,6 +468,11 @@ public class CoordPainelController {
             }
         }
 
+        if (horariosSelecionados.isEmpty()) {
+            exibirAlerta(Alert.AlertType.WARNING, "Atenção", "Selecione ao menos um horário.");
+            return;
+        }
+
         try {
             if (atribuicaoAtual != null) {
                 // ── EDIÇÃO ───────────────────────────────────────────────────
@@ -482,8 +487,9 @@ public class CoordPainelController {
                 novaAtrib.setProfessor_id(prof.getId_usuario());
                 novaAtrib.setDisciplina_id(disc.getId_disciplina());
                 novaAtrib.setSemestre_letivo_id(idSemestreLetivoAtual);
-                atribuicaoProfessorDAO.salvar(novaAtrib);
+                atribuicaoProfessorDAO.salvar(novaAtrib);  // preenche o id gerado
 
+                // Agora que temos o id, setamos em cada horário antes de salvar
                 horariosSelecionados.forEach(ah ->
                         ah.setAtribuicao_id(novaAtrib.getId_atribuicao_professor()));
                 atribuicaoHorarioDAO.salvarLote(horariosSelecionados);
@@ -492,6 +498,8 @@ public class CoordPainelController {
             }
 
             exibirAlerta(Alert.AlertType.INFORMATION, "Sucesso", "Atribuição salva com sucesso.");
+            recarregarTabelaProfessores();
+            carregarGrade(); // recarrega para refletir o estado salvo
 
         } catch (SQLException e) {
             exibirAlerta(Alert.AlertType.ERROR, "Erro",
@@ -600,7 +608,10 @@ public class CoordPainelController {
 
                     final int diaFinal     = dia;
                     final int horarioId    = hc.getId_horario_curso();
-                    cb.setOnAction(e -> verificarConflito(prof, diaFinal, horarioId, cb));
+                    cb.setOnAction(e -> {
+                        verificarConflito(prof, diaFinal, horarioId, cb);
+                        atualizarBotaoSalvar();
+                    });
 
                     gradeAtribuicao.add(cb, dia, row + 1);
                 }
@@ -633,6 +644,11 @@ public class CoordPainelController {
         } catch (SQLException e) {
             System.err.println("Erro ao verificar conflito: " + e.getMessage());
         }
+    }
+
+    private void atualizarBotaoSalvar() {
+        boolean algumMarcado = mapaCheckBoxes.values().stream().anyMatch(CheckBox::isSelected);
+        btnSalvarAtrib.setDisable(!algumMarcado);
     }
 
     // ════════════════════════════════════════════════════════════════════════
