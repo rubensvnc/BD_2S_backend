@@ -425,7 +425,7 @@ public class CoordPainelController {
 
     private void recarregarTabelaProfessores() {
         try {
-            tabelaProfessores.getItems().setAll(usuarioDAO.listarProfessoresComAtribuicao());
+            tabelaProfessores.getItems().setAll(atribuicaoProfessorDAO.listarProfessoresComAtribuicao());
         } catch (SQLException e) {
             System.err.println("Erro ao recarregar tabela de professores: " + e.getMessage());
         }

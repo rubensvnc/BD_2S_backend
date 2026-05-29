@@ -335,31 +335,4 @@ public class UsuarioDAO {
         }
     }
 
-    public List<Usuario> listarProfessoresComAtribuicao() throws SQLException {
-        List<Usuario> usuarios = new ArrayList<>();
-        String sql = """
-        SELECT DISTINCT u.id_usuario, u.nome, u.email, u.senha_hash
-        FROM usuario u
-        INNER JOIN usuario_tipo ut ON ut.usuario_id = u.id_usuario
-        INNER JOIN atribuicao_professor ap ON ap.professor_id = u.id_usuario
-        WHERE ut.tipo = 'PROF'
-        AND u.deletado_em IS NULL
-        ORDER BY u.nome
-        """;
-
-        try (Connection conn = DatabaseConnection.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql);
-             ResultSet rs = ps.executeQuery()) {
-
-            while (rs.next()) {
-                Usuario u = new Usuario();
-                u.setId_usuario(rs.getInt("id_usuario"));
-                u.setNome(rs.getString("nome"));
-                u.setEmail(rs.getString("email"));
-                u.setSenha_hash(rs.getString("senha_hash"));
-                usuarios.add(u);
-            }
-        }
-        return usuarios;
-    }
 }
