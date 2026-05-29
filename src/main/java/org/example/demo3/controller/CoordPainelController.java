@@ -579,6 +579,24 @@ public class CoordPainelController {
                     CheckBox cb = new CheckBox();
                     cb.setSelected(marcados.contains(chave));
                     mapaCheckBoxes.put(chave, cb);
+                    // ── NOVO: VERIFICAÇÃO DE CONFLITOS NO CARREGAMENTO ─────────────────────────────────
+                    int atribuicaoIdExcluir = atribuicaoAtual != null
+                            ? atribuicaoAtual.getId_atribuicao_professor() : -1;
+
+                    String nomeConflito = atribuicaoHorarioDAO.buscarConflito(
+                            idSemestreLetivoAtual, dia, hc.getId_horario_curso(), atribuicaoIdExcluir);
+
+                    if (nomeConflito != null) {
+                        // Aplica a borda vermelha indicando o conflito pré-existente
+                        cb.setStyle("-fx-border-color: #e74c3c; -fx-border-width: 2px; -fx-border-radius: 3px; -fx-padding: 1px;");
+
+                        // Opcional: Adiciona um Tooltip para mostrar o motivo ao passar o mouse
+                        Tooltip tooltip = new Tooltip("Ocupado: " + nomeConflito);
+                        cb.setTooltip(tooltip);
+
+                        // Opcional: cb.setDisable(true); // Descomente se quiser impedir o clique totalmente
+                    }
+                    // ──────────────────────────────────────────────────────────────────────
 
                     final int diaFinal     = dia;
                     final int horarioId    = hc.getId_horario_curso();
