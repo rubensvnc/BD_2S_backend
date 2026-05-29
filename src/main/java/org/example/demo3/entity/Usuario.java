@@ -9,6 +9,7 @@ public class Usuario {
     private String senha_hash;
     private LocalDate criado_em;
     private LocalDate deletado_em;
+    private String tipo;
 
     public Usuario() {
     }
@@ -23,7 +24,6 @@ public class Usuario {
         this.deletado_em = deletado_em;
     }
 
-    // Getters e Setters
     public Integer getId_usuario() {
         return id_usuario;
     }
@@ -70,5 +70,13 @@ public class Usuario {
 
     public void setDeletado_em(LocalDate deletado_em) {
         this.deletado_em = deletado_em;
+    }
+
+    public String getTipo() {
+        return tipo;
+    }
+
+    public void setTipo(String tipo) {
+        this.tipo = tipo;
     }
 }
