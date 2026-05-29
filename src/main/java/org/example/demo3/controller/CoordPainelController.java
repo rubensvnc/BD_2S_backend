@@ -16,8 +16,10 @@ import org.example.demo3.dao.UsuarioTipoDAO;
 import org.example.demo3.entity.AtribuicaoProfessor;
 import org.example.demo3.entity.Disciplina;
 import org.example.demo3.entity.Usuario;
+import org.example.demo3.entity.UsuarioTipo;
 
 import java.sql.SQLException;
+import java.time.LocalDate;
 
 public class CoordPainelController {
 
@@ -95,6 +97,7 @@ public class CoordPainelController {
 
     // null = modo inserção; não-null = modo edição
     private Disciplina disciplinaSelecionadaTabela;
+    private Usuario professorSelecionadoTabela; // null = inserção, não-null = edição
 
     // ════════════════════════════════════════════════════════════════════════
     // INICIALIZAÇÃO
@@ -106,6 +109,7 @@ public class CoordPainelController {
         configurarTabelaDisciplinas();
         configurarSpinnerDisciplina();
         configurarTabelaProfessores();
+        recarregarTabelaProfessores();
     }
 
     // ════════════════════════════════════════════════════════════════════════
@@ -246,12 +250,41 @@ public class CoordPainelController {
 
     @FXML
     private void handleSelecionarProfessor(MouseEvent event) {
-        // TODO: Carregar os dados do professor selecionado na tabela para o formulário
+        Usuario selecionado = tabelaProfessores.getSelectionModel().getSelectedItem();
+        if (selecionado == null) return;
+
+        professorSelecionadoTabela = selecionado;
+        lblTituloFormProf.setText("Editar Professor");
+
+        tfProfNome.setText(selecionado.getNome());
+        tfProfEmail.setText(selecionado.getEmail());
+        pfProfSenha.clear(); // senha nunca vem do banco
     }
 
     @FXML
     private void handleAtribuirMesmo(ActionEvent event) {
-        // TODO: Preencher o formulário com os dados do coordenador logado
+        try {
+            // Verifica se o coordenador já tem o tipo PROF
+            boolean jaProfessor = usuarioTipoDAO.listarUsuariosTipo().stream()
+                    .anyMatch(ut -> ut.getUsuario_id().equals(logado.getId_usuario())
+                            && "PROF".equals(ut.getTipo()));
+
+            if (!jaProfessor) {
+                UsuarioTipo usuarioTipo = new UsuarioTipo();
+                usuarioTipo.setUsuario_id(logado.getId_usuario());
+                usuarioTipo.setTipo("PROF");
+                usuarioTipoDAO.inserirUsuarioTipo(usuarioTipo);
+            }
+
+            exibirAlerta(Alert.AlertType.INFORMATION, "Sucesso",
+                    jaProfessor ? "Você já está cadastrado como professor."
+                            : "Você foi adicionado como professor com sucesso.");
+            recarregarTabelaProfessores();
+
+        } catch (Exception e) {
+            exibirAlerta(Alert.AlertType.ERROR, "Erro", "Falha ao se atribuir como professor:\n" + e.getMessage());
+            e.printStackTrace();
+        }
     }
 
     @FXML
@@ -274,6 +307,8 @@ public class CoordPainelController {
 
     @FXML
     private void handleLimparProf() {
+        professorSelecionadoTabela = null;
+        lblTituloFormProf.setText("Novo Professor");
         tfProfNome.clear();
         tfProfEmail.clear();
         pfProfSenha.clear();
@@ -281,34 +316,76 @@ public class CoordPainelController {
 
     @FXML
     private void handleSalvarProfessor() {
-        //VERIFICAÇÕES
-        if (tfProfNome.getText().isBlank() || tfProfEmail.getText().isBlank() || pfProfSenha.getText().isBlank()) {
-            exibirAlerta(Alert.AlertType.ERROR, "Erro", "Preencha todos os campos do formulário.");
+        // ── Validações ──────────────────────────────────────────────────────
+        if (tfProfNome.getText().isBlank() || tfProfEmail.getText().isBlank()) {
+            exibirAlerta(Alert.AlertType.ERROR, "Erro", "Nome e e-mail são obrigatórios.");
             return;
         }
-
         if (avisoEmailDup.isVisible()) {
             exibirAlerta(Alert.AlertType.ERROR, "Erro", "O e-mail informado já está cadastrado.");
             return;
         }
 
-        if (cbDiscSemestreCurso.getValue() == null) {
-            exibirAlerta(Alert.AlertType.ERROR, "Erro", "Selecione o semestre do curso.");
-            return;
+        try {
+            if (professorSelecionadoTabela != null) {
+                professorSelecionadoTabela.setNome(tfProfNome.getText().trim());
+                professorSelecionadoTabela.setEmail(tfProfEmail.getText().trim());
+
+                if (!pfProfSenha.getText().isBlank()) {
+                    professorSelecionadoTabela.setSenha_hash(pfProfSenha.getText());
+                }
+                // Se senha em branco, o objeto já carrega o hash original vindo da tabela
+
+                usuarioDAO.editarUsuario(professorSelecionadoTabela);
+                exibirAlerta(Alert.AlertType.INFORMATION, "Sucesso", "Professor atualizado com sucesso.");
+            } else {
+                // ── INSERÇÃO ─────────────────────────────────────────────────
+                if (pfProfSenha.getText().isBlank()) {
+                    exibirAlerta(Alert.AlertType.ERROR, "Erro", "A senha é obrigatória para novo professor.");
+                    return;
+                }
+
+                Usuario professor = new Usuario();
+                professor.setNome(tfProfNome.getText().trim());
+                professor.setEmail(tfProfEmail.getText().trim());
+                professor.setSenha_hash(pfProfSenha.getText());
+                professor.setCriado_em(LocalDate.now());
+
+                int novoId = usuarioDAO.inserirUsuarioRetornandoId(professor);
+                if (novoId == -1) {
+                    exibirAlerta(Alert.AlertType.ERROR, "Erro", "Falha ao inserir o professor no banco.");
+                    return;
+                }
+
+                UsuarioTipo usuarioTipo = new UsuarioTipo();
+                usuarioTipo.setUsuario_id(novoId);
+                usuarioTipo.setTipo("PROF");
+                usuarioTipoDAO.inserirUsuarioTipo(usuarioTipo);
+
+                exibirAlerta(Alert.AlertType.INFORMATION, "Sucesso", "Professor cadastrado com sucesso.");
+            }
+
+            professorSelecionadoTabela = null;
+            handleLimparProf();
+            recarregarTabelaProfessores();
+
+        } catch (Exception e) {
+            exibirAlerta(Alert.AlertType.ERROR, "Erro", "Falha ao salvar o professor:\n" + e.getMessage());
+            e.printStackTrace();
         }
-
-        //MONTAR ENTIDADE
-        Usuario professor = new Usuario();
-        professor.setNome(tfProfNome.getText().trim());
-        professor.setEmail(tfProfEmail.getText().trim());
-        professor.setSenha_hash(pfProfSenha.getText());
-
-
     }
 
     private void configurarTabelaProfessores() {
         colProfNome.setCellValueFactory(new PropertyValueFactory<>("nome"));
         colProfEmail.setCellValueFactory(new PropertyValueFactory<>("email"));
+    }
+
+    private void recarregarTabelaProfessores() {
+        try {
+            tabelaProfessores.getItems().setAll(usuarioDAO.listarTodosProfessores());
+        } catch (SQLException e) {
+            System.err.println("Erro ao recarregar tabela de professores: " + e.getMessage());
+        }
     }
 
 
