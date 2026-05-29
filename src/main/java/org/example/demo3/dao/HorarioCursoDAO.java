@@ -11,6 +11,39 @@ import java.util.List;
 
 public class HorarioCursoDAO {
 
+    public List<HorarioCurso> listarHorariosPorAtribuicaoDSemana
+            (Integer idAtribuicao, Integer diaSemana) throws SQLException{
+        String sql = """
+        SELECT DISTINCT ah.dia_semana, hc.id_horario_curso, hc.curso_id, 
+            hc.semestre_letivo_id, hc.tipo, hc.numero_ordem, hc.hora_inicio, hc.hora_fim 
+        FROM atribuicao_horario AS ah INNER JOIN horario_curso AS hc 
+        ON hc.id_horario_curso = ah.horario_curso_id 
+        WHERE ah.atribuicao_id = ? AND ah.dia_semana = ? ORDER BY ah.dia_semana;
+        """;
+
+        List<HorarioCurso> listaHc = new ArrayList<>();
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, idAtribuicao);
+            ps.setInt(2, diaSemana);
+
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    HorarioCurso hc = new HorarioCurso(
+                            rs.getInt("hc.id_horario_curso"),
+                            rs.getInt("hc.curso_id"),
+                            rs.getInt("hc.semestre_letivo_id"),
+                            rs.getString("hc.tipo"),
+                            rs.getInt("hc.numero_ordem"),
+                            rs.getObject("hc.hora_inicio", java.time.LocalTime.class),
+                            rs.getObject("hc.hora_fim", java.time.LocalTime.class)
+                    );
+                    listaHc.add(hc);
+                }
+            }
+        }
+        return listaHc;
+    }
 
     public List<HorarioCurso> listarHorariosPorCurso
             (Integer curso_id, Integer sl) throws SQLException{
