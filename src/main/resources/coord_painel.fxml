@@ -28,7 +28,7 @@
     </top>
 
     <center>
-        <TabPane tabClosingPolicy="UNAVAILABLE">
+        <TabPane tabClosingPolicy="UNAVAILABLE" fx:id="tabPanePrincipal">
 
             <!-- ══════════════════════════════════════
                  ABA 1 — DISCIPLINAS  (cobre seção 7.2)
@@ -147,7 +147,7 @@
             <!-- ══════════════════════════════════════
                  ABA 3 — ATRIBUIÇÕES  (cobre seção 7.4)
             ═══════════════════════════════════════ -->
-            <Tab text="📋 Atribuições">
+            <Tab text="📋 Atribuições" fx:id="tabAtribuicoes">
                 <VBox spacing="12">
                     <padding><Insets bottom="12" left="16" right="16" top="12" /></padding>
 
