@@ -8,18 +8,14 @@ import javafx.scene.input.KeyEvent;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.VBox;
+import javafx.util.StringConverter;
 import org.example.demo3.UsuarioAtual;
-import org.example.demo3.dao.AtribuicaoProfessorDAO;
-import org.example.demo3.dao.DisciplinaDAO;
-import org.example.demo3.dao.UsuarioDAO;
-import org.example.demo3.dao.UsuarioTipoDAO;
-import org.example.demo3.entity.AtribuicaoProfessor;
-import org.example.demo3.entity.Disciplina;
-import org.example.demo3.entity.Usuario;
-import org.example.demo3.entity.UsuarioTipo;
+import org.example.demo3.dao.*;
+import org.example.demo3.entity.*;
 
 import java.sql.SQLException;
 import java.time.LocalDate;
+import java.util.*;
 
 public class CoordPainelController {
 
@@ -27,18 +23,18 @@ public class CoordPainelController {
     // CAMPOS FXML — ABA 1: DISCIPLINAS
     // ════════════════════════════════════════════════════════════════════════
 
-    @FXML private TableView<Disciplina>          tabelaDisciplinas;
+    @FXML private TableView<Disciplina>            tabelaDisciplinas;
     @FXML private TableColumn<Disciplina, String>  colDiscNome;
     @FXML private TableColumn<Disciplina, Integer> colDiscSemCurso;
     @FXML private TableColumn<Disciplina, Integer> colDiscCH;
     @FXML private TableColumn<Disciplina, String>  colDiscProf;
     @FXML private TableColumn<Disciplina, Void>    colDiscAcoes;
-    @FXML private Label           lblTituloFormDisc;
-    @FXML private TextField       tfDiscNome;
-    @FXML private Label           errDiscNome;
+    @FXML private Label             lblTituloFormDisc;
+    @FXML private TextField         tfDiscNome;
+    @FXML private Label             errDiscNome;
     @FXML private ComboBox<Integer> cbDiscSemestreCurso;
     @FXML private Spinner<Integer>  spDiscCH;
-    @FXML private Label           lblFeedbackDisc;
+    @FXML private Label             lblFeedbackDisc;
 
     // ════════════════════════════════════════════════════════════════════════
     // CAMPOS FXML — ABA 2: PROFESSORES
@@ -74,30 +70,44 @@ public class CoordPainelController {
     // CAMPOS FXML — PLANEJAMENTOS
     // ════════════════════════════════════════════════════════════════════════
 
-    @FXML private Label      lblTituloCoordVisor;
-    @FXML private TabPane    tabVisorCoord;
+    @FXML private Label       lblTituloCoordVisor;
+    @FXML private TabPane     tabVisorCoord;
     @FXML private TreeView<?> treePlanoCoord;
-    @FXML private VBox       painelEstatCoord;
+    @FXML private VBox        painelEstatCoord;
 
     // ════════════════════════════════════════════════════════════════════════
-    // ESTADO / DAOs
+    // DAOs
     // ════════════════════════════════════════════════════════════════════════
 
-    DisciplinaDAO disciplinaDAO = new DisciplinaDAO();
-    UsuarioDAO usuarioDAO = new UsuarioDAO();
-    UsuarioTipoDAO usuarioTipoDAO = new UsuarioTipoDAO();
-    AtribuicaoProfessorDAO atribuicaoProfessorDAO = new AtribuicaoProfessorDAO();
-    UsuarioAtual logado = UsuarioAtual.getInstancia();
+    private final DisciplinaDAO          disciplinaDAO          = new DisciplinaDAO();
+    private final UsuarioDAO             usuarioDAO             = new UsuarioDAO();
+    private final UsuarioTipoDAO         usuarioTipoDAO         = new UsuarioTipoDAO();
+    private final AtribuicaoProfessorDAO atribuicaoProfessorDAO = new AtribuicaoProfessorDAO();
+    private final HorarioCursoDAO        horarioCursoDAO        = new HorarioCursoDAO();
+    private final AtribuicaoHorarioDAO   atribuicaoHorarioDAO   = new AtribuicaoHorarioDAO();
+    private final SemestreLetivoDAO      semestreLetivoDAO      = new SemestreLetivoDAO();
+
+    // ════════════════════════════════════════════════════════════════════════
+    // ESTADO
+    // ════════════════════════════════════════════════════════════════════════
+
+    private final UsuarioAtual logado = UsuarioAtual.getInstancia();
+
     private Integer anoAtual;
     private Integer anoSemestre;
     private Integer idDisciplinaAtual;
-    private Integer idSemestreAtual;
     private Integer idCursoAtual;
+    private Integer idSemestreLetivoAtual;
 
-
-    // null = modo inserção; não-null = modo edição
+    // Aba 1
     private Disciplina disciplinaSelecionadaTabela;
-    private Usuario professorSelecionadoTabela; // null = inserção, não-null = edição
+
+    // Aba 2
+    private Usuario professorSelecionadoTabela;
+
+    // Aba 3
+    private AtribuicaoProfessor atribuicaoAtual;
+    private final Map<String, CheckBox> mapaCheckBoxes = new HashMap<>();
 
     // ════════════════════════════════════════════════════════════════════════
     // INICIALIZAÇÃO
@@ -110,10 +120,18 @@ public class CoordPainelController {
         configurarSpinnerDisciplina();
         configurarTabelaProfessores();
         recarregarTabelaProfessores();
+        configurarAbaAtribuicoes();
+    }
+
+    private void configurarIds() {
+        this.idDisciplinaAtual    = logado.getIdDisciplina();
+        this.idCursoAtual         = logado.getIdCurso();
+        this.anoAtual             = logado.getAno();
+        this.anoSemestre          = logado.getAnoSemestre();
     }
 
     // ════════════════════════════════════════════════════════════════════════
-    // ABA 1 — DISCIPLINAS  (handlers de botão)
+    // ABA 1 — DISCIPLINAS
     // ════════════════════════════════════════════════════════════════════════
 
     @FXML
@@ -130,11 +148,9 @@ public class CoordPainelController {
 
         disciplinaSelecionadaTabela = selecionada;
         lblTituloFormDisc.setText("Editar Disciplina");
-
         tfDiscNome.setText(selecionada.getNome());
         cbDiscSemestreCurso.setValue(selecionada.getSemestre_curso());
         spDiscCH.getValueFactory().setValue(selecionada.getCarga_horaria_minima());
-
         ocultarErrosDisc();
         ocultarFeedbackDisc();
     }
@@ -148,7 +164,6 @@ public class CoordPainelController {
 
     @FXML
     private void handleSalvarDisciplina(ActionEvent event) {
-        // ── Validações ──────────────────────────────────────────────────────
         if (tfDiscNome.getText().isBlank()) {
             errDiscNome.setText("O nome da disciplina é obrigatório.");
             errDiscNome.setVisible(true);
@@ -163,7 +178,6 @@ public class CoordPainelController {
             return;
         }
 
-        // ── Monta entidade ──────────────────────────────────────────────────
         Disciplina disciplina = new Disciplina();
         disciplina.setCurso_id(logado.getIdCurso());
         disciplina.setNome(tfDiscNome.getText().trim());
@@ -173,31 +187,28 @@ public class CoordPainelController {
 
         try {
             if (disciplinaSelecionadaTabela != null) {
-                // ── EDIÇÃO ───────────────────────────────────────────────────
                 disciplina.setId_disciplina(disciplinaSelecionadaTabela.getId_disciplina());
                 disciplinaDAO.atualizarDisciplina(disciplina);
                 disciplinaSelecionadaTabela = disciplina;
                 exibirAlerta(Alert.AlertType.INFORMATION, "Sucesso", "Disciplina alterada com sucesso.");
             } else {
-                // ── INSERÇÃO ─────────────────────────────────────────────────
                 disciplinaDAO.inserirDisciplina(disciplina);
                 exibirAlerta(Alert.AlertType.INFORMATION, "Sucesso", "Disciplina cadastrada com sucesso.");
             }
-
             tabelaDisciplinas.getItems().setAll(disciplinaDAO.listarDisciplinas());
 
         } catch (Exception e) {
             exibirAlerta(Alert.AlertType.ERROR, "Erro", "Falha ao salvar a disciplina:\n" + e.getMessage());
-            System.out.println(e.getMessage());
+            e.printStackTrace();
         }
     }
 
     @FXML
     private void handleDeletarDisciplina() {
-        // TODO: remover disciplina selecionada (soft-delete)
+        // TODO: soft-delete da disciplina selecionada
     }
 
-    // ── Helpers — ABA 1 ─────────────────────────────────────────────────────
+    // ── Helpers — Aba 1 ─────────────────────────────────────────────────────
 
     private void configurarTabelaDisciplinas() {
         colDiscNome.setCellValueFactory(new PropertyValueFactory<>("nome"));
@@ -239,7 +250,7 @@ public class CoordPainelController {
     }
 
     // ════════════════════════════════════════════════════════════════════════
-    // ABA 2 — PROFESSORES  (handlers de botão)
+    // ABA 2 — PROFESSORES
     // ════════════════════════════════════════════════════════════════════════
 
     @FXML
@@ -255,16 +266,14 @@ public class CoordPainelController {
 
         professorSelecionadoTabela = selecionado;
         lblTituloFormProf.setText("Editar Professor");
-
         tfProfNome.setText(selecionado.getNome());
         tfProfEmail.setText(selecionado.getEmail());
-        pfProfSenha.clear(); // senha nunca vem do banco
+        pfProfSenha.clear();
     }
 
     @FXML
     private void handleAtribuirMesmo(ActionEvent event) {
         try {
-            // Verifica se o coordenador já tem o tipo PROF
             boolean jaProfessor = usuarioTipoDAO.listarUsuariosTipo().stream()
                     .anyMatch(ut -> ut.getUsuario_id().equals(logado.getId_usuario())
                             && "PROF".equals(ut.getTipo()));
@@ -282,7 +291,8 @@ public class CoordPainelController {
             recarregarTabelaProfessores();
 
         } catch (Exception e) {
-            exibirAlerta(Alert.AlertType.ERROR, "Erro", "Falha ao se atribuir como professor:\n" + e.getMessage());
+            exibirAlerta(Alert.AlertType.ERROR, "Erro",
+                    "Falha ao se atribuir como professor:\n" + e.getMessage());
             e.printStackTrace();
         }
     }
@@ -290,7 +300,6 @@ public class CoordPainelController {
     @FXML
     private void handleVerificarEmailProf(KeyEvent event) {
         String email = tfProfEmail.getText().trim();
-        // Só consulta a partir de alguns caracteres para não spammar o banco
         if (email.length() < 3) {
             avisoEmailDup.setVisible(false);
             avisoEmailDup.setManaged(false);
@@ -316,7 +325,6 @@ public class CoordPainelController {
 
     @FXML
     private void handleSalvarProfessor() {
-        // ── Validações ──────────────────────────────────────────────────────
         if (tfProfNome.getText().isBlank() || tfProfEmail.getText().isBlank()) {
             exibirAlerta(Alert.AlertType.ERROR, "Erro", "Nome e e-mail são obrigatórios.");
             return;
@@ -328,16 +336,15 @@ public class CoordPainelController {
 
         try {
             if (professorSelecionadoTabela != null) {
+                // ── EDIÇÃO ───────────────────────────────────────────────────
                 professorSelecionadoTabela.setNome(tfProfNome.getText().trim());
                 professorSelecionadoTabela.setEmail(tfProfEmail.getText().trim());
-
                 if (!pfProfSenha.getText().isBlank()) {
                     professorSelecionadoTabela.setSenha_hash(pfProfSenha.getText());
                 }
-                // Se senha em branco, o objeto já carrega o hash original vindo da tabela
-
                 usuarioDAO.editarUsuario(professorSelecionadoTabela);
                 exibirAlerta(Alert.AlertType.INFORMATION, "Sucesso", "Professor atualizado com sucesso.");
+
             } else {
                 // ── INSERÇÃO ─────────────────────────────────────────────────
                 if (pfProfSenha.getText().isBlank()) {
@@ -365,15 +372,17 @@ public class CoordPainelController {
                 exibirAlerta(Alert.AlertType.INFORMATION, "Sucesso", "Professor cadastrado com sucesso.");
             }
 
-            professorSelecionadoTabela = null;
             handleLimparProf();
             recarregarTabelaProfessores();
 
         } catch (Exception e) {
-            exibirAlerta(Alert.AlertType.ERROR, "Erro", "Falha ao salvar o professor:\n" + e.getMessage());
+            exibirAlerta(Alert.AlertType.ERROR, "Erro",
+                    "Falha ao salvar o professor:\n" + e.getMessage());
             e.printStackTrace();
         }
     }
+
+    // ── Helpers — Aba 2 ─────────────────────────────────────────────────────
 
     private void configurarTabelaProfessores() {
         colProfNome.setCellValueFactory(new PropertyValueFactory<>("nome"));
@@ -388,28 +397,190 @@ public class CoordPainelController {
         }
     }
 
-
-
-
-
-
     // ════════════════════════════════════════════════════════════════════════
-    // ABA 3 — ATRIBUIÇÕES  (handlers de botão)
+    // ABA 3 — ATRIBUIÇÕES
     // ════════════════════════════════════════════════════════════════════════
 
     @FXML
     private void handleAtribContextChange(ActionEvent event) {
-        // TODO: Atualizar a grade de horários ao trocar o professor ou a disciplina selecionada
+        carregarGrade();
     }
 
     @FXML
     private void handleLimparGrade(ActionEvent event) {
-        // TODO: Desmarcar todos os CheckBoxes da grade de atribuição atual
+        mapaCheckBoxes.values().forEach(cb -> cb.setSelected(false));
+        lblConflito.setVisible(false);
+        lblConflito.setManaged(false);
     }
 
     @FXML
     private void handleSalvarAtribuicao(ActionEvent event) {
-        // TODO: Salvar o vínculo entre professor, disciplina e horários selecionados
+        Usuario prof  = cbAtribProf.getValue();
+        Disciplina disc = cbAtribDisc.getValue();
+
+        if (prof == null || disc == null) {
+            exibirAlerta(Alert.AlertType.ERROR, "Erro", "Selecione um professor e uma disciplina.");
+            return;
+        }
+
+        List<AtribuicaoHorario> horariosSelecionados = new ArrayList<>();
+        for (Map.Entry<String, CheckBox> entry : mapaCheckBoxes.entrySet()) {
+            if (entry.getValue().isSelected()) {
+                String[] partes = entry.getKey().split("_");
+                AtribuicaoHorario ah = new AtribuicaoHorario();
+                ah.setDia_semana(Integer.parseInt(partes[0]));
+                ah.setHorario_curso_id(Integer.parseInt(partes[1]));
+                horariosSelecionados.add(ah);
+            }
+        }
+
+        try {
+            if (atribuicaoAtual != null) {
+                // ── EDIÇÃO ───────────────────────────────────────────────────
+                horariosSelecionados.forEach(ah ->
+                        ah.setAtribuicao_id(atribuicaoAtual.getId_atribuicao_professor()));
+                atribuicaoHorarioDAO.substituirHorarios(
+                        atribuicaoAtual.getId_atribuicao_professor(), horariosSelecionados);
+
+            } else {
+                // ── INSERÇÃO ─────────────────────────────────────────────────
+                AtribuicaoProfessor novaAtrib = new AtribuicaoProfessor();
+                novaAtrib.setProfessor_id(prof.getId_usuario());
+                novaAtrib.setDisciplina_id(disc.getId_disciplina());
+                novaAtrib.setSemestre_letivo_id(idSemestreLetivoAtual);
+                atribuicaoProfessorDAO.salvar(novaAtrib);
+
+                horariosSelecionados.forEach(ah ->
+                        ah.setAtribuicao_id(novaAtrib.getId_atribuicao_professor()));
+                atribuicaoHorarioDAO.salvarLote(horariosSelecionados);
+
+                atribuicaoAtual = novaAtrib;
+            }
+
+            exibirAlerta(Alert.AlertType.INFORMATION, "Sucesso", "Atribuição salva com sucesso.");
+
+        } catch (SQLException e) {
+            exibirAlerta(Alert.AlertType.ERROR, "Erro",
+                    "Falha ao salvar atribuição:\n" + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
+    // ── Helpers — Aba 3 ─────────────────────────────────────────────────────
+
+    private void configurarAbaAtribuicoes() {
+        try {
+            idSemestreLetivoAtual = semestreLetivoDAO.getIdSemestreLetivo(anoAtual, anoSemestre);
+            if (idSemestreLetivoAtual == null) return;
+
+            cbAtribProf.getItems().setAll(usuarioDAO.listarTodosProfessores());
+            cbAtribProf.setConverter(new StringConverter<>() {
+                @Override public String toString(Usuario u)    { return u != null ? u.getNome() : ""; }
+                @Override public Usuario fromString(String s)  { return null; }
+            });
+
+            cbAtribDisc.getItems().setAll(disciplinaDAO.listarDisciplinasPorCurso(idCursoAtual));
+            cbAtribDisc.setConverter(new StringConverter<>() {
+                @Override public String toString(Disciplina d)    { return d != null ? d.getNome() : ""; }
+                @Override public Disciplina fromString(String s)  { return null; }
+            });
+
+            cbAtribProf.setOnAction(e -> carregarGrade());
+            cbAtribDisc.setOnAction(e -> carregarGrade());
+
+        } catch (SQLException e) {
+            System.err.println("Erro ao configurar aba de atribuições: " + e.getMessage());
+        }
+    }
+
+    private void carregarGrade() {
+        Usuario    prof = cbAtribProf.getValue();
+        Disciplina disc = cbAtribDisc.getValue();
+
+        gradeAtribuicao.getChildren().clear();
+        mapaCheckBoxes.clear();
+        atribuicaoAtual = null;
+        lblConflito.setVisible(false);
+        lblConflito.setManaged(false);
+
+        if (prof == null || disc == null || idSemestreLetivoAtual == null) return;
+
+        try {
+            List<HorarioCurso> horarios = horarioCursoDAO
+                    .listarHorariosPorCurso(idCursoAtual, idSemestreLetivoAtual)
+                    .stream()
+                    .filter(h -> "aula".equals(h.getTipo()))
+                    .toList();
+
+            if (horarios.isEmpty()) return;
+
+            atribuicaoAtual = atribuicaoProfessorDAO
+                    .buscarPorDisciplinaESemestre(disc.getId_disciplina(), idSemestreLetivoAtual);
+
+            Set<String> marcados = new HashSet<>();
+            if (atribuicaoAtual != null) {
+                atribuicaoHorarioDAO
+                        .listarPorAtribuicao(atribuicaoAtual.getId_atribuicao_professor())
+                        .forEach(ah -> marcados.add(ah.getDia_semana() + "_" + ah.getHorario_curso_id()));
+            }
+
+            // Cabeçalho
+            String[] dias = {"Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"};
+            for (int col = 0; col < dias.length; col++) {
+                Label lblDia = new Label(dias[col]);
+                lblDia.setStyle("-fx-font-weight: bold; -fx-alignment: center;");
+                gradeAtribuicao.add(lblDia, col + 1, 0);
+            }
+
+            // Linhas de horários
+            for (int row = 0; row < horarios.size(); row++) {
+                HorarioCurso hc = horarios.get(row);
+
+                Label lblHorario = new Label(hc.getHora_inicio() + " – " + hc.getHora_fim());
+                lblHorario.setStyle("-fx-font-size: 11px;");
+                gradeAtribuicao.add(lblHorario, 0, row + 1);
+
+                for (int dia = 1; dia <= 6; dia++) {
+                    String chave = dia + "_" + hc.getId_horario_curso();
+                    CheckBox cb = new CheckBox();
+                    cb.setSelected(marcados.contains(chave));
+                    mapaCheckBoxes.put(chave, cb);
+
+                    final int diaFinal     = dia;
+                    final int horarioId    = hc.getId_horario_curso();
+                    cb.setOnAction(e -> verificarConflito(prof, diaFinal, horarioId, cb));
+
+                    gradeAtribuicao.add(cb, dia, row + 1);
+                }
+            }
+
+        } catch (SQLException e) {
+            System.err.println("Erro ao carregar grade: " + e.getMessage());
+        }
+    }
+
+    private void verificarConflito(Usuario prof, int diaSemana, int horarioCursoId, CheckBox cb) {
+        if (!cb.isSelected()) {
+            lblConflito.setVisible(false);
+            lblConflito.setManaged(false);
+            return;
+        }
+        try {
+            int atribuicaoIdExcluir = atribuicaoAtual != null
+                    ? atribuicaoAtual.getId_atribuicao_professor() : -1;
+
+            String nomeConflito = atribuicaoHorarioDAO.buscarConflito(
+                    idSemestreLetivoAtual, diaSemana, horarioCursoId, atribuicaoIdExcluir);
+
+            if (nomeConflito != null) {
+                lblConflito.setText("⚠ Conflito com " + nomeConflito + " neste horário.");
+                lblConflito.setVisible(true);
+                lblConflito.setManaged(true);
+                cb.setSelected(false);
+            }
+        } catch (SQLException e) {
+            System.err.println("Erro ao verificar conflito: " + e.getMessage());
+        }
     }
 
     // ════════════════════════════════════════════════════════════════════════
@@ -422,12 +593,5 @@ public class CoordPainelController {
         alerta.setHeaderText(null);
         alerta.setContentText(mensagem);
         alerta.showAndWait();
-    }
-
-    private void configurarIds() {
-        this.idDisciplinaAtual = logado.getIdDisciplina();
-        this.idCursoAtual = logado.getIdCurso();
-        this.anoAtual = logado.getAno();
-        this.anoSemestre = logado.getAnoSemestre();
     }
 }
