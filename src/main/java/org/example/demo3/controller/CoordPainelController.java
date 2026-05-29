@@ -58,7 +58,8 @@ public class CoordPainelController {
     // ════════════════════════════════════════════════════════════════════════
     // CAMPOS FXML — ABA 3: ATRIBUIÇÕES
     // ════════════════════════════════════════════════════════════════════════
-
+    @FXML private TabPane tabPanePrincipal;
+    @FXML private Tab     tabAtribuicoes;
     @FXML private ComboBox<Usuario>    cbAtribProf;
     @FXML private ComboBox<Disciplina> cbAtribDisc;
     @FXML private GridPane             gradeAtribuicao;
@@ -344,6 +345,8 @@ public class CoordPainelController {
                 }
                 usuarioDAO.editarUsuario(professorSelecionadoTabela);
                 exibirAlerta(Alert.AlertType.INFORMATION, "Sucesso", "Professor atualizado com sucesso.");
+                handleLimparProf();
+                recarregarTabelaProfessores();
 
             } else {
                 // ── INSERÇÃO ─────────────────────────────────────────────────
@@ -369,11 +372,42 @@ public class CoordPainelController {
                 usuarioTipo.setTipo("PROF");
                 usuarioTipoDAO.inserirUsuarioTipo(usuarioTipo);
 
-                exibirAlerta(Alert.AlertType.INFORMATION, "Sucesso", "Professor cadastrado com sucesso.");
-            }
+                Alert popup = new Alert(Alert.AlertType.CONFIRMATION);
+                popup.setTitle("Professor cadastrado");
+                popup.setHeaderText(null);
+                popup.setContentText("Professor salvo. Deseja atribuir uma disciplina agora?\n\n" +
+                        "• Atribuir agora → vai para a aba de Atribuições\n" +
+                        "• Cancelar cadastro → desfaz e remove do banco");
 
-            handleLimparProf();
-            recarregarTabelaProfessores();
+                ButtonType btnAtribuir = new ButtonType("Atribuir agora");
+                ButtonType btnCancelar = new ButtonType("Cancelar cadastro", ButtonBar.ButtonData.CANCEL_CLOSE);
+                popup.getButtonTypes().setAll(btnAtribuir, btnCancelar);
+
+                popup.showAndWait().ifPresent(resposta -> {
+                    if (resposta == btnAtribuir) {
+                        handleLimparProf();
+                        recarregarTabelaProfessores();
+
+                        try {
+                            cbAtribProf.getItems().setAll(usuarioDAO.listarTodosProfessores());
+                        } catch (SQLException e) {
+                            System.err.println("Erro ao recarregar combo: " + e.getMessage());
+                        }
+                        cbAtribProf.getItems().stream()
+                                .filter(u -> u.getId_usuario() == novoId)
+                                .findFirst()
+                                .ifPresent(u -> cbAtribProf.setValue(u));
+
+                        tabPanePrincipal.getSelectionModel().select(tabAtribuicoes);
+
+                    } else {
+                        usuarioTipoDAO.excluirUsuarioTipo(novoId, "PROF");
+                        usuarioDAO.excluirUsuario(novoId);
+                        exibirAlerta(Alert.AlertType.INFORMATION, "Cancelado",
+                                "Cadastro desfeito. Nenhum dado foi salvo.");
+                    }
+                });
+            }
 
         } catch (Exception e) {
             exibirAlerta(Alert.AlertType.ERROR, "Erro",
@@ -391,7 +425,7 @@ public class CoordPainelController {
 
     private void recarregarTabelaProfessores() {
         try {
-            tabelaProfessores.getItems().setAll(usuarioDAO.listarTodosProfessores());
+            tabelaProfessores.getItems().setAll(usuarioDAO.listarProfessoresComAtribuicao());
         } catch (SQLException e) {
             System.err.println("Erro ao recarregar tabela de professores: " + e.getMessage());
         }
