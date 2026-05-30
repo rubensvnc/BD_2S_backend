@@ -9,11 +9,16 @@ import javafx.scene.control.cell.TextFieldTableCell;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.VBox;
 import javafx.util.converter.LocalDateStringConverter;
+import org.example.demo3.DatabaseConnection;
+import org.example.demo3.UsuarioAtual;
 import org.example.demo3.dao.CancelamentoAdmDAO;
 import org.example.demo3.dao.SprintDAO;
 import org.example.demo3.entity.CancelamentoAdm;
 import org.example.demo3.entity.Sprint;
 
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.LocalDate;
 import java.time.Month;
@@ -22,7 +27,6 @@ import java.util.Locale;
 
 public class AdmCalendarioBloqueiosController {
 
-    // Aba 1 — Componentes FXML (Calendário / Sprints)
     @FXML private DatePicker dpInicioSemestre;
     @FXML private DatePicker dpFimSemestre;
     @FXML private DatePicker dpTcc;
@@ -33,39 +37,106 @@ public class AdmCalendarioBloqueiosController {
     @FXML private TableColumn<Sprint, LocalDate> colSprintReview;
     @FXML private Label lblFeedbackCalendario;
 
-    // Aba 2 — Componentes FXML (Cancelamentos / Bloqueios)
     @FXML private ComboBox<String> cbMes;
     @FXML private GridPane gridDias;
     @FXML private VBox boxConfigCancelamento;
     @FXML private ComboBox<String> cbTurno;
     @FXML private TextField tfMotivoCancelamento;
     @FXML private Label lblFeedbackCancelamento;
-    @FXML private ListView<CancelamentoAdm> listCancelamentos; // Tipado com a entidade real
+    @FXML private ListView<CancelamentoAdm> listCancelamentos;
     @FXML private Button btnDeletar;
 
-    // DAOs do Projeto
     private final SprintDAO sprintDAO = new SprintDAO();
     private final CancelamentoAdmDAO cancelamentoDAO = new CancelamentoAdmDAO();
+    private final UsuarioAtual logado = UsuarioAtual.getInstancia();
 
     private final ObservableList<Sprint> listaSprintsFX = FXCollections.observableArrayList();
     private final ObservableList<CancelamentoAdm> listaCancelamentosFX = FXCollections.observableArrayList();
     private LocalDate dataSelecionadaNoCalendario;
 
-    // ID do semestre ativo no escopo da tela (pode ser obtido dinamicamente se necessário)
-    private final int ID_SEMESTRE_ATUAL = 1;
+    private int idSemestreAtual = 1;
     private final int ID_ADM_LOGADO = 1;
 
     @FXML
     public void initialize() {
         configurarTabelaSprints();
-        carregarDadosSprints();
         configurarAbaBloqueios();
+
+        int anoFiltro = (logado.getAno() != null) ? logado.getAno() : LocalDate.now().getYear();
+        int numeroSemestre = (logado.getAnoSemestre() != null) ? logado.getAnoSemestre() : 1;
+
+        carregarDadosPorAnoESemestre(anoFiltro, numeroSemestre);
+    }
+
+    public void carregarDadosPorAnoESemestre(int anoFiltro, int numeroSemestre) {
+        listaSprintsFX.clear();
+
+        this.idSemestreAtual = buscarIdSemestreDoBanco(anoFiltro, numeroSemestre);
+
+        buscarEPreencherDatasMacro(this.idSemestreAtual, anoFiltro, numeroSemestre);
+
+        var sprintsBanco = sprintDAO.buscarSprintsPorSemestre(this.idSemestreAtual);
+
+        if (sprintsBanco.isEmpty()) {
+            int mesBase = (numeroSemestre == 2) ? 8 : 2;
+            for (int i = 1; i <= 3; i++) {
+                Sprint s = new Sprint();
+                s.setNumero(i);
+                s.setSemestre_letivo_id(this.idSemestreAtual);
+                s.setData_inicio(LocalDate.of(anoFiltro, mesBase, 10).plusMonths(i - 1));
+                s.setData_fim(LocalDate.of(anoFiltro, mesBase, 10).plusMonths(i - 1).plusDays(25));
+                s.setData_review(LocalDate.of(anoFiltro, mesBase, 10).plusMonths(i - 1).plusDays(27));
+                listaSprintsFX.add(s);
+            }
+        } else {
+            listaSprintsFX.addAll(sprintsBanco);
+        }
+        tabelaSprints.setItems(listaSprintsFX);
         carregarListaCancelamentos();
     }
 
-    // ═══════════════════════════════════════════════
-    // LÓGICA DA ABA 1 — CALENDÁRIO E SPRINTS
-    // ═══════════════════════════════════════════════
+    private int buscarIdSemestreDoBanco(int ano, int numeroSemestre) {
+        String sql = "SELECT id_semestre_letivo FROM semestre_letivo WHERE ano = ? AND numero_semestre = ?";
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setInt(1, ano);
+            stmt.setInt(2, numeroSemestre);
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getInt("id_semestre_letivo");
+                }
+            }
+        } catch (SQLException e) {
+            System.err.println("Erro ao buscar id_semestre_letivo dinamico: " + e.getMessage());
+        }
+        return 1;
+    }
+
+    private void buscarEPreencherDatasMacro(int idSemestre, int anoFiltro, int numeroSemestre) {
+        String sql = "SELECT data_inicio, data_fim, data_tg, data_feira FROM semestre_letivo WHERE id_semestre_letivo = ?";
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setInt(1, idSemestre);
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    dpInicioSemestre.setValue(rs.getDate("data_inicio").toLocalDate());
+                    dpFimSemestre.setValue(rs.getDate("data_fim").toLocalDate());
+                    dpTcc.setValue(rs.getDate("data_tg").toLocalDate());
+                    dpFeira.setValue(rs.getDate("data_feira").toLocalDate());
+                    return;
+                }
+            }
+        } catch (SQLException e) {
+            System.err.println("Erro ao carregar datas macro do semestre: " + e.getMessage());
+        }
+
+        int mesInicio = (numeroSemestre == 2) ? 8 : 2;
+        int mesFim = (numeroSemestre == 2) ? 12 : 6;
+        dpInicioSemestre.setValue(LocalDate.of(anoFiltro, mesInicio, 1));
+        dpFimSemestre.setValue(LocalDate.of(anoFiltro, mesFim, 30));
+        dpTcc.setValue(LocalDate.of(anoFiltro, mesFim, 15));
+        dpFeira.setValue(LocalDate.of(anoFiltro, mesFim, 20));
+    }
 
     private void configurarTabelaSprints() {
         tabelaSprints.setEditable(true);
@@ -73,63 +144,100 @@ public class AdmCalendarioBloqueiosController {
 
         colSprintInicio.setCellValueFactory(new PropertyValueFactory<>("data_inicio"));
         colSprintInicio.setCellFactory(TextFieldTableCell.forTableColumn(new LocalDateStringConverter()));
-        colSprintInicio.setOnEditCommit(event -> event.getRowValue().setData_inicio(event.getNewValue()));
+        colSprintInicio.setOnEditCommit(event -> {
+            Sprint sprint = event.getRowValue();
+            if (sprint != null) {
+                sprint.setData_inicio(event.getNewValue());
+                tabelaSprints.refresh();
+            }
+        });
 
         colSprintReview.setCellValueFactory(new PropertyValueFactory<>("data_review"));
         colSprintReview.setCellFactory(TextFieldTableCell.forTableColumn(new LocalDateStringConverter()));
-        colSprintReview.setOnEditCommit(event -> event.getRowValue().setData_review(event.getNewValue()));
-    }
-
-    private void carregarDadosSprints() {
-        listaSprintsFX.clear();
-        var sprintsBanco = sprintDAO.listarSprints();
-
-        if (sprintsBanco.isEmpty()) {
-            for (int i = 1; i <= 3; i++) {
-                Sprint s = new Sprint();
-                s.setNumero(i);
-                s.setSemestre_letivo_id(ID_SEMESTRE_ATUAL);
-                s.setData_inicio(LocalDate.now());
-                s.setData_fim(LocalDate.now().plusDays(15));
-                s.setData_review(LocalDate.now().plusDays(14));
-                listaSprintsFX.add(s);
+        colSprintReview.setOnEditCommit(event -> {
+            Sprint sprint = event.getRowValue();
+            if (sprint != null) {
+                sprint.setData_review(event.getNewValue());
+                tabelaSprints.refresh();
             }
-        } else {
-            listaSprintsFX.addAll(sprintsBanco);
-        }
-        tabelaSprints.setItems(listaSprintsFX);
+        });
     }
 
     @FXML
     public void handleSalvarCalendario() {
-        try {
-            if (dpInicioSemestre.getValue() != null && dpFimSemestre.getValue() != null) {
-                if (dpInicioSemestre.getValue().isAfter(dpFimSemestre.getValue())) {
-                    exibirFeedback(lblFeedbackCalendario, "Erro: Data de início não pode ser após o fim!", true);
-                    return;
-                }
-            }
+        if (dpInicioSemestre.getValue() == null || dpFimSemestre.getValue() == null ||
+                dpFeira.getValue() == null || dpTcc.getValue() == null) {
+            exibirFeedback(lblFeedbackCalendario, "Erro: Datas macro do semestre e marcos obrigatorios sao obrigatorios!", true);
+            return;
+        }
 
-            for (Sprint sprint : listaSprintsFX) {
-                if (sprint.getId_sprint() == null || sprint.getId_sprint() == 0) {
-                    sprintDAO.inserirSprint(sprint);
-                } else {
-                    sprintDAO.atualizarSprint(sprint);
-                }
+        LocalDate inicio = dpInicioSemestre.getValue();
+        LocalDate fim = dpFimSemestre.getValue();
+        LocalDate feira = dpFeira.getValue();
+        LocalDate tcc = dpTcc.getValue();
+
+        if (inicio.isAfter(fim)) {
+            exibirFeedback(lblFeedbackCalendario, "Erro: Data de inicio nao pode ser apos o fim do semestre!", true);
+            return;
+        }
+
+        if (feira.isBefore(inicio) || feira.isAfter(fim) || tcc.isBefore(inicio) || tcc.isAfter(fim)) {
+            exibirFeedback(lblFeedbackCalendario, "Erro: As datas da feira e do TG devem estar contidas dentro do intervalo do semestre!", true);
+            return;
+        }
+
+        if (listaSprintsFX.size() != 3) {
+            exibirFeedback(lblFeedbackCalendario, "Erro: O sistema exige a configuracao de exatamente 3 sprints obrigatorias!", true);
+            return;
+        }
+
+        for (Sprint sprint : listaSprintsFX) {
+            sprint.setSemestre_letivo_id(this.idSemestreAtual);
+            if (sprint.getData_inicio() == null || sprint.getData_review() == null) {
+                exibirFeedback(lblFeedbackCalendario, "Erro: Todas as datas das 3 sprints devem estar preenchidas!", true);
+                return;
             }
-            carregarDadosSprints();
-            exibirFeedback(lblFeedbackCalendario, "Calendário atualizado com sucesso!", false);
+            if (sprint.getData_inicio().isBefore(inicio) || sprint.getData_review().isAfter(fim)) {
+                exibirFeedback(lblFeedbackCalendario, "Erro: Os prazos das sprints nao podem extrapolar os limites do semestre!", true);
+                return;
+            }
+            if (sprint.getData_inicio().isAfter(sprint.getData_review())) {
+                exibirFeedback(lblFeedbackCalendario, "Erro: Data de inicio da Sprint " + sprint.getNumero() + " nao pode ser posterior a Review!", true);
+                return;
+            }
+            if (sprint.getData_fim() == null) {
+                sprint.setData_fim(sprint.getData_review());
+            }
+        }
+
+        try (Connection connection = DatabaseConnection.getConnection()) {
+            connection.setAutoCommit(false);
+            try {
+                sprintDAO.salvarOuAtualizarSprintsEmLote(connection, listaSprintsFX);
+
+                String sqlUpdateSemestre = "UPDATE semestre_letivo SET data_inicio = ?, data_fim = ?, data_tg = ?, data_feira = ? WHERE id_semestre_letivo = ?";
+                try (PreparedStatement stmtSem = connection.prepareStatement(sqlUpdateSemestre)) {
+                    stmtSem.setDate(1, java.sql.Date.valueOf(inicio));
+                    stmtSem.setDate(2, java.sql.Date.valueOf(fim));
+                    stmtSem.setDate(3, java.sql.Date.valueOf(tcc));
+                    stmtSem.setDate(4, java.sql.Date.valueOf(feira));
+                    stmtSem.setInt(5, this.idSemestreAtual);
+                    stmtSem.executeUpdate();
+                }
+
+                connection.commit();
+                carregarDadosPorAnoESemestre(inicio.getYear(), (inicio.getMonthValue() >= 7) ? 2 : 1);
+                exibirFeedback(lblFeedbackCalendario, "Calendario e as 3 Sprints salvos com sucesso!", false);
+            } catch (SQLException e) {
+                connection.rollback();
+                throw e;
+            }
         } catch (Exception e) {
-            exibirFeedback(lblFeedbackCalendario, "Falha ao salvar: " + e.getMessage(), true);
+            exibirFeedback(lblFeedbackCalendario, "Falha ao salvar lote do calendario: " + e.getMessage(), true);
         }
     }
 
-    // ═══════════════════════════════════════════════
-    // LÓGICA DA ABA 2 — BLOQUEIOS E CANCELAMENTOS
-    // ═══════════════════════════════════════════════
-
     private void configurarAbaBloqueios() {
-        // Popula os meses em PT-BR
         for (Month month : Month.values()) {
             cbMes.getItems().add(month.getDisplayName(TextStyle.FULL, new Locale("pt", "BR")));
         }
@@ -138,7 +246,6 @@ public class AdmCalendarioBloqueiosController {
         cbTurno.setItems(FXCollections.observableArrayList("Dia inteiro", "Manhã", "Noite"));
         cbTurno.getSelectionModel().selectFirst();
 
-        // Customiza a exibição das células do ListView para mostrar os dados do CancelamentoAdm legíveis
         listCancelamentos.setCellFactory(param -> new ListCell<>() {
             @Override
             protected void updateItem(CancelamentoAdm item, boolean empty) {
@@ -162,7 +269,7 @@ public class AdmCalendarioBloqueiosController {
         gridDias.getChildren().clear();
         if (mesId < 1 || mesId > 12) return;
 
-        int anoAtual = LocalDate.now().getYear();
+        int anoAtual = (logado.getAno() != null) ? logado.getAno() : LocalDate.now().getYear();
         LocalDate primeiroDiaDoMes = LocalDate.of(anoAtual, mesId, 1);
         int diasNoMes = primeiroDiaDoMes.lengthOfMonth();
 
@@ -193,7 +300,7 @@ public class AdmCalendarioBloqueiosController {
     private void carregarListaCancelamentos() {
         try {
             listaCancelamentosFX.clear();
-            var doBanco = cancelamentoDAO.listarCancelamentos(ID_SEMESTRE_ATUAL);
+            var doBanco = cancelamentoDAO.listarCancelamentos(this.idSemestreAtual);
             listaCancelamentosFX.addAll(doBanco);
             listCancelamentos.setItems(listaCancelamentosFX);
         } catch (SQLException e) {
@@ -217,10 +324,9 @@ public class AdmCalendarioBloqueiosController {
         String turnoSelecionado = cbTurno.getValue();
         boolean ehDiaInteiro = "Dia inteiro".equalsIgnoreCase(turnoSelecionado);
 
-        // Instancia a Entidade Oficial do projeto
         CancelamentoAdm novoCancelamento = new CancelamentoAdm();
         novoCancelamento.setAdm_id(ID_ADM_LOGADO);
-        novoCancelamento.setSemestre_letivo_id(ID_SEMESTRE_ATUAL);
+        novoCancelamento.setSemestre_letivo_id(this.idSemestreAtual);
         novoCancelamento.setData(dataSelecionadaNoCalendario);
         novoCancelamento.setTurno(ehDiaInteiro ? null : turnoSelecionado);
         novoCancelamento.setDia_inteiro(ehDiaInteiro);
