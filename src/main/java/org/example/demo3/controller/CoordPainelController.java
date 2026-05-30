@@ -247,6 +247,7 @@ public class CoordPainelController {
                 exibirAlerta(Alert.AlertType.INFORMATION, "Sucesso", "Disciplina cadastrada com sucesso.");
             }
             tabelaDisciplinas.getItems().setAll(disciplinaDAO.listarDisciplinas());
+            recarregarDisciplinasUI();
 
         } catch (Exception e) {
             exibirAlerta(Alert.AlertType.ERROR, "Erro", "Falha ao salvar a disciplina:\n" + e.getMessage());
@@ -274,6 +275,7 @@ public class CoordPainelController {
 
                 carregarDisciplinas();
                 exibirAlerta(Alert.AlertType.INFORMATION, "Sucesso", "Disciplina excluída com sucesso.");
+                recarregarDisciplinasUI();
 
             } catch (Exception e) {
                 exibirAlerta(Alert.AlertType.ERROR, "Erro", "Falha ao excluir a disciplina.");
@@ -414,7 +416,7 @@ public class CoordPainelController {
                     jaProfessor ? "Você já está cadastrado como professor."
                             : "Você foi adicionado como professor com sucesso.");
             recarregarTabelaProfessores();
-
+            recarregarProfessoresUI();
         } catch (Exception e) {
             exibirAlerta(Alert.AlertType.ERROR, "Erro",
                     "Falha ao se atribuir como professor:\n" + e.getMessage());
@@ -532,7 +534,7 @@ public class CoordPainelController {
                     }
                 });
             }
-
+            recarregarProfessoresUI();
         } catch (Exception e) {
             exibirAlerta(Alert.AlertType.ERROR, "Erro",
                     "Falha ao salvar o professor:\n" + e.getMessage());
@@ -575,6 +577,7 @@ public class CoordPainelController {
                 }
 
                 recarregarTabelaProfessores();
+                recarregarProfessoresUI();
                 exibirAlerta(Alert.AlertType.INFORMATION, "Sucesso", "Disciplina excluída com sucesso.");
 
             } catch (Exception e) {
@@ -687,6 +690,36 @@ public class CoordPainelController {
     }
 
     // ── Helpers — Aba 3 ─────────────────────────────────────────────────────
+
+    private void recarregarDisciplinasUI() {
+        try {
+            tabelaDisciplinas.getItems().setAll(
+                    disciplinaDAO.listarDisciplinas()
+            );
+
+            cbAtribDisc.getItems().setAll(
+                    disciplinaDAO.listarDisciplinasPorCurso(idCursoAtual)
+            );
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+    private void recarregarProfessoresUI() {
+        try {
+
+            tabelaProfessores.getItems().setAll(
+                    atribuicaoProfessorDAO.listarProfessoresComAtribuicao()
+            );
+
+            cbAtribProf.getItems().setAll(
+                    usuarioDAO.listarTodosProfessores()
+            );
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
 
     private void configurarAbaAtribuicoes() {
         try {
