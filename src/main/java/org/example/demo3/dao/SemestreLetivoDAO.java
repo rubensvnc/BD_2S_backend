@@ -7,6 +7,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -70,6 +71,35 @@ public class SemestreLetivoDAO{
             throw e;
         } finally {
             DatabaseConnection.closeConnection();
+        }
+        return null;
+    }
+
+    public SemestreLetivo listarSLPorId(Integer id){
+        String sql = """
+            SELECT * FROM semestre_letivo WHERE id_semestre_letivo = ?;
+            """;
+
+        try (Connection conn = DatabaseConnection.getConnection();
+        PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            ps.setInt(1, id);
+
+            ResultSet rs = ps.executeQuery();
+            if (rs.next()) {
+                SemestreLetivo sl = new SemestreLetivo();
+                sl.setId_semestre_letivo(rs.getInt("id_semestre_letivo"));
+                sl.setCriado_por_adm_id(rs.getInt("criado_por_adm_id"));
+                sl.setAno(rs.getInt("ano"));
+                sl.setNumero_semestre(rs.getInt("numero_semestre"));
+                sl.setData_inicio(rs.getObject("data_inicio", LocalDate.class));
+                sl.setData_fim(rs.getObject("data_fim", LocalDate.class));
+                sl.setData_tg(rs.getObject("data_tg", LocalDate.class));
+                sl.setData_feira(rs.getObject("data_feira", LocalDate.class));
+                return sl;
+            }
+        } catch (SQLException e) {
+            System.err.println("Erro ao listar temas: " + e.getMessage());
         }
         return null;
     }
