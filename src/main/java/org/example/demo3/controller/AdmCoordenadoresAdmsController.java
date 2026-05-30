@@ -12,7 +12,9 @@ import org.example.demo3.entity.Usuario;
 import org.example.demo3.entity.UsuarioTipo;
 
 import java.time.LocalDate;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class AdmCoordenadoresAdmsController {
 
@@ -67,14 +69,29 @@ public class AdmCoordenadoresAdmsController {
             listaCoordenadoresFX.clear();
             listaAdmsFX.clear();
 
-            List<Usuario> todosUsuarios = usuarioDAO.listarUsuariosComTipo();
+            // 1. Busca os usuários básicos do seu UsuarioDAO que permaneceu intacto
+            List<Usuario> todosUsuarios = usuarioDAO.listarUsuarios();
 
+            // 2. Busca a lista de papéis/permissões do UsuarioTipoDAO
+            List<UsuarioTipo> todosTipos = usuarioTipoDAO.listarUsuariosTipo();
+
+            // 3. Mapeia os tipos vinculando o ID do usuário ao seu cargo para busca veloz
+            Map<Integer, String> mapaTipos = new HashMap<>();
+            for (UsuarioTipo ut : todosTipos) {
+                mapaTipos.put(ut.getUsuario_id(), ut.getTipo());
+            }
+
+            // 4. Injeta o tipo em tempo de execução e distribui nas tabelas corretas da interface
             for (Usuario user : todosUsuarios) {
+                String tipoEncontrado = mapaTipos.get(user.getId_usuario());
+                if (tipoEncontrado != null) {
+                    user.setTipo(tipoEncontrado);
 
-                if ("COORD".equalsIgnoreCase(user.getTipo())) {
-                    listaCoordenadoresFX.add(user);
-                } else if ("ADM".equalsIgnoreCase(user.getTipo())) {
-                    listaAdmsFX.add(user);
+                    if ("COORD".equalsIgnoreCase(tipoEncontrado)) {
+                        listaCoordenadoresFX.add(user);
+                    } else if ("ADM".equalsIgnoreCase(tipoEncontrado)) {
+                        listaAdmsFX.add(user);
+                    }
                 }
             }
         } catch (Exception e) {
@@ -179,6 +196,7 @@ public class AdmCoordenadoresAdmsController {
             return;
         }
         try {
+            // CORRIGIDO: Agora conversa perfeitamente com a assinatura (Integer, String) do seu novo metodo
             usuarioTipoDAO.excluirUsuarioTipo(coordenadorSelecionado.getId_usuario(), "COORD");
             usuarioDAO.excluirUsuario(coordenadorSelecionado.getId_usuario());
             exibirAlerta("Sucesso", "Coordenador removido do sistema.");
@@ -261,6 +279,7 @@ public class AdmCoordenadoresAdmsController {
             return;
         }
         try {
+            // CORRIGIDO: Chame o método adequado por ID para o Administrador
             usuarioTipoDAO.excluirUsuarioTipo(admSelecionado.getId_usuario(), "ADM");
             usuarioDAO.excluirUsuario(admSelecionado.getId_usuario());
             exibirAlerta("Sucesso", "Administrador removido.");
