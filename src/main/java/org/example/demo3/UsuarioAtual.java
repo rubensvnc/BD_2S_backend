@@ -76,8 +76,6 @@ public class UsuarioAtual {
     public void setSemestreCurso(Integer semestreCurso) { this.semestreCurso.set(semestreCurso); }
 
     public Integer getIdDisciplina() { return id_disciplina.get(); }
-
-    // CORRIGIDO: Agora aponta para id_disciplina e não para id_usuario!
     public void setIdDisciplina(Integer idDisciplina) {
         this.id_disciplina.set(idDisciplina);
     }
