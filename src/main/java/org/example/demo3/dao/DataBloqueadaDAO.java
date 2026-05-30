@@ -1,9 +1,11 @@
 package org.example.demo3.dao;
 
 import org.example.demo3.DatabaseConnection;
+import org.example.demo3.entity.CancelamentoAdm;
 import org.example.demo3.entity.DataBloqueada;
 
 import java.sql.*;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -54,6 +56,27 @@ public class DataBloqueadaDAO {
         }
         return lista;
     }
+
+    public List<LocalDate> listarDatasBloqueadasPorSemestre (Integer sl){
+        String sql = "SELECT data FROM data_bloqueada WHERE semestre_letivo_id = ?";
+
+        List<LocalDate> datas = new ArrayList<>();
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            ps.setInt(1, sl);
+
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    datas.add(rs.getObject("data", LocalDate.class));
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return datas;
+    }
+
 
     public void excluir(int id) throws SQLException {
         String sql = "DELETE FROM data_bloqueada WHERE id_data_bloqueada = ?";
