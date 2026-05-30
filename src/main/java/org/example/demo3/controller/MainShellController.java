@@ -62,8 +62,8 @@ public class MainShellController {
         configurarResetInicial();
 
         if (logado.getTipo() == null) {
-            logado.setId_usuario(3);
-            logado.setTipo("COORD");
+            logado.setId_usuario(4);
+            logado.setTipo("PROF");
         }
 
         if (lblPerfilUsuario != null) {
@@ -314,14 +314,7 @@ public class MainShellController {
         }
     }
 
-    private void atualizarSubtelaSePlanejamentoAtivo() {
-        if (planejamentoAtivoController != null && !areaConteudo.getChildren().isEmpty()) {
-            Parent conteudoAtual = (Parent) areaConteudo.getChildren().get(0);
-            if ("raizPlanejamentoPane".equals(conteudoAtual.getId())) {
-                planejamentoAtivoController.handleGerarPlanejamento();
-            }
-        }
-    }
+
 
     @FXML
     public void handleTrocaAno() {
@@ -341,7 +334,7 @@ public class MainShellController {
                     }
                 }
             }
-            atualizarSubtelaSePlanejamentoAtivo();
+
         }
     }
 
@@ -356,7 +349,7 @@ public class MainShellController {
             tbSem1.setSelected(false);
         }
         processarDadosCursos();
-        atualizarSubtelaSePlanejamentoAtivo();
+
     }
 
     @FXML
@@ -367,7 +360,7 @@ public class MainShellController {
                 CursoDAO cDAO = new CursoDAO();
                 logado.setIdCurso(cDAO.listarIdCurso(cursoSelecionado));
                 processarDadosCursoSemestresEDisciplinas();
-                atualizarSubtelaSePlanejamentoAtivo();
+
             } catch (SQLException e){
                 e.printStackTrace();
             }
@@ -381,7 +374,7 @@ public class MainShellController {
             logado.setSemestreCurso(Integer.parseInt(valor));
             logado.setIdDisciplina(null);
             popularComboboxDisciplinas();
-            atualizarSubtelaSePlanejamentoAtivo();
+
         }
     }
 
@@ -393,7 +386,7 @@ public class MainShellController {
         } else {
             logado.setIdDisciplina(null);
         }
-        atualizarSubtelaSePlanejamentoAtivo();
+
     }
 
     @FXML void handleLogout(ActionEvent event) {
@@ -444,7 +437,7 @@ public class MainShellController {
             areaConteudo.getChildren().clear();
             areaConteudo.getChildren().add(novoConteudo);
 
-            atualizarSubtelaSePlanejamentoAtivo();
+
         } catch (IOException e) {
             e.printStackTrace();
         }
