@@ -88,4 +88,46 @@ public class SlotPlanejamentoDAO {
             DatabaseConnection.closeConnection();
         }
     }
+
+    public void inserirEmLote(List<SlotPlanejamento> slots) {
+        String sql = """
+        INSERT INTO slot_planejamento (planejamento_id, data, horario_curso_id, tema_id, status)
+        VALUES (?, ?, ?, ?, ?);
+        """;
+
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            for (SlotPlanejamento slot : slots) {
+                ps.setInt(1, slot.getPlanejamento_id());
+                ps.setObject(2, slot.getData());
+                ps.setInt(3, slot.getHorario_curso_id());
+                ps.setInt(4, slot.getTema_id());
+                ps.setString(5, slot.getStatus());
+                ps.addBatch();
+            }
+
+            ps.executeBatch();
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void deletarPorPlanejamento(Integer idPlanejamento) {
+        String sql = """
+        DELETE FROM slot_planejamento
+        WHERE planejamento_id = ?;
+        """;
+
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            ps.setInt(1, idPlanejamento);
+            ps.executeUpdate();
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
 }
