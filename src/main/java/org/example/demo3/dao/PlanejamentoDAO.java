@@ -11,6 +11,45 @@ import java.util.Map;
 
 public class PlanejamentoDAO {
 
+    public Integer buscarOuCriarPlanejamento(Integer idAtribuicao) {
+        String sqlBusca = """
+        SELECT id_planejamento FROM planejamento
+        WHERE atribuicao_professor_id = ?;
+        """;
+
+        String sqlInsert = """
+        INSERT INTO planejamento (atribuicao_professor_id)
+        VALUES (?);
+        """;
+
+        try (Connection conn = DatabaseConnection.getConnection()) {
+
+            try (PreparedStatement psBusca = conn.prepareStatement(sqlBusca)) {
+                psBusca.setInt(1, idAtribuicao);
+                try (ResultSet rs = psBusca.executeQuery()) {
+                    if (rs.next()) {
+                        return rs.getInt("id_planejamento");
+                    }
+                }
+            }
+
+            try (PreparedStatement psInsert = conn.prepareStatement(sqlInsert,
+                    PreparedStatement.RETURN_GENERATED_KEYS)) {
+                psInsert.setInt(1, idAtribuicao);
+                psInsert.executeUpdate();
+                try (ResultSet rsKeys = psInsert.getGeneratedKeys()) {
+                    if (rsKeys.next()) {
+                        return rsKeys.getInt(1);
+                    }
+                }
+            }
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        return null;
+    }
 
     public static Map<String, Object> obterEstatisticasGlobais(int ano, int semestreAno,
                                                                 Integer id_curso, Integer id_disciplina,
