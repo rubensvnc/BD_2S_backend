@@ -37,7 +37,7 @@ public class CoordPainelController {
 
     @FXML private TableView<Disciplina>            tabelaDisciplinas;
     @FXML private TableColumn<Disciplina, String>  colDiscNome;
-    @FXML private TableColumn<Disciplina, Integer> colDiscSemCurso;
+    @FXML private TableColumn  <Curso, Integer> colDiscSemCurso;
     @FXML private TableColumn<Disciplina, Integer> colDiscCH;
     @FXML private TableColumn<Disciplina, String>  colDiscProf;
     @FXML private TableColumn<Disciplina, Void>    colDiscAcoes;
@@ -103,16 +103,16 @@ public class CoordPainelController {
     // ════════════════════════════════════════════════════════════════════════
     // DAOs
     // ════════════════════════════════════════════════════════════════════════
-
-    private final DisciplinaDAO          disciplinaDAO          = new DisciplinaDAO();
-    private final UsuarioDAO             usuarioDAO             = new UsuarioDAO();
-    private final UsuarioTipoDAO         usuarioTipoDAO         = new UsuarioTipoDAO();
+    private final CursoDAO cursoDAO = new CursoDAO();
+    private final DisciplinaDAO disciplinaDAO = new DisciplinaDAO();
+    private final UsuarioDAO usuarioDAO = new UsuarioDAO();
+    private final UsuarioTipoDAO usuarioTipoDAO = new UsuarioTipoDAO();
     private final AtribuicaoProfessorDAO atribuicaoProfessorDAO = new AtribuicaoProfessorDAO();
-    private final HorarioCursoDAO        horarioCursoDAO        = new HorarioCursoDAO();
-    private final AtribuicaoHorarioDAO   atribuicaoHorarioDAO   = new AtribuicaoHorarioDAO();
-    private final SemestreLetivoDAO      semestreLetivoDAO      = new SemestreLetivoDAO();
-    private final SlotPlanejamentoDAO    slotDAO                = new SlotPlanejamentoDAO();
-    private final PlanejamentoDAO        planejamentoDAO        = new PlanejamentoDAO();
+    private final HorarioCursoDAO horarioCursoDAO = new HorarioCursoDAO();
+    private final AtribuicaoHorarioDAO atribuicaoHorarioDAO = new AtribuicaoHorarioDAO();
+    private final SemestreLetivoDAO semestreLetivoDAO = new SemestreLetivoDAO();
+    private final SlotPlanejamentoDAO slotDAO = new SlotPlanejamentoDAO();
+    private final PlanejamentoDAO planejamentoDAO = new PlanejamentoDAO();
 
     // ════════════════════════════════════════════════════════════════════════
     // ESTADO
@@ -151,8 +151,11 @@ public class CoordPainelController {
 
     @FXML
     public void initialize() {
+        //ABA 1, 2 E 3
         configurarIds();
         configurarTabelaDisciplinas();
+        carregarDisciplinas();
+        configurarComboboxCurso();
         configurarSpinnerDisciplina();
         configurarTabelaProfessores();
         recarregarTabelaProfessores();
@@ -288,6 +291,49 @@ public class CoordPainelController {
                 : "-fx-text-fill: #e74c3c; -fx-font-weight: bold;");
         lblFeedbackDisc.setVisible(true);
         lblFeedbackDisc.setManaged(true);
+    }
+
+    private void carregarDisciplinas() {
+        // Carrega a tabela (isso parece estar correto, assumindo que tabelaDisciplinas é um TableView)
+        tabelaDisciplinas.getItems().setAll(disciplinaDAO.listarDisciplinas());
+        preencherComboBoxSemestres();
+    }
+
+    private void preencherComboBoxSemestres() {
+        // Garante que o ComboBox seja limpo antes de preencher novamente
+        cbDiscSemestreCurso.getItems().clear();
+
+        // Verificação de segurança: se não houver curso logado, não faz nada
+        if (this.idCursoAtual == null) {
+            System.out.println("Nenhum curso associado ao coordenador atual.");
+            return;
+        }
+
+        try {
+            int qtdSemestres = cursoDAO.buscarQtdSemestresPorId(idCursoAtual);
+
+            for (int i = 1; i <= qtdSemestres; i++) {
+                cbDiscSemestreCurso.getItems().add(i);
+            }
+
+        } catch (SQLException e) {
+            System.err.println("Erro ao buscar semestres do curso: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
+    private void configurarComboboxCurso() {
+        cbDiscSemestreCurso.setConverter(new javafx.util.StringConverter<Integer>() {
+            @Override
+            public String toString(Integer numero) {
+                return (numero == null) ? "" : numero + "º Semestre";
+            }
+
+            @Override
+            public Integer fromString(String string) {
+                return null; // Não necessário para este fluxo
+            }
+        });
     }
 
     // ════════════════════════════════════════════════════════════════════════
