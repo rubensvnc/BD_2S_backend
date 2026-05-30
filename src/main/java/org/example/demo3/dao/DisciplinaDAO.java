@@ -9,6 +9,35 @@ import java.util.List;
 
 public class DisciplinaDAO {
 
+    public Disciplina recuperarDisciplinaPorId(Integer id) throws SQLException{
+        String sql = "SELECT * FROM disciplina WHERE id_disciplina = ?";
+
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql);
+             ) {
+
+            stmt.setInt(1, id);
+            ResultSet rs = stmt.executeQuery();
+            if (rs.next()) {
+                Disciplina d = new Disciplina();
+                d.setId_disciplina(rs.getInt("id_disciplina"));
+                d.setCurso_id(rs.getInt("curso_id"));
+                d.setNome(rs.getString("nome"));
+                d.setSemestre_curso(rs.getInt("semestre_curso"));
+                d.setCarga_horaria_minima(rs.getInt("carga_horaria_minima"));
+
+                Timestamp deletadoEm = rs.getTimestamp("deletado_em");
+                if (deletadoEm != null) d.setDeletado_em(deletadoEm.toLocalDateTime());
+
+                return d;
+            }
+
+        } catch (SQLException e) {
+            System.out.println("Erro ao listar disciplinas: " + e.getMessage());
+        }
+
+        return null;
+    }
 
     // INSERÇÃO (SEM RETORNO DO ID)
     public void inserirDisciplina(Disciplina disciplina) {
