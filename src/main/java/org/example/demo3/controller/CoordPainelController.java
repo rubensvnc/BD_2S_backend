@@ -254,9 +254,56 @@ public class CoordPainelController {
         }
     }
 
-    @FXML
-    private void handleDeletarDisciplina() {
-        // TODO: soft-delete da disciplina selecionada
+    private void handleDeletarDisciplina(Disciplina disciplina) {
+        Alert confirmacao = new Alert(Alert.AlertType.CONFIRMATION);
+        confirmacao.setTitle("Confirmar exclusão");
+        confirmacao.setHeaderText(null);
+        confirmacao.setContentText("Deseja excluir a disciplina \"" + disciplina.getNome() + "\"?");
+
+        confirmacao.showAndWait().ifPresent(resposta -> {
+            if (resposta != ButtonType.OK) return;
+
+            try {
+                disciplinaDAO.excluirDisciplina(disciplina.getId_disciplina()); // getter correto
+
+                if (disciplinaSelecionadaTabela != null
+                        && disciplinaSelecionadaTabela.getId_disciplina() == disciplina.getId_disciplina()) {
+                    disciplinaSelecionadaTabela = null;
+                    limparCamposDisc(); // em vez de handleLimparDisc() que não existe com esse nome
+                }
+
+                carregarDisciplinas();
+                exibirAlerta(Alert.AlertType.INFORMATION, "Sucesso", "Disciplina excluída com sucesso.");
+
+            } catch (Exception e) {
+                exibirAlerta(Alert.AlertType.ERROR, "Erro", "Falha ao excluir a disciplina.");
+                System.err.println(e.getMessage());
+            }
+        });
+    }
+
+    private void configurarColunaAcoesDisc() {
+        colDiscAcoes.setCellFactory(col -> new TableCell<>() {
+
+            private final Button btnDelete = new Button("EXCLUIR");
+
+            {
+                btnDelete.setStyle(
+                        "-fx-background-color: #e74c3c;" +
+                                "-fx-text-fill: white;" +
+                                "-fx-cursor: hand;"
+                );
+                btnDelete.setOnAction(e ->
+                        handleDeletarDisciplina(getTableView().getItems().get(getIndex()))
+                );
+            }
+
+            @Override
+            protected void updateItem(Void item, boolean empty) {
+                super.updateItem(item, empty);
+                setGraphic(empty ? null : btnDelete);
+            }
+        });
     }
 
     // ── Helpers — Aba 1 ─────────────────────────────────────────────────────
@@ -266,6 +313,7 @@ public class CoordPainelController {
         colDiscSemCurso.setCellValueFactory(new PropertyValueFactory<>("semestre_curso"));
         colDiscCH.setCellValueFactory(new PropertyValueFactory<>("carga_horaria_minima"));
         colDiscProf.setCellValueFactory(new PropertyValueFactory<>("nome"));
+        configurarColunaAcoesDisc();
     }
 
     private void configurarComboboxCurso() {
@@ -497,6 +545,7 @@ public class CoordPainelController {
     private void configurarTabelaProfessores() {
         colProfNome.setCellValueFactory(new PropertyValueFactory<>("nome"));
         colProfEmail.setCellValueFactory(new PropertyValueFactory<>("email"));
+        configurarColunaAcoesProf();
     }
 
     private void recarregarTabelaProfessores() {
@@ -506,6 +555,59 @@ public class CoordPainelController {
             System.err.println("Erro ao recarregar tabela de professores: " + e.getMessage());
         }
     }
+
+    private void handleDeletarProfessor(Usuario professor) {
+        Alert confirmacao = new Alert(Alert.AlertType.CONFIRMATION);
+        confirmacao.setTitle("Confirmar exclusão");
+        confirmacao.setHeaderText(null);
+        confirmacao.setContentText("Deseja excluir o professor \"" + professor.getNome() + "\"?");
+
+        confirmacao.showAndWait().ifPresent(resposta -> {
+            if (resposta != ButtonType.OK) return;
+
+            try {
+                usuarioDAO.excluirUsuario(professor.getId_usuario()); // getter correto
+
+                if (professorSelecionadoTabela != null
+                        && professorSelecionadoTabela.getId_usuario() == professor.getId_usuario()) {
+                    professorSelecionadoTabela = null;
+                    handleLimparProf();
+                }
+
+                recarregarTabelaProfessores();
+                exibirAlerta(Alert.AlertType.INFORMATION, "Sucesso", "Disciplina excluída com sucesso.");
+
+            } catch (Exception e) {
+                exibirAlerta(Alert.AlertType.ERROR, "Erro", "Falha ao excluir a disciplina.");
+                System.err.println(e.getMessage());
+            }
+        });
+    }
+
+    private void configurarColunaAcoesProf() {
+        colProfAcoes.setCellFactory(col -> new TableCell<>() {
+
+            private final Button btnDelete = new Button("EXCLUIR");
+
+            {
+                btnDelete.setStyle(
+                        "-fx-background-color: #e74c3c;" +
+                                "-fx-text-fill: white;" +
+                                "-fx-cursor: hand;"
+                );
+                btnDelete.setOnAction(e ->
+                        handleDeletarProfessor(getTableView().getItems().get(getIndex()))
+                );
+            }
+
+            @Override
+            protected void updateItem(Void item, boolean empty) {
+                super.updateItem(item, empty);
+                setGraphic(empty ? null : btnDelete);
+            }
+        });
+    }
+
 
     // ════════════════════════════════════════════════════════════════════════
     // ABA 3 — ATRIBUIÇÕES
