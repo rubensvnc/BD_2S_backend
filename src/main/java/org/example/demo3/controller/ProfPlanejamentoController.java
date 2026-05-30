@@ -15,7 +15,9 @@ import org.example.demo3.dao.*;
 import org.example.demo3.entity.*;
 
 import java.sql.SQLException;
+import java.time.DayOfWeek;
 import java.time.LocalDate;
+import java.time.temporal.TemporalAdjusters;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -51,6 +53,9 @@ public class ProfPlanejamentoController {
     private UsuarioAtual logado = UsuarioAtual.getInstancia();
 
     private Integer idSemestreLetivo;
+    private Integer contadorCargaH = 0;
+    private Boolean falhouCumprirQtdMinAulas = false;
+    private HashMap<Tema, HashMap<LocalDate, List<HorarioCurso>>> hMapTemaDataHorarios = new HashMap<>();
 
     @FXML
     public void initialize() {
@@ -67,60 +72,69 @@ public class ProfPlanejamentoController {
         );
 
         treePlanejamento.setCellFactory(CheckBoxTreeCell.forTreeView());
+
+        logado.idDisciplinaProperty().addListener((observable, oldValue, newValue) -> {
+            System.out.println("O ID da disciplina mudou de: " + oldValue + " para: " + newValue);
+
+            if (newValue != null) {
+                atualizarDadosPlanejamento();
+            }
+        });
     }
 
     public void setMainShellController(MainShellController mainShellController) {
         this.mainShellController = mainShellController;
     }
 
-    public HashMap<Tema, List<Tema>> mapearTemaPrioEDependenciasOrd(){
-        HashMap<Tema, List<Tema>> hmapTemaPrioDepend =
-                new HashMap<>();
+    public LinkedHashMap<Tema, List<Tema>> mapearTemaPrioEDependenciasOrd() {
+        LinkedHashMap<Tema, List<Tema>> hmapTemaPrioDepend = new LinkedHashMap<>();
         SemestreLetivoDAO slDao = new SemestreLetivoDAO();
         TemaDAO tDao = new TemaDAO();
         DependenciaTemaDAO dtDao = new DependenciaTemaDAO();
 
-        try{
+        try {
             idSemestreLetivo = slDao.getIdSemestreLetivo(
                     logado.getAno(), logado.getAnoSemestre());
 
+            // Já vem ordenada por prioridade (1 = maior)
             List<Tema> temasOrdPrioridade = tDao.listarTemasPorDisciplinaESemestre(
                     logado.getIdDisciplina(),
                     idSemestreLetivo
             );
 
-            for (Tema tDepois: temasOrdPrioridade){
+            for (Tema tDepois : temasOrdPrioridade) {
                 List<Tema> temasOrdDependencia = new ArrayList<>();
                 List<DependenciaTema> dependencias = dtDao.listarDependenciasTema(tDepois.getId_tema());
 
-                for (DependenciaTema dt: dependencias){
-                    Tema tVemAntes = new Tema();
-                    tVemAntes.setId_tema(dt.getTema_dependencia_id());
+                for (DependenciaTema dt : dependencias) {
+                    // CORRIGIDO: busca o Tema completo em vez de criar objeto parcial
+                    Tema tVemAntes = tDao.buscarPorId(dt.getTema_dependencia_id());
                     temasOrdDependencia.add(tVemAntes);
                 }
+
                 hmapTemaPrioDepend.put(tDepois, temasOrdDependencia);
             }
 
-        } catch (SQLException e){
+        } catch (SQLException e) {
             e.printStackTrace();
         }
+
         return hmapTemaPrioDepend;
     }
 
     public HashMap<Integer, List<HorarioCurso>> mapearDiasSemanaHorarios() {
-        HashMap<Integer, List<HorarioCurso>> hmapDiaSemanaHorarios =
-                new HashMap<>();
+        HashMap<Integer, List<HorarioCurso>> hmapDiaSemanaHorarios = new HashMap<>();
         AtribuicaoProfessorDAO apDao = new AtribuicaoProfessorDAO();
         HorarioCursoDAO hcDao = new HorarioCursoDAO();
         AtribuicaoHorarioDAO ahDao = new AtribuicaoHorarioDAO();
 
         try {
-            AtribuicaoProfessor ap = apDao.buscarPorDisciplinaESemestre
-                    (logado.getIdDisciplina(), idSemestreLetivo);
+            AtribuicaoProfessor ap = apDao.buscarPorDisciplinaESemestre(
+                    logado.getIdDisciplina(), idSemestreLetivo);
             Integer idAtribuicao = ap.getId_atribuicao_professor();
 
             List<AtribuicaoHorario> listaAh = ahDao.listarPorAtribuicao(idAtribuicao);
-            for (AtribuicaoHorario ah: listaAh){
+            for (AtribuicaoHorario ah : listaAh) {
                 Integer diaSemana = ah.getDia_semana();
                 List<HorarioCurso> listaHorariosDiaSemana = hcDao.listarHorariosPorAtribuicaoDSemana(
                         idAtribuicao,
@@ -128,21 +142,306 @@ public class ProfPlanejamentoController {
                 );
                 hmapDiaSemanaHorarios.put(diaSemana, listaHorariosDiaSemana);
             }
-        } catch (SQLException e){
+        } catch (SQLException e) {
             e.printStackTrace();
         }
+
         return hmapDiaSemanaHorarios;
     }
 
+    private boolean isDatBloqueada(LocalDate data, List<LocalDate> datasBloqueadas,
+                                   List<CancelamentoAdm> cancelamentosAdm) {
+        if (datasBloqueadas.contains(data)) return true;
 
+        for (CancelamentoAdm ca : cancelamentosAdm) {
+            if (ca.getData().equals(data) && ca.getDia_inteiro()) return true;
+        }
+
+        return false;
+    }
+
+    private List<HorarioCurso> filtrarHorariosCancelados(
+            LocalDate data,
+            List<HorarioCurso> horariosDoDia,
+            List<CancelamentoAdm> cancelamentosAdm,
+            Map<Integer, List<Integer>> cancelamentosAhmPorCaId) {
+
+        Set<Integer> idsCancelados = new HashSet<>();
+
+        for (CancelamentoAdm ca : cancelamentosAdm) {
+            if (ca.getData().equals(data) && !ca.getDia_inteiro()) {
+                List<Integer> ids = cancelamentosAhmPorCaId.get(ca.getId_cancelamento_adm());
+                if (ids != null) idsCancelados.addAll(ids);
+            }
+        }
+
+        if (idsCancelados.isEmpty()) return horariosDoDia;
+
+        List<HorarioCurso> filtrados = new ArrayList<>();
+        for (HorarioCurso h : horariosDoDia) {
+            if (!idsCancelados.contains(h.getId_horario_curso())) {
+                filtrados.add(h);
+            }
+        }
+        return filtrados;
+    }
+
+    private boolean isSlotOcupado(LocalDate data, HorarioCurso horario) {
+        for (HashMap<LocalDate, List<HorarioCurso>> porData : hMapTemaDataHorarios.values()) {
+            List<HorarioCurso> horariosNaData = porData.get(data);
+            if (horariosNaData != null) {
+                for (HorarioCurso h : horariosNaData) {
+                    if (h.getId_horario_curso().equals(horario.getId_horario_curso())) {
+                        return true;
+                    }
+                }
+            }
+        }
+        return false;
+    }
+
+    public LocalDate popularTemaNosDiasSemana(
+            LocalDate inicio, LocalDate fim,
+            HashMap<Integer, List<HorarioCurso>> hmapa,
+            Tema tema, int limiteCargaH,
+            List<LocalDate> datasBloqueadas,
+            List<CancelamentoAdm> cancelamentosAdm,
+            Map<Integer, List<Integer>> cancelamentosAhmPorCaId) {
+
+        return alocarTema(inicio, fim, hmapa, tema, limiteCargaH,
+                datasBloqueadas, cancelamentosAdm, cancelamentosAhmPorCaId, false);
+    }
+
+    public LocalDate popularTemaNosSabados(
+            LocalDate inicio, LocalDate fim,
+            HashMap<Integer, List<HorarioCurso>> hmapa,
+            Tema tema, int limiteCargaH,
+            List<LocalDate> datasBloqueadas,
+            List<CancelamentoAdm> cancelamentosAdm,
+            Map<Integer, List<Integer>> cancelamentosAhmPorCaId) {
+
+        return alocarTema(inicio, fim, hmapa, tema, limiteCargaH,
+                datasBloqueadas, cancelamentosAdm, cancelamentosAhmPorCaId, true);
+    }
+
+    private LocalDate alocarTema(
+            LocalDate inicio, LocalDate fim,
+            HashMap<Integer, List<HorarioCurso>> hmapa,
+            Tema tema, int limiteCargaH,
+            List<LocalDate> datasBloqueadas,
+            List<CancelamentoAdm> cancelamentosAdm,
+            Map<Integer, List<Integer>> cancelamentosAhmPorCaId,
+            boolean usarSabadosRegressivo) {
+
+        int aulasDesteTema = 0;
+        LocalDate ultimaDataOcupada = inicio;
+
+        List<LocalDate> datasPossiveis = new ArrayList<>();
+        for (Integer diaSemana : hmapa.keySet()) {
+            if (usarSabadosRegressivo && diaSemana != 6) continue;
+            if (!usarSabadosRegressivo && diaSemana == 6) continue;
+
+            LocalDate proximaData = inicio.with(
+                    TemporalAdjusters.nextOrSame(DayOfWeek.of(diaSemana)));
+
+            while (!proximaData.isAfter(fim)) {
+                if (!isDatBloqueada(proximaData, datasBloqueadas, cancelamentosAdm)) {
+                    datasPossiveis.add(proximaData);
+                }
+                proximaData = proximaData.plusWeeks(1);
+            }
+        }
+
+        if (usarSabadosRegressivo) {
+            datasPossiveis.sort(Collections.reverseOrder());
+        } else {
+            Collections.sort(datasPossiveis);
+        }
+
+        for (LocalDate data : datasPossiveis) {
+            if (aulasDesteTema >= tema.getQtd_min_aulas() || contadorCargaH >= limiteCargaH) break;
+
+            List<HorarioCurso> horariosDoDia = hmapa.get(data.getDayOfWeek().getValue());
+            horariosDoDia = filtrarHorariosCancelados(data, horariosDoDia,
+                    cancelamentosAdm, cancelamentosAhmPorCaId);
+
+            for (HorarioCurso h : horariosDoDia) {
+                if (aulasDesteTema >= tema.getQtd_min_aulas() || contadorCargaH >= limiteCargaH) break;
+
+                if (h.getTipo().equalsIgnoreCase("aula") && !isSlotOcupado(data, h)) { // <-- adicionado
+                    hMapTemaDataHorarios
+                            .computeIfAbsent(tema, k -> new HashMap<>())
+                            .computeIfAbsent(data, k -> new ArrayList<>())
+                            .add(h);
+
+                    aulasDesteTema++;
+                    contadorCargaH++;
+                    ultimaDataOcupada = data;
+                }
+            }
+        }
+
+        if (aulasDesteTema < tema.getQtd_min_aulas()) {
+            this.falhouCumprirQtdMinAulas = true;
+            if (contadorCargaH >= limiteCargaH) {
+                System.out.println("AVISO: Limite de carga horária atingido antes de completar o tema: "
+                        + tema.getNome());
+            } else {
+                System.out.println("ERRO: Datas insuficientes para o tema: " + tema.getNome());
+            }
+        }
+
+        return ultimaDataOcupada;
+    }
+
+    private int contarAulasTema(Tema tema) {
+        Map<LocalDate, List<HorarioCurso>> porData = hMapTemaDataHorarios.get(tema);
+        if (porData == null) return 0;
+
+        int total = 0;
+        for (List<HorarioCurso> lista : porData.values()) {
+            total += lista.size();
+        }
+        return total;
+    }
 
     @FXML
     public void handleGerarPlanejamento() {
-        HashMap<Tema, List<Tema>> hmapTemaPrioDepend =
-                mapearTemaPrioEDependenciasOrd();
-        HashMap<Integer, List<HorarioCurso>> mapmapDiaSemanaHorarios =
-                mapearDiasSemanaHorarios();
+        LinkedHashMap<Tema, List<Tema>> hmapTemaPrioDepend = mapearTemaPrioEDependenciasOrd();
+        HashMap<Integer, List<HorarioCurso>> hmapDiaSemanaHorarios = mapearDiasSemanaHorarios();
 
+        DisciplinaDAO dDao = new DisciplinaDAO();
+        SemestreLetivoDAO slDao = new SemestreLetivoDAO();
+        DataBloqueadaDAO dbDao = new DataBloqueadaDAO();
+        CancelamentoAdmDAO caDao = new CancelamentoAdmDAO();
+        PlanejamentoDAO pDao = new PlanejamentoDAO();
+        AtribuicaoProfessorDAO apDao = new AtribuicaoProfessorDAO();
+
+        try {
+            SemestreLetivo semestreSelecionado = slDao.listarSLPorId(idSemestreLetivo);
+            Disciplina disciplinaEscolhida = dDao.recuperarDisciplinaPorId(logado.getIdDisciplina());
+            Integer cargaHoraria = disciplinaEscolhida.getCarga_horaria_minima();
+
+            List<LocalDate> datasBloqueadas = dbDao.listarDatasBloqueadasPorSemestre(idSemestreLetivo);
+            List<CancelamentoAdm> cancelamentosAdm = caDao.listarPorSemestre(idSemestreLetivo);
+            Map<Integer, List<Integer>> cancelamentosAhmPorCaId =
+                    caDao.listarHorariosCanceladosPorCancelamento(idSemestreLetivo);
+
+            LocalDate dataInicio = semestreSelecionado.getData_inicio();
+            LocalDate dataFim;
+            List<Tema> temasJaVistos = new ArrayList<>();
+
+            // Reseta estado antes de gerar
+            contadorCargaH = 0;
+            falhouCumprirQtdMinAulas = false;
+            hMapTemaDataHorarios.clear();
+
+            List<Tema> temasObrigatorios = new ArrayList<>();
+            List<Tema> temasOpcionais = new ArrayList<>();
+            for (Tema t : hmapTemaPrioDepend.keySet()) {
+                if (t.getEh_opcional() == 1) temasOpcionais.add(t);
+                else temasObrigatorios.add(t);
+            }
+
+            // --- PASSAGEM 1: obrigatórios, dias úteis ---
+            for (Tema chave : temasObrigatorios) {
+                List<Tema> dependenciasOrd = hmapTemaPrioDepend.get(chave);
+                for (Tema temaDepen : dependenciasOrd) {
+                    if (!temasJaVistos.contains(temaDepen)) {
+                        dataFim = popularTemaNosDiasSemana(dataInicio, semestreSelecionado.getData_fim(),
+                                hmapDiaSemanaHorarios, temaDepen, cargaHoraria,
+                                datasBloqueadas, cancelamentosAdm, cancelamentosAhmPorCaId);
+                        temasJaVistos.add(temaDepen);
+                        if (!dataFim.equals(dataInicio)) dataInicio = dataFim;
+                    }
+                }
+                if (!temasJaVistos.contains(chave)) {
+                    dataFim = popularTemaNosDiasSemana(dataInicio, semestreSelecionado.getData_fim(),
+                            hmapDiaSemanaHorarios, chave, cargaHoraria,
+                            datasBloqueadas, cancelamentosAdm, cancelamentosAhmPorCaId);
+                    temasJaVistos.add(chave);
+                    if (!dataFim.equals(dataInicio)) dataInicio = dataFim;
+                }
+            }
+
+            // --- PASSAGEM 2: sábados regressivos, se necessário ---
+            if (falhouCumprirQtdMinAulas && hmapDiaSemanaHorarios.containsKey(6)) {
+                falhouCumprirQtdMinAulas = false;
+                for (Tema chave : temasObrigatorios) {
+                    boolean temaCompleto = hMapTemaDataHorarios.containsKey(chave)
+                            && contarAulasTema(chave) >= chave.getQtd_min_aulas();
+                    if (!temaCompleto) {
+                        popularTemaNosSabados(semestreSelecionado.getData_inicio(),
+                                semestreSelecionado.getData_fim(), hmapDiaSemanaHorarios,
+                                chave, cargaHoraria, datasBloqueadas, cancelamentosAdm,
+                                cancelamentosAhmPorCaId);
+                    }
+                }
+            }
+
+            // --- PASSAGEM 3: opcionais, se sobrar carga ---
+            if (contadorCargaH < cargaHoraria) {
+                for (Tema chave : temasOpcionais) {
+                    if (contadorCargaH >= cargaHoraria) break;
+                    List<Tema> dependenciasOrd = hmapTemaPrioDepend.get(chave);
+                    for (Tema temaDepen : dependenciasOrd) {
+                        if (!temasJaVistos.contains(temaDepen)) {
+                            dataFim = popularTemaNosDiasSemana(dataInicio, semestreSelecionado.getData_fim(),
+                                    hmapDiaSemanaHorarios, temaDepen, cargaHoraria,
+                                    datasBloqueadas, cancelamentosAdm, cancelamentosAhmPorCaId);
+                            temasJaVistos.add(temaDepen);
+                            if (!dataFim.equals(dataInicio)) dataInicio = dataFim;
+                        }
+                    }
+                    dataFim = popularTemaNosDiasSemana(dataInicio, semestreSelecionado.getData_fim(),
+                            hmapDiaSemanaHorarios, chave, cargaHoraria,
+                            datasBloqueadas, cancelamentosAdm, cancelamentosAhmPorCaId);
+                    temasJaVistos.add(chave);
+                    if (!dataFim.equals(dataInicio)) dataInicio = dataFim;
+                }
+            }
+
+            // --- PERSISTÊNCIA ---
+            // Recupera ou cria o registro de planejamento
+            AtribuicaoProfessor ap = apDao.buscarPorDisciplinaESemestre(
+                    logado.getIdDisciplina(), idSemestreLetivo);
+            Integer idAtribuicao = ap.getId_atribuicao_professor();
+
+            Integer idPlanejamento = pDao.buscarOuCriarPlanejamento(idAtribuicao);
+
+            // Apaga os slots anteriores antes de reinserir
+            slotDAO.deletarPorPlanejamento(idPlanejamento);
+
+            // Monta e persiste cada slot gerado
+            List<SlotPlanejamento> slotsParaSalvar = new ArrayList<>();
+            for (Map.Entry<Tema, HashMap<LocalDate, List<HorarioCurso>>> entryTema
+                    : hMapTemaDataHorarios.entrySet()) {
+
+                Tema tema = entryTema.getKey();
+                for (Map.Entry<LocalDate, List<HorarioCurso>> entryData
+                        : entryTema.getValue().entrySet()) {
+
+                    LocalDate data = entryData.getKey();
+                    for (HorarioCurso horario : entryData.getValue()) {
+                        SlotPlanejamento slot = new SlotPlanejamento();
+                        slot.setPlanejamento_id(idPlanejamento);
+                        slot.setData(data);
+                        slot.setHorario_curso_id(horario.getId_horario_curso());
+                        slot.setTema_id(tema.getId_tema());
+                        slot.setStatus("nao_ministrada");
+                        slotsParaSalvar.add(slot);
+                    }
+                }
+            }
+
+            slotDAO.inserirEmLote(slotsParaSalvar);
+
+            // Recarrega a tela com os dados recém-persistidos
+            atualizarDadosPlanejamento();
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
     }
 
     public void atualizarDadosPlanejamento(){
