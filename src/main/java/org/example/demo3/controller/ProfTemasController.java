@@ -264,6 +264,7 @@ public class ProfTemasController {
 
     @FXML
     private void handleLimparTema() {
+        handleNovoTema();
         limparFormulario();
     }
 
