@@ -53,16 +53,17 @@ public class MainShellController {
     private final List<Integer> ordemIdDisciplinas = new ArrayList<>();
     private final UsuarioAtual logado = UsuarioAtual.getInstancia();
 
-    // Referência do controlador para atualizações automáticas
+    // Referências dos controladores para atualizações automáticas de subtela
     private ProfPlanejamentoController planejamentoAtivoController;
+    private CoordPainelController coordPainelAtivoController; // Nova referência adicionada para US10
 
     @FXML
     public void initialize() {
         configurarResetInicial();
 
         if (logado.getTipo() == null) {
-            logado.setId_usuario(1);
-            logado.setTipo("ADM");
+            logado.setId_usuario(3);
+            logado.setTipo("COORD");
         }
 
         if (lblPerfilUsuario != null) {
@@ -117,7 +118,7 @@ public class MainShellController {
             listaCursos = cDAO.buscarCursoCoordenador(logado.getId_usuario());
             if (listaCursos != null && !listaCursos.isEmpty()) {
                 Curso curso = listaCursos.get(0);
-                logado.setIdCurso(curso.getId_curso()); // ← seta o id diretamente, sem passar pelo combobox
+                logado.setIdCurso(curso.getId_curso());
             }
         } catch (SQLException e) {
             e.printStackTrace();
@@ -165,7 +166,7 @@ public class MainShellController {
             exibirSecao(secaoProfessor);
             configurarVisibilidadeFiltros(true);
         } else if ("COORD".equals(tipo)) {
-            carregarConteudo("/coord_painel.fxml");
+            navCoordPainel(); // Centraliza a abertura correta passando pelo injetor mapeado
             exibirSecao(secaoCoordenador);
             configurarVisibilidadeFiltros(false);
         } else if ("ADM".equals(tipo)) {
@@ -307,6 +308,7 @@ public class MainShellController {
             areaConteudo.getChildren().clear();
             areaConteudo.getChildren().add(novoConteudo);
             planejamentoAtivoController = null;
+            coordPainelAtivoController = null; // Reseta referências ao mudar de tela
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -377,10 +379,7 @@ public class MainShellController {
         String valor = cbSemestreCurso.getValue();
         if (valor != null && !valor.isEmpty()) {
             logado.setSemestreCurso(Integer.parseInt(valor));
-
-            // CORREÇÃO: Reseta o ID salvo da disciplina anterior para não dar conflito na troca
             logado.setIdDisciplina(null);
-
             popularComboboxDisciplinas();
             atualizarSubtelaSePlanejamentoAtivo();
         }
@@ -389,14 +388,11 @@ public class MainShellController {
     @FXML
     public void handleTrocaDisciplina(){
         int index = cbDisciplina.getSelectionModel().getSelectedIndex();
-
-        // CORREÇÃO: Se selecionou um item válido salva, caso contrário (limpo) zera o ID na memória
         if (index >= 0 && index < ordemIdDisciplinas.size()) {
             logado.setIdDisciplina(ordemIdDisciplinas.get(index));
         } else {
             logado.setIdDisciplina(null);
         }
-
         atualizarSubtelaSePlanejamentoAtivo();
     }
 
@@ -415,8 +411,24 @@ public class MainShellController {
     @FXML void navCalendario() { carregarConteudo("/adm_calendario_bloqueios.fxml"); }
     @FXML void navCursosHorarios() { carregarConteudo("/adm_cursos_horarios.fxml"); }
     @FXML void navCoordenaodresAdms() { carregarConteudo("/adm_coordenadores_adms.fxml"); }
-    @FXML void navCoordPainel() { carregarConteudo("/coord_painel.fxml"); }
     @FXML void navTemas() { carregarConteudo("/prof_temas.fxml"); }
+
+    @FXML
+    void navCoordPainel() {
+        try {
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/coord_painel.fxml"));
+            Parent novoConteudo = loader.load();
+
+            // Captura e armazena a instância ativa do painel do coordenador
+            coordPainelAtivoController = loader.getController();
+
+            areaConteudo.getChildren().clear();
+            areaConteudo.getChildren().add(novoConteudo);
+            planejamentoAtivoController = null;
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
 
     @FXML
     void navPlanejamento() {
@@ -424,7 +436,6 @@ public class MainShellController {
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/prof_planejamento_stats_rotina.fxml"));
             Parent novoConteudo = loader.load();
 
-            // Configura o identificador artificial sem mexer no FXML
             novoConteudo.setId("raizPlanejamentoPane");
 
             planejamentoAtivoController = loader.getController();
