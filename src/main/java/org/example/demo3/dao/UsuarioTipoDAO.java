@@ -14,61 +14,99 @@ public class UsuarioTipoDAO {
 
     public void removerUsuarioTipo(String email, String tipo) throws SQLException {
         String sql = "DELETE FROM usuario_tipo WHERE tipo = ? AND usuario_id = (SELECT id_usuario FROM usuario WHERE email = ?)";
+        Connection connection = null;
 
-        try (Connection connection = DatabaseConnection.getConnection();
-             PreparedStatement ps = connection.prepareStatement(sql)) {
-            ps.setString(1, tipo);
-            ps.setString(2, email);
-            ps.executeUpdate();
+        try {
+            connection = DatabaseConnection.getConnection();
+            try (PreparedStatement ps = connection.prepareStatement(sql)) {
+                ps.setString(1, tipo);
+                ps.setString(2, email);
+                ps.executeUpdate();
+            }
+
         } catch (SQLException e) {
-            System.err.println("Erro ao remover tipo do usuário: " + e.getMessage());
+            if (connection != null) connection.rollback();
             throw e;
+        } finally {
+            if (connection != null) connection.close();
         }
     }
 
     public void inserirUsuarioTipo(UsuarioTipo usuarioTipo) {
         String sql = "INSERT INTO usuario_tipo (usuario_id, tipo) VALUES (?, ?)";
+        Connection connection = null;
+        PreparedStatement ps = null;
 
-        try (Connection connection = DatabaseConnection.getConnection();
-             PreparedStatement ps = connection.prepareStatement(sql)) {
+        try {
+            connection = DatabaseConnection.getConnection();
+            ps = connection.prepareStatement(sql);
             ps.setInt(1, usuarioTipo.getUsuario_id());
             ps.setString(2, usuarioTipo.getTipo());
             ps.executeUpdate();
         } catch (SQLException e) {
-            System.err.println("Erro ao inserir tipo de usuário: " + e.getMessage());
+            e.printStackTrace();
+        } finally {
+            try {
+                if (ps != null) ps.close();
+                if (connection != null) connection.close();
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
         }
     }
 
     public List<UsuarioTipo> listarUsuariosTipo() {
         List<UsuarioTipo> usuariosTipo = new ArrayList<>();
         String sql = "SELECT * FROM usuario_tipo";
+        Connection connection = null;
+        PreparedStatement ps = null;
+        ResultSet rs = null;
 
-        try (Connection connection = DatabaseConnection.getConnection();
-             PreparedStatement ps = connection.prepareStatement(sql);
-             ResultSet rs = ps.executeQuery()) {
+        try {
+            connection = DatabaseConnection.getConnection();
+            ps = connection.prepareStatement(sql);
+            rs = ps.executeQuery();
 
             while (rs.next()) {
-                UsuarioTipo usuarioTipo = new UsuarioTipo();
-                usuarioTipo.setUsuario_id(rs.getInt("usuario_id"));
-                usuarioTipo.setTipo(rs.getString("tipo"));
-                usuariosTipo.add(usuarioTipo);
+                UsuarioTipo ut = new UsuarioTipo();
+                ut.setUsuario_id(rs.getInt("usuario_id"));
+                ut.setTipo(rs.getString("tipo"));
+                usuariosTipo.add(ut);
             }
         } catch (SQLException e) {
-            System.err.println("Erro ao listar tipos de usuário: " + e.getMessage());
+            e.printStackTrace();
+        } finally {
+            try {
+                if (rs != null) rs.close();
+                if (ps != null) ps.close();
+                if (connection != null) connection.close();
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
         }
         return usuariosTipo;
     }
 
     public void excluirUsuarioTipo(Integer usuarioId, String tipo) {
         String sql = "DELETE FROM usuario_tipo WHERE usuario_id = ? AND tipo = ?";
+        Connection connection = null;
+        PreparedStatement ps = null;
 
-        try (Connection connection = DatabaseConnection.getConnection();
-             PreparedStatement ps = connection.prepareStatement(sql)) {
+        try {
+            connection = DatabaseConnection.getConnection();
+            ps = connection.prepareStatement(sql);
             ps.setInt(1, usuarioId);
             ps.setString(2, tipo);
             ps.executeUpdate();
         } catch (SQLException e) {
-            System.err.println("Erro ao excluir tipo de usuário: " + e.getMessage());
+            e.printStackTrace();
+        } finally {
+            try {
+                if (ps != null) ps.close();
+                if (connection != null) connection.close();
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
         }
     }
 }
