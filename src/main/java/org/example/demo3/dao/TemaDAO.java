@@ -1,6 +1,7 @@
 package org.example.demo3.dao;
 
 import org.example.demo3.DatabaseConnection;
+import org.example.demo3.dto.AdmCursoExibicao;
 import org.example.demo3.entity.Tema;
 
 import java.sql.*;
@@ -152,6 +153,35 @@ public class TemaDAO {
         }
     }
 
+    public Tema buscarPorId(Integer idTema) throws SQLException{
+        String sql = """
+            SELECT * FROM tema WHERE id_tema = ?;
+        """;
+
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, idTema);
+
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    Tema tema = new Tema(
+                        rs.getInt("id_tema"),
+                        rs.getInt("disciplina_id"),
+                        rs.getInt("semestre_letivo_id"),
+                        rs.getString("nome"),
+                        rs.getInt("eh_avaliacao"),
+                        rs.getInt("qtd_min_aulas"),
+                        rs.getInt("qtd_max_aulas"),
+                        rs.getInt("prioridade"),
+                        rs.getInt("eh_opcional"),
+                        rs.getObject("deletado_em", LocalDate.class)
+                    );
+                    return tema;
+                }
+            }
+        }
+        return null;
+    }
 
     //EXCLUÍ TEMA
     public void excluirTema(Integer idTema) {
