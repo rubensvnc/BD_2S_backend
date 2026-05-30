@@ -189,23 +189,16 @@ public class CursoDAO {
         }
     }
 
-    public Integer buscarQtdSemestresPorId(Curso curso) {
+    public int buscarQtdSemestresPorId(int idCurso) throws SQLException {
         String sql = "SELECT qtd_semestres FROM curso WHERE id_curso = ?";
-
         try (Connection conn = DatabaseConnection.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
-
-            ps.setInt(1, curso.getId_curso());
-
+            ps.setInt(1, idCurso);
             try (ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) {
-                    return rs.getInt("qtd_semestres");
-                }
+                if (rs.next()) return rs.getInt("qtd_semestres");
             }
-        } catch (Exception e) {
-            e.printStackTrace();
         }
-        return null;
+        return 0;
     }
 
     public void inserirCurso(Curso curso) throws SQLException {
