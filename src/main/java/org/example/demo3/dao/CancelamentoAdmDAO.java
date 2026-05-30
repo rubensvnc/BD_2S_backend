@@ -9,7 +9,9 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class CancelamentoAdmDAO {
 
@@ -46,6 +48,77 @@ public class CancelamentoAdmDAO {
             DatabaseConnection.closeConnection();
         }
         return lista;
+    }
+
+    public List<CancelamentoAdm> listarPorSemestre(Integer sl){
+        String sql = """
+        SELECT id_cancelamento_adm, adm_id, semestre_letivo_id,
+               data, turno, dia_inteiro, motivo, criado_em, deletado_em
+        FROM cancelamento_adm WHERE semestre_letivo_id = ?
+        AND deletado_em IS NULL;
+        """;
+
+        List<CancelamentoAdm> cancelamentos = new ArrayList<>();
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            ps.setInt(1, sl);
+
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    CancelamentoAdm cadm = new CancelamentoAdm();
+                    cadm.setId_cancelamento_adm(rs.getInt("id_cancelamento_adm"));
+                    cadm.setAdm_id(rs.getInt("adm_id"));
+                    cadm.setSemestre_letivo_id(rs.getInt("semestre_letivo_id"));
+                    cadm.setData(rs.getObject("data", LocalDate.class));
+                    cadm.setTurno(rs.getString("turno"));
+                    cadm.setDia_inteiro(rs.getBoolean("dia_inteiro"));
+                    cadm.setMotivo(rs.getString("motivo"));
+                    cadm.setCriado_em(rs.getObject("criado_em", LocalDate.class));
+                    cadm.setDeletado_em(rs.getObject("deletado_em", LocalDate.class));
+
+                    cancelamentos.add(cadm);
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return cancelamentos;
+    }
+
+    public Map<Integer, List<Integer>> listarHorariosCanceladosPorCancelamento(Integer sl) {
+        String sql = """
+        SELECT cah.cancelamento_adm_id, cah.horario_curso_id
+        FROM cancelamento_adm_horario cah
+        INNER JOIN cancelamento_adm ca
+                ON ca.id_cancelamento_adm = cah.cancelamento_adm_id
+        WHERE ca.semestre_letivo_id = ?
+          AND ca.dia_inteiro = 0
+          AND ca.deletado_em IS NULL;
+        """;
+
+        Map<Integer, List<Integer>> resultado = new HashMap<>();
+
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            ps.setInt(1, sl);
+
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    Integer cancelamentoId = rs.getInt("cah.cancelamento_adm_id");
+                    Integer horarioId = rs.getInt("cah.horario_curso_id");
+
+                    resultado
+                            .computeIfAbsent(cancelamentoId, k -> new ArrayList<>())
+                            .add(horarioId);
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        return resultado;
     }
 
     public void salvar(CancelamentoAdm c) throws SQLException {
