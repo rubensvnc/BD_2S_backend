@@ -1,7 +1,10 @@
 package org.example.demo3.controller;
 
 import javafx.beans.binding.Bindings;
-import javafx.beans.property.*;
+import javafx.beans.property.DoubleProperty;
+import javafx.beans.property.IntegerProperty;
+import javafx.beans.property.SimpleDoubleProperty;
+import javafx.beans.property.SimpleIntegerProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
@@ -16,8 +19,8 @@ import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import javafx.util.StringConverter;
-import org.example.demo3.UsuarioAtual;
 import org.example.demo3.SlotPlanejamento;
+import org.example.demo3.UsuarioAtual;
 import org.example.demo3.dao.*;
 import org.example.demo3.entity.*;
 
@@ -77,7 +80,7 @@ public class CoordPainelController {
     @FXML private Button               btnSalvarAtrib;
 
     // ════════════════════════════════════════════════════════════════════════
-    // CAMPOS FXML — PLANEJAMENTOS (US10)
+    // CAMPOS FXML — PLANEJAMENTOS
     // ════════════════════════════════════════════════════════════════════════
 
     @FXML private Label       lblTituloCoordVisor;
@@ -119,16 +122,9 @@ public class CoordPainelController {
 
     private Integer anoAtual;
     private Integer anoSemestre;
+    private Integer idDisciplinaAtual;
     private Integer idCursoAtual;
     private Integer idSemestreLetivoAtual;
-
-    private final IntegerProperty totalTemas = new SimpleIntegerProperty(0);
-    private final IntegerProperty aulasGeradas = new SimpleIntegerProperty(0);
-    private final IntegerProperty aulasMinistradas = new SimpleIntegerProperty(0);
-    private final IntegerProperty aulasPendentes = new SimpleIntegerProperty(0);
-    private final IntegerProperty aulasCanceladas = new SimpleIntegerProperty(0);
-    private final IntegerProperty cargaMinima = new SimpleIntegerProperty(0);
-    private final DoubleProperty percentualConclusao = new SimpleDoubleProperty(0.0);
 
     // Aba 1
     private Disciplina disciplinaSelecionadaTabela;
@@ -139,6 +135,15 @@ public class CoordPainelController {
     // Aba 3
     private AtribuicaoProfessor atribuicaoAtual;
     private final Map<String, CheckBox> mapaCheckBoxes = new HashMap<>();
+
+    // Aba 4
+    private final IntegerProperty totalTemas = new SimpleIntegerProperty(0);
+    private final IntegerProperty aulasGeradas = new SimpleIntegerProperty(0);
+    private final IntegerProperty aulasMinistradas = new SimpleIntegerProperty(0);
+    private final IntegerProperty aulasPendentes = new SimpleIntegerProperty(0);
+    private final IntegerProperty aulasCanceladas = new SimpleIntegerProperty(0);
+    private final IntegerProperty cargaMinima = new SimpleIntegerProperty(0);
+    private final DoubleProperty percentualConclusao = new SimpleDoubleProperty(0.0);
 
     // ════════════════════════════════════════════════════════════════════════
     // INICIALIZAÇÃO
@@ -160,80 +165,10 @@ public class CoordPainelController {
     }
 
     private void configurarIds() {
+        this.idDisciplinaAtual    = logado.getIdDisciplina();
         this.idCursoAtual         = logado.getIdCurso();
         this.anoAtual             = logado.getAno();
         this.anoSemestre          = logado.getAnoSemestre();
-    }
-
-    @SuppressWarnings("unchecked")
-    private void mapearComponentesFxmlOcultos() {
-        try {
-            if (tabPanePrincipal != null && tabPanePrincipal.getTabs().size() >= 4) {
-                Tab aba4 = tabPanePrincipal.getTabs().get(3);
-                Node conteudoAba = aba4.getContent();
-
-                if (conteudoAba instanceof SplitPane) {
-                    SplitPane split = (SplitPane) conteudoAba;
-
-                    if (!split.getItems().isEmpty() && split.getItems().get(0) instanceof VBox) {
-                        VBox vboxEsquerdo = (VBox) split.getItems().get(0);
-                        for (Node node : vboxEsquerdo.getChildren()) {
-                            if (node instanceof ListView) {
-                                // CORREÇÃO LINHA 217: Tipagem corrigida de Object para Usuario batendo com o topo
-                                this.listaProfessoresEsquerda = (ListView<Usuario>) node;
-                                break;
-                            }
-                        }
-                    }
-                }
-            }
-
-            if (painelEstatCoord != null) {
-                painelEstatCoord.getChildren().clear();
-
-                lblTotalTemas = new Label("0");
-                lblAulasGeradas = new Label("0");
-                lblAulasMinistradas = new Label("0");
-                lblAulasPendentes = new Label("0");
-                lblAulasCanceladas = new Label("0");
-                lblCargaHorariaMinima = new Label("0");
-                progressConclusao = new ProgressBar(0);
-                lblPercentual = new Label("0.0%");
-                chartStatusAulas = new PieChart();
-
-                GridPane grid = new GridPane();
-                grid.setHgap(15); grid.setVgap(10);
-                grid.add(new Label("Total de Temas:"), 0, 0); grid.add(lblTotalTemas, 1, 0);
-                grid.add(new Label("Aulas Geradas:"), 0, 1); grid.add(lblAulasGeradas, 1, 1);
-                grid.add(new Label("Aulas Ministradas:"), 0, 2); grid.add(lblAulasMinistradas, 1, 2);
-                grid.add(new Label("Aulas Pendentes:"), 2, 0); grid.add(lblAulasPendentes, 3, 0);
-                grid.add(new Label("Aulas Canceladas:"), 2, 1); grid.add(lblAulasCanceladas, 3, 1);
-                grid.add(new Label("Carga Mínima Curso:"), 2, 2); grid.add(lblCargaHorariaMinima, 3, 2);
-
-                HBox progressoBox = new HBox(10, new Label("Progresso Realizado:"), lblPercentual, progressConclusao);
-                progressConclusao.setPrefWidth(200);
-
-                painelEstatCoord.getChildren().addAll(grid, new Separator(), progressoBox, chartStatusAulas);
-            }
-        } catch (Exception e) {
-            System.err.println("Aviso: Falha na varredura automatica de componentes: " + e.getMessage());
-        }
-    }
-
-    private void configurarEstatisticasPlanejamento() {
-        if (lblTotalTemas != null) lblTotalTemas.textProperty().bind(totalTemas.asString());
-        if (lblAulasGeradas != null) lblAulasGeradas.textProperty().bind(aulasGeradas.asString());
-        if (lblAulasMinistradas != null) lblAulasMinistradas.textProperty().bind(aulasMinistradas.asString());
-        if (lblAulasPendentes != null) lblAulasPendentes.textProperty().bind(aulasPendentes.asString());
-        if (lblAulasCanceladas != null) lblAulasCanceladas.textProperty().bind(aulasCanceladas.asString());
-        if (lblCargaHorariaMinima != null) lblCargaHorariaMinima.textProperty().bind(cargaMinima.asString());
-
-        if (progressConclusao != null) progressConclusao.progressProperty().bind(percentualConclusao);
-        if (lblPercentual != null) {
-            lblPercentual.textProperty().bind(
-                    Bindings.concat(Bindings.format("%.1f", percentualConclusao.multiply(100)), "%")
-            );
-        }
     }
 
     // ════════════════════════════════════════════════════════════════════════
@@ -311,8 +246,10 @@ public class CoordPainelController {
 
     @FXML
     private void handleDeletarDisciplina() {
-        // Soft delete
+        // TODO: soft-delete da disciplina selecionada
     }
+
+    // ── Helpers — Aba 1 ─────────────────────────────────────────────────────
 
     private void configurarTabelaDisciplinas() {
         colDiscNome.setCellValueFactory(new PropertyValueFactory<>("nome"));
@@ -335,31 +272,27 @@ public class CoordPainelController {
     }
 
     private void ocultarErrosDisc() {
-        if (errDiscNome != null) {
-            errDiscNome.setVisible(false);
-            errDiscNome.setManaged(false);
-        }
+        errDiscNome.setVisible(false);
+        errDiscNome.setManaged(false);
     }
 
     private void ocultarFeedbackDisc() {
-        if (lblFeedbackDisc != null) {
-            lblFeedbackDisc.setVisible(false);
-            lblFeedbackDisc.setManaged(false);
-        }
+        lblFeedbackDisc.setVisible(false);
+        lblFeedbackDisc.setManaged(false);
+    }
+
+    private void exibirFeedbackDisc(String mensagem, boolean sucesso) {
+        lblFeedbackDisc.setText(mensagem);
+        lblFeedbackDisc.setStyle(sucesso
+                ? "-fx-text-fill: #27ae60; -fx-font-weight: bold;"
+                : "-fx-text-fill: #e74c3c; -fx-font-weight: bold;");
+        lblFeedbackDisc.setVisible(true);
+        lblFeedbackDisc.setManaged(true);
     }
 
     // ════════════════════════════════════════════════════════════════════════
     // ABA 2 — PROFESSORES
     // ════════════════════════════════════════════════════════════════════════
-
-    @FXML
-    public void handleLimparProf() {
-        professorSelecionadoTabela = null;
-        lblTituloFormProf.setText("Novo Professor");
-        tfProfNome.clear();
-        tfProfEmail.clear();
-        pfProfSenha.clear();
-    }
 
     @FXML
     private void handleNovoProfessor(ActionEvent event) {
@@ -423,6 +356,15 @@ public class CoordPainelController {
     }
 
     @FXML
+    private void handleLimparProf() {
+        professorSelecionadoTabela = null;
+        lblTituloFormProf.setText("Novo Professor");
+        tfProfNome.clear();
+        tfProfEmail.clear();
+        pfProfSenha.clear();
+    }
+
+    @FXML
     private void handleSalvarProfessor() {
         if (tfProfNome.getText().isBlank() || tfProfEmail.getText().isBlank()) {
             exibirAlerta(Alert.AlertType.ERROR, "Erro", "Nome e e-mail são obrigatórios.");
@@ -435,6 +377,7 @@ public class CoordPainelController {
 
         try {
             if (professorSelecionadoTabela != null) {
+                // ── EDIÇÃO ───────────────────────────────────────────────────
                 professorSelecionadoTabela.setNome(tfProfNome.getText().trim());
                 professorSelecionadoTabela.setEmail(tfProfEmail.getText().trim());
                 if (!pfProfSenha.getText().isBlank()) {
@@ -446,6 +389,7 @@ public class CoordPainelController {
                 recarregarTabelaProfessores();
 
             } else {
+                // ── INSERÇÃO ─────────────────────────────────────────────────
                 if (pfProfSenha.getText().isBlank()) {
                     exibirAlerta(Alert.AlertType.ERROR, "Erro", "A senha é obrigatória para novo professor.");
                     return;
@@ -512,6 +456,8 @@ public class CoordPainelController {
         }
     }
 
+    // ── Helpers — Aba 2 ─────────────────────────────────────────────────────
+
     private void configurarTabelaProfessores() {
         colProfNome.setCellValueFactory(new PropertyValueFactory<>("nome"));
         colProfEmail.setCellValueFactory(new PropertyValueFactory<>("email"));
@@ -519,12 +465,7 @@ public class CoordPainelController {
 
     private void recarregarTabelaProfessores() {
         try {
-            List<Usuario> listaProfessores = atribuicaoProfessorDAO.listarProfessoresComAtribuicao();
-            tabelaProfessores.getItems().setAll(listaProfessores);
-
-            if (listaProfessoresEsquerda != null) {
-                listaProfessoresEsquerda.getItems().setAll(listaProfessores);
-            }
+            tabelaProfessores.getItems().setAll(atribuicaoProfessorDAO.listarProfessoresComAtribuicao());
         } catch (SQLException e) {
             System.err.println("Erro ao recarregar tabela de professores: " + e.getMessage());
         }
@@ -548,7 +489,7 @@ public class CoordPainelController {
 
     @FXML
     private void handleSalvarAtribuicao(ActionEvent event) {
-        Usuario prof = cbAtribProf.getValue();
+        Usuario    prof = cbAtribProf.getValue();
         Disciplina disc = cbAtribDisc.getValue();
 
         if (prof == null || disc == null) {
@@ -561,10 +502,8 @@ public class CoordPainelController {
             if (entry.getValue().isSelected()) {
                 String[] partes = entry.getKey().split("_");
                 AtribuicaoHorario ah = new AtribuicaoHorario();
-
-                ah.setDia_semana(Integer.parseInt(Arrays.toString(partes)));
-                ah.setHorario_curso_id(Integer.parseInt(Arrays.toString(partes)));
-
+                ah.setDia_semana(Integer.parseInt(partes[0]));
+                ah.setHorario_curso_id(Integer.parseInt(partes[1]));
                 horariosSelecionados.add(ah);
             }
         }
@@ -576,18 +515,21 @@ public class CoordPainelController {
 
         try {
             if (atribuicaoAtual != null) {
+                // ── EDIÇÃO ───────────────────────────────────────────────────
                 horariosSelecionados.forEach(ah ->
                         ah.setAtribuicao_id(atribuicaoAtual.getId_atribuicao_professor()));
                 atribuicaoHorarioDAO.substituirHorarios(
                         atribuicaoAtual.getId_atribuicao_professor(), horariosSelecionados);
 
             } else {
+                // ── INSERÇÃO ─────────────────────────────────────────────────
                 AtribuicaoProfessor novaAtrib = new AtribuicaoProfessor();
                 novaAtrib.setProfessor_id(prof.getId_usuario());
                 novaAtrib.setDisciplina_id(disc.getId_disciplina());
                 novaAtrib.setSemestre_letivo_id(idSemestreLetivoAtual);
-                atribuicaoProfessorDAO.salvar(novaAtrib);
+                atribuicaoProfessorDAO.salvar(novaAtrib);  // preenche o id gerado
 
+                // Agora que temos o id, setamos em cada horário antes de salvar
                 horariosSelecionados.forEach(ah ->
                         ah.setAtribuicao_id(novaAtrib.getId_atribuicao_professor()));
                 atribuicaoHorarioDAO.salvarLote(horariosSelecionados);
@@ -597,7 +539,7 @@ public class CoordPainelController {
 
             exibirAlerta(Alert.AlertType.INFORMATION, "Sucesso", "Atribuição salva com sucesso.");
             recarregarTabelaProfessores();
-            carregarGrade();
+            carregarGrade(); // recarrega para refletir o estado salvo
 
         } catch (SQLException e) {
             exibirAlerta(Alert.AlertType.ERROR, "Erro",
@@ -606,6 +548,8 @@ public class CoordPainelController {
         }
     }
 
+    // ── Helpers — Aba 3 ─────────────────────────────────────────────────────
+
     private void configurarAbaAtribuicoes() {
         try {
             idSemestreLetivoAtual = semestreLetivoDAO.getIdSemestreLetivo(anoAtual, anoSemestre);
@@ -613,14 +557,14 @@ public class CoordPainelController {
 
             cbAtribProf.getItems().setAll(usuarioDAO.listarTodosProfessores());
             cbAtribProf.setConverter(new StringConverter<>() {
-                @Override public String toString(Usuario u) { return u != null ? u.getNome() : ""; }
-                @Override public Usuario fromString(String s) { return null; }
+                @Override public String toString(Usuario u)    { return u != null ? u.getNome() : ""; }
+                @Override public Usuario fromString(String s)  { return null; }
             });
 
             cbAtribDisc.getItems().setAll(disciplinaDAO.listarDisciplinasPorCurso(idCursoAtual));
             cbAtribDisc.setConverter(new StringConverter<>() {
-                @Override public String toString(Disciplina d) { return d != null ? d.getNome() : ""; }
-                @Override public Disciplina fromString(String s) { return null; }
+                @Override public String toString(Disciplina d)    { return d != null ? d.getNome() : ""; }
+                @Override public Disciplina fromString(String s)  { return null; }
             });
 
             cbAtribProf.setOnAction(e -> carregarGrade());
@@ -632,7 +576,7 @@ public class CoordPainelController {
     }
 
     private void carregarGrade() {
-        Usuario prof = cbAtribProf.getValue();
+        Usuario    prof = cbAtribProf.getValue();
         Disciplina disc = cbAtribDisc.getValue();
 
         gradeAtribuicao.getChildren().clear();
@@ -662,6 +606,7 @@ public class CoordPainelController {
                         .forEach(ah -> marcados.add(ah.getDia_semana() + "_" + ah.getHorario_curso_id()));
             }
 
+            // Cabeçalho
             String[] dias = {"Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"};
             for (int col = 0; col < dias.length; col++) {
                 Label lblDia = new Label(dias[col]);
@@ -669,6 +614,7 @@ public class CoordPainelController {
                 gradeAtribuicao.add(lblDia, col + 1, 0);
             }
 
+            // Linhas de horários
             for (int row = 0; row < horarios.size(); row++) {
                 HorarioCurso hc = horarios.get(row);
 
@@ -681,7 +627,7 @@ public class CoordPainelController {
                     CheckBox cb = new CheckBox();
                     cb.setSelected(marcados.contains(chave));
                     mapaCheckBoxes.put(chave, cb);
-
+                    // ── NOVO: VERIFICAÇÃO DE CONFLITOS NO CARREGAMENTO ─────────────────────────────────
                     int atribuicaoIdExcluir = atribuicaoAtual != null
                             ? atribuicaoAtual.getId_atribuicao_professor() : -1;
 
@@ -689,13 +635,19 @@ public class CoordPainelController {
                             idSemestreLetivoAtual, dia, hc.getId_horario_curso(), atribuicaoIdExcluir);
 
                     if (nomeConflito != null) {
+                        // Aplica a borda vermelha indicando o conflito pré-existente
                         cb.setStyle("-fx-border-color: #e74c3c; -fx-border-width: 2px; -fx-border-radius: 3px; -fx-padding: 1px;");
+
+                        // Opcional: Adiciona um Tooltip para mostrar o motivo ao passar o mouse
                         Tooltip tooltip = new Tooltip("Ocupado: " + nomeConflito);
                         cb.setTooltip(tooltip);
-                    }
 
-                    final int diaFinal = dia;
-                    final int horarioId = hc.getId_horario_curso();
+                        // Opcional: cb.setDisable(true); // Descomente se quiser impedir o clique totalmente
+                    }
+                    // ──────────────────────────────────────────────────────────────────────
+
+                    final int diaFinal     = dia;
+                    final int horarioId    = hc.getId_horario_curso();
                     cb.setOnAction(e -> {
                         verificarConflito(prof, diaFinal, horarioId, cb);
                         atualizarBotaoSalvar();
@@ -737,6 +689,85 @@ public class CoordPainelController {
     private void atualizarBotaoSalvar() {
         boolean algumMarcado = mapaCheckBoxes.values().stream().anyMatch(CheckBox::isSelected);
         btnSalvarAtrib.setDisable(!algumMarcado);
+    }
+
+
+
+
+    // ════════════════════════════════════════════════════════════════════════
+    // ABA 4 — PLANEJAMENTO
+    // ════════════════════════════════════════════════════════════════════════
+
+
+    @SuppressWarnings("unchecked")
+    private void mapearComponentesFxmlOcultos() {
+        try {
+            if (tabPanePrincipal != null && tabPanePrincipal.getTabs().size() >= 4) {
+                Tab aba4 = tabPanePrincipal.getTabs().get(3);
+                Node conteudoAba = aba4.getContent();
+
+                if (conteudoAba instanceof SplitPane) {
+                    SplitPane split = (SplitPane) conteudoAba;
+
+                    if (!split.getItems().isEmpty() && split.getItems().get(0) instanceof VBox) {
+                        VBox vboxEsquerdo = (VBox) split.getItems().get(0);
+                        for (Node node : vboxEsquerdo.getChildren()) {
+                            if (node instanceof ListView) {
+                                // CORREÇÃO LINHA 217: Tipagem corrigida de Object para Usuario batendo com o topo
+                                this.listaProfessoresEsquerda = (ListView<Usuario>) node;
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+
+            if (painelEstatCoord != null) {
+                painelEstatCoord.getChildren().clear();
+
+                lblTotalTemas = new Label("0");
+                lblAulasGeradas = new Label("0");
+                lblAulasMinistradas = new Label("0");
+                lblAulasPendentes = new Label("0");
+                lblAulasCanceladas = new Label("0");
+                lblCargaHorariaMinima = new Label("0");
+                progressConclusao = new ProgressBar(0);
+                lblPercentual = new Label("0.0%");
+                chartStatusAulas = new PieChart();
+
+                GridPane grid = new GridPane();
+                grid.setHgap(15); grid.setVgap(10);
+                grid.add(new Label("Total de Temas:"), 0, 0); grid.add(lblTotalTemas, 1, 0);
+                grid.add(new Label("Aulas Geradas:"), 0, 1); grid.add(lblAulasGeradas, 1, 1);
+                grid.add(new Label("Aulas Ministradas:"), 0, 2); grid.add(lblAulasMinistradas, 1, 2);
+                grid.add(new Label("Aulas Pendentes:"), 2, 0); grid.add(lblAulasPendentes, 3, 0);
+                grid.add(new Label("Aulas Canceladas:"), 2, 1); grid.add(lblAulasCanceladas, 3, 1);
+                grid.add(new Label("Carga Mínima Curso:"), 2, 2); grid.add(lblCargaHorariaMinima, 3, 2);
+
+                HBox progressoBox = new HBox(10, new Label("Progresso Realizado:"), lblPercentual, progressConclusao);
+                progressConclusao.setPrefWidth(200);
+
+                painelEstatCoord.getChildren().addAll(grid, new Separator(), progressoBox, chartStatusAulas);
+            }
+        } catch (Exception e) {
+            System.err.println("Aviso: Falha na varredura automatica de componentes: " + e.getMessage());
+        }
+    }
+
+    private void configurarEstatisticasPlanejamento() {
+        if (lblTotalTemas != null) lblTotalTemas.textProperty().bind(totalTemas.asString());
+        if (lblAulasGeradas != null) lblAulasGeradas.textProperty().bind(aulasGeradas.asString());
+        if (lblAulasMinistradas != null) lblAulasMinistradas.textProperty().bind(aulasMinistradas.asString());
+        if (lblAulasPendentes != null) lblAulasPendentes.textProperty().bind(aulasPendentes.asString());
+        if (lblAulasCanceladas != null) lblAulasCanceladas.textProperty().bind(aulasCanceladas.asString());
+        if (lblCargaHorariaMinima != null) lblCargaHorariaMinima.textProperty().bind(cargaMinima.asString());
+
+        if (progressConclusao != null) progressConclusao.progressProperty().bind(percentualConclusao);
+        if (lblPercentual != null) {
+            lblPercentual.textProperty().bind(
+                    Bindings.concat(Bindings.format("%.1f", percentualConclusao.multiply(100)), "%")
+            );
+        }
     }
 
     // ════════════════════════════════════════════════════════════════════════
@@ -920,14 +951,6 @@ public class CoordPainelController {
         }
     }
 
-    private void exibirAlerta(Alert.AlertType tipo, String titulo, String mensagem) {
-        Alert alerta = new Alert(tipo);
-        alerta.setTitle(titulo);
-        alerta.setHeaderText(null);
-        alerta.setContentText(mensagem);
-        alerta.showAndWait();
-    }
-
     // ── Wrapper estático para formatação textual das tags de status do Mockup ──
     private static class SlotVisual {
         private final SlotPlanejamento slot;
@@ -954,5 +977,25 @@ public class CoordPainelController {
             String horaCortada = (this.horaInicio != null && this.horaInicio.length() >= 5) ? this.horaInicio.substring(0, 5) : "00:00";
             return String.format("Aula %d (%s): %s %s", slot.getId_slot_planejamento(), horaCortada, conteudo, tagStatus);
         }
+    }
+
+
+
+
+
+
+
+
+
+    // ════════════════════════════════════════════════════════════════════════
+    // UTILITÁRIOS GERAIS
+    // ════════════════════════════════════════════════════════════════════════
+
+    private void exibirAlerta(Alert.AlertType tipo, String titulo, String mensagem) {
+        Alert alerta = new Alert(tipo);
+        alerta.setTitle(titulo);
+        alerta.setHeaderText(null);
+        alerta.setContentText(mensagem);
+        alerta.showAndWait();
     }
 }
