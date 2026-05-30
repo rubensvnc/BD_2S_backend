@@ -53,17 +53,17 @@ public class MainShellController {
     private final List<Integer> ordemIdDisciplinas = new ArrayList<>();
     private final UsuarioAtual logado = UsuarioAtual.getInstancia();
 
-    // Referências dos controladores para atualizações automáticas de subtela
     private ProfPlanejamentoController planejamentoAtivoController;
-    private CoordPainelController coordPainelAtivoController; // Nova referência adicionada para US10
+    private CoordPainelController coordPainelAtivoController;
+    private AdmCalendarioBloqueiosController calendarioAtivoController;
 
     @FXML
     public void initialize() {
         configurarResetInicial();
 
         if (logado.getTipo() == null) {
-            logado.setId_usuario(4);
-            logado.setTipo("PROF");
+            logado.setId_usuario(1);
+            logado.setTipo("ADM");
         }
 
         if (lblPerfilUsuario != null) {
@@ -166,7 +166,7 @@ public class MainShellController {
             exibirSecao(secaoProfessor);
             configurarVisibilidadeFiltros(true);
         } else if ("COORD".equals(tipo)) {
-            navCoordPainel(); // Centraliza a abertura correta passando pelo injetor mapeado
+            navCoordPainel();
             exibirSecao(secaoCoordenador);
             configurarVisibilidadeFiltros(false);
         } else if ("ADM".equals(tipo)) {
@@ -290,7 +290,7 @@ public class MainShellController {
         }
     }
 
-    private void configurarVisibilidadeFiltros(boolean visivel) {
+    private void configVisibilidadeFiltros(boolean visivel) {
         lblCurso.setVisible(visivel); lblCurso.setManaged(visivel);
         cbCurso.setVisible(visivel);  cbCurso.setManaged(visivel);
 
@@ -301,6 +301,10 @@ public class MainShellController {
         cbDisciplina.setVisible(visivel);  cbDisciplina.setManaged(visivel);
     }
 
+    private void configurarVisibilidadeFiltros(boolean visivel) {
+        configVisibilidadeFiltros(visivel);
+    }
+
     private void carregarConteudo(String caminhoFxml) {
         try {
             FXMLLoader loader = new FXMLLoader(getClass().getResource(caminhoFxml));
@@ -308,13 +312,12 @@ public class MainShellController {
             areaConteudo.getChildren().clear();
             areaConteudo.getChildren().add(novoConteudo);
             planejamentoAtivoController = null;
-            coordPainelAtivoController = null; // Reseta referências ao mudar de tela
+            coordPainelAtivoController = null;
+            calendarioAtivoController = null;
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
-
-
 
     @FXML
     public void handleTrocaAno() {
@@ -335,6 +338,9 @@ public class MainShellController {
                 }
             }
 
+            if (calendarioAtivoController != null) {
+                calendarioAtivoController.carregarDadosPorAnoESemestre(logado.getAno(), logado.getAnoSemestre());
+            }
         }
     }
 
@@ -350,6 +356,9 @@ public class MainShellController {
         }
         processarDadosCursos();
 
+        if (calendarioAtivoController != null) {
+            calendarioAtivoController.carregarDadosPorAnoESemestre(logado.getAno(), logado.getAnoSemestre());
+        }
     }
 
     @FXML
@@ -386,7 +395,6 @@ public class MainShellController {
         } else {
             logado.setIdDisciplina(null);
         }
-
     }
 
     @FXML void handleLogout(ActionEvent event) {
@@ -401,7 +409,27 @@ public class MainShellController {
         }
     }
 
-    @FXML void navCalendario() { carregarConteudo("/adm_calendario_bloqueios.fxml"); }
+    @FXML
+    void navCalendario() {
+        try {
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/adm_calendario_bloqueios.fxml"));
+            Parent novoConteudo = loader.load();
+
+            calendarioAtivoController = loader.getController();
+
+            areaConteudo.getChildren().clear();
+            areaConteudo.getChildren().add(novoConteudo);
+            planejamentoAtivoController = null;
+            coordPainelAtivoController = null;
+
+            if (logado.getAno() != null && logado.getAnoSemestre() != null) {
+                calendarioAtivoController.carregarDadosPorAnoESemestre(logado.getAno(), logado.getAnoSemestre());
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
     @FXML void navCursosHorarios() { carregarConteudo("/adm_cursos_horarios.fxml"); }
     @FXML void navCoordenaodresAdms() { carregarConteudo("/adm_coordenadores_adms.fxml"); }
     @FXML void navTemas() { carregarConteudo("/prof_temas.fxml"); }
@@ -412,12 +440,12 @@ public class MainShellController {
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/coord_painel.fxml"));
             Parent novoConteudo = loader.load();
 
-            // Captura e armazena a instância ativa do painel do coordenador
             coordPainelAtivoController = loader.getController();
 
             areaConteudo.getChildren().clear();
             areaConteudo.getChildren().add(novoConteudo);
             planejamentoAtivoController = null;
+            calendarioAtivoController = null;
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -436,8 +464,8 @@ public class MainShellController {
 
             areaConteudo.getChildren().clear();
             areaConteudo.getChildren().add(novoConteudo);
-
-
+            coordPainelAtivoController = null;
+            calendarioAtivoController = null;
         } catch (IOException e) {
             e.printStackTrace();
         }
