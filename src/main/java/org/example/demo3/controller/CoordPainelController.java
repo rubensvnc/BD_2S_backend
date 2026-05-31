@@ -1,10 +1,7 @@
 package org.example.demo3.controller;
 
 import javafx.beans.binding.Bindings;
-import javafx.beans.property.DoubleProperty;
-import javafx.beans.property.IntegerProperty;
-import javafx.beans.property.SimpleDoubleProperty;
-import javafx.beans.property.SimpleIntegerProperty;
+import javafx.beans.property.*;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
@@ -314,7 +311,7 @@ public class CoordPainelController {
         colDiscNome.setCellValueFactory(new PropertyValueFactory<>("nome"));
         colDiscSemCurso.setCellValueFactory(new PropertyValueFactory<>("semestre_curso"));
         colDiscCH.setCellValueFactory(new PropertyValueFactory<>("carga_horaria_minima"));
-        colDiscProf.setCellValueFactory(new PropertyValueFactory<>("nome"));
+        configurarcolDisProf();
         configurarColunaAcoesDisc();
     }
 
@@ -374,6 +371,18 @@ public class CoordPainelController {
                 : "-fx-text-fill: #e74c3c; -fx-font-weight: bold;");
         lblFeedbackDisc.setVisible(true);
         lblFeedbackDisc.setManaged(true);
+    }
+
+    private void configurarcolDisProf() {
+        colDiscProf.setCellValueFactory(cellData -> {
+            try {
+                String nome = atribuicaoProfessorDAO.buscarNomeProfessorPorDisciplina(
+                        cellData.getValue().getId_disciplina(), idSemestreLetivoAtual);
+                return new SimpleStringProperty(nome);
+            } catch (SQLException e) {
+                return new SimpleStringProperty("-");
+            }
+        });
     }
 
     // ════════════════════════════════════════════════════════════════════════
@@ -681,6 +690,7 @@ public class CoordPainelController {
             exibirAlerta(Alert.AlertType.INFORMATION, "Sucesso", "Atribuição salva com sucesso.");
             recarregarTabelaProfessores();
             carregarGrade();
+            carregarDisciplinas();
 
         } catch (SQLException e) {
             exibirAlerta(Alert.AlertType.ERROR, "Erro",
