@@ -174,32 +174,71 @@ public class AtribuicaoHorarioDAO {
 
 
     // Em AtribuicaoHorarioDAO — substitui buscarConflito e existeConflito
-    public String buscarConflitoParaProfessor(int professorId, int semestreLetivoId, int diaSemana, int numeroOrdem, int excluirAtribuicaoId) throws SQLException {
-        String sql = """
-        SELECT d.nome AS nome_disciplina
-        FROM atribuicao_horario ah
-        INNER JOIN atribuicao_professor ap
-                ON ap.id_atribuicao_professor = ah.atribuicao_id
-        INNER JOIN disciplina d
-                ON d.id_disciplina = ap.disciplina_id
-        INNER JOIN horario_curso hc
-                ON hc.id_horario_curso = ah.horario_curso_id
-        WHERE ap.professor_id       = ?
-          AND ap.semestre_letivo_id = ?
-          AND ah.dia_semana         = ?
-          AND hc.numero_ordem       = ?
-          AND ah.atribuicao_id     != ?
-        LIMIT 1
-        """;
+    public String buscarConflitoParaProfessor(int professorId, int semestreLetivoId,
+                                              int diaSemana, int horarioCursoId,
+                                              int excluirAtribuicaoId) throws SQLException {
+        // Busca hora_inicio e hora_fim do horário sendo avaliado
+        String sqlHorario = """
+            SELECT hc.hora_inicio, hc.hora_fim,
+                   sl.ano, sl.numero_semestre
+            FROM horario_curso hc
+            INNER JOIN semestre_letivo sl
+                    ON sl.id_semestre_letivo = hc.semestre_letivo_id
+            WHERE hc.id_horario_curso = ?
+            """;
+
+        String horaInicio;
+        String horaFim;
+        int ano;
+        int numeroSemestre;
 
         try (Connection con = DatabaseConnection.getConnection();
-             PreparedStatement ps = con.prepareStatement(sql)) {
+             PreparedStatement ps = con.prepareStatement(sqlHorario)) {
+
+            ps.setInt(1, horarioCursoId);
+
+            try (ResultSet rs = ps.executeQuery()) {
+                if (!rs.next()) return null;
+                horaInicio      = rs.getString("hora_inicio");
+                horaFim         = rs.getString("hora_fim");
+                ano             = rs.getInt("ano");
+                numeroSemestre  = rs.getInt("numero_semestre");
+            }
+        }
+
+        // Verifica se o professor já tem um horário com o mesmo dia + hora + ano + semestre
+        // em qualquer curso/coordenador, excluindo a atribuição atual (edição)
+        String sqlConflito = """
+            SELECT d.nome AS nome_disciplina
+            FROM atribuicao_horario ah
+            INNER JOIN atribuicao_professor ap
+                    ON ap.id_atribuicao_professor = ah.atribuicao_id
+            INNER JOIN disciplina d
+                    ON d.id_disciplina = ap.disciplina_id
+            INNER JOIN horario_curso hc
+                    ON hc.id_horario_curso = ah.horario_curso_id
+            INNER JOIN semestre_letivo sl
+                    ON sl.id_semestre_letivo = hc.semestre_letivo_id
+            WHERE ap.professor_id    = ?
+              AND sl.ano             = ?
+              AND sl.numero_semestre = ?
+              AND ah.dia_semana      = ?
+              AND hc.hora_inicio     = ?
+              AND hc.hora_fim        = ?
+              AND ah.atribuicao_id  != ?
+            LIMIT 1
+            """;
+
+        try (Connection con = DatabaseConnection.getConnection();
+             PreparedStatement ps = con.prepareStatement(sqlConflito)) {
 
             ps.setInt(1, professorId);
-            ps.setInt(2, semestreLetivoId);
-            ps.setInt(3, diaSemana);
-            ps.setInt(4, numeroOrdem);
-            ps.setInt(5, excluirAtribuicaoId);
+            ps.setInt(2, ano);
+            ps.setInt(3, numeroSemestre);
+            ps.setInt(4, diaSemana);
+            ps.setString(5, horaInicio);
+            ps.setString(6, horaFim);
+            ps.setInt(7, excluirAtribuicaoId);
 
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
