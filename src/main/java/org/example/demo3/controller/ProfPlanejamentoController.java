@@ -200,16 +200,50 @@ public class ProfPlanejamentoController {
         return false;
     }
 
+    private boolean isDataBloqueadaParaAvaliacao(LocalDate data, List<Sprint> sprints,
+                                                 SemestreLetivo semestre) {
+        // Regra 3: jamais em sábado ou domingo
+        DayOfWeek dia = data.getDayOfWeek();
+        if (dia == DayOfWeek.SATURDAY || dia == DayOfWeek.SUNDAY) return true;
+
+        // Regra 4: dia da feira de soluções
+        if (data.equals(semestre.getData_feira())) return true;
+
+        // Regra 5: semana de apresentação de TG (data_tg até data_tg + 4 dias)
+        LocalDate inicioTg = semestre.getData_tg();
+        LocalDate fimTg = inicioTg.plusDays(4);
+        if (!data.isBefore(inicioTg) && !data.isAfter(fimTg)) return true;
+
+        // Regras 1 e 2: verificadas por sprint
+        for (Sprint sprint : sprints) {
+            LocalDate dataReview = sprint.getData_review();
+
+            // Regra 2: semana de sprint review (data_review até data_review + 4 dias)
+            LocalDate fimReview = dataReview.plusDays(4);
+            if (!data.isBefore(dataReview) && !data.isAfter(fimReview)) return true;
+
+            // Regra 1: 3ª semana da sprint (data_review - 7 até data_review - 3)
+            LocalDate inicioTerceiraSemana = dataReview.minusDays(7);
+            LocalDate fimTerceiraSemana = dataReview.minusDays(3);
+            if (!data.isBefore(inicioTerceiraSemana) && !data.isAfter(fimTerceiraSemana)) return true;
+        }
+
+        return false;
+    }
+
     public LocalDate popularTemaNosDiasSemana(
             LocalDate inicio, LocalDate fim,
             HashMap<Integer, List<HorarioCurso>> hmapa,
             Tema tema, int limiteCargaH,
             List<LocalDate> datasBloqueadas,
             List<CancelamentoAdm> cancelamentosAdm,
-            Map<Integer, List<Integer>> cancelamentosAhmPorCaId) {
+            Map<Integer, List<Integer>> cancelamentosAhmPorCaId,
+            List<Sprint> sprints,
+            SemestreLetivo semestre)  {
 
         return alocarTema(inicio, fim, hmapa, tema, limiteCargaH,
-                datasBloqueadas, cancelamentosAdm, cancelamentosAhmPorCaId, false);
+                datasBloqueadas, cancelamentosAdm, cancelamentosAhmPorCaId,
+                sprints, semestre, false);
     }
 
     public LocalDate popularTemaNosSabados(
@@ -218,10 +252,13 @@ public class ProfPlanejamentoController {
             Tema tema, int limiteCargaH,
             List<LocalDate> datasBloqueadas,
             List<CancelamentoAdm> cancelamentosAdm,
-            Map<Integer, List<Integer>> cancelamentosAhmPorCaId) {
+            Map<Integer, List<Integer>> cancelamentosAhmPorCaId,
+            List<Sprint> sprints,
+            SemestreLetivo semestre) {
 
         return alocarTema(inicio, fim, hmapa, tema, limiteCargaH,
-                datasBloqueadas, cancelamentosAdm, cancelamentosAhmPorCaId, true);
+                datasBloqueadas, cancelamentosAdm, cancelamentosAhmPorCaId,
+                sprints, semestre, true);
     }
 
     private LocalDate alocarTema(
@@ -231,6 +268,8 @@ public class ProfPlanejamentoController {
             List<LocalDate> datasBloqueadas,
             List<CancelamentoAdm> cancelamentosAdm,
             Map<Integer, List<Integer>> cancelamentosAhmPorCaId,
+            List<Sprint> sprints,
+            SemestreLetivo semestre,
             boolean usarSabadosRegressivo) {
 
         int aulasDesteTema = 0;
@@ -260,6 +299,10 @@ public class ProfPlanejamentoController {
 
         for (LocalDate data : datasPossiveis) {
             if (aulasDesteTema >= tema.getQtd_min_aulas() || contadorCargaH >= limiteCargaH) break;
+
+            if (tema.getEh_avaliacao() == 1 && isDataBloqueadaParaAvaliacao(data, sprints, semestre)) {
+                continue;
+            }
 
             List<HorarioCurso> horariosDoDia = hmapa.get(data.getDayOfWeek().getValue());
             horariosDoDia = filtrarHorariosCancelados(data, horariosDoDia,
@@ -305,6 +348,11 @@ public class ProfPlanejamentoController {
         return total;
     }
 
+    private boolean temaJaVisto(List<Tema> temasJaVistos, Tema tema) {
+        return temasJaVistos.stream()
+                .anyMatch(t -> t.getId_tema().equals(tema.getId_tema()));
+    }
+
     @FXML
     public void handleGerarPlanejamento() {
         LinkedHashMap<Tema, List<Tema>> hmapTemaPrioDepend = mapearTemaPrioEDependenciasOrd();
@@ -327,6 +375,9 @@ public class ProfPlanejamentoController {
             Map<Integer, List<Integer>> cancelamentosAhmPorCaId =
                     caDao.listarHorariosCanceladosPorCancelamento(idSemestreLetivo);
 
+            SprintDAO sprintDao = new SprintDAO();
+            List<Sprint> sprints = sprintDao.listarPorSemestre(idSemestreLetivo);
+
             LocalDate dataInicio = semestreSelecionado.getData_inicio();
             LocalDate dataFim;
             List<Tema> temasJaVistos = new ArrayList<>();
@@ -347,18 +398,20 @@ public class ProfPlanejamentoController {
             for (Tema chave : temasObrigatorios) {
                 List<Tema> dependenciasOrd = hmapTemaPrioDepend.get(chave);
                 for (Tema temaDepen : dependenciasOrd) {
-                    if (!temasJaVistos.contains(temaDepen)) {
+                    if (!temaJaVisto(temasJaVistos, temaDepen)) {
                         dataFim = popularTemaNosDiasSemana(dataInicio, semestreSelecionado.getData_fim(),
                                 hmapDiaSemanaHorarios, temaDepen, cargaHoraria,
-                                datasBloqueadas, cancelamentosAdm, cancelamentosAhmPorCaId);
+                                datasBloqueadas, cancelamentosAdm, cancelamentosAhmPorCaId,
+                                sprints, semestreSelecionado);
                         temasJaVistos.add(temaDepen);
                         if (!dataFim.equals(dataInicio)) dataInicio = dataFim;
                     }
                 }
-                if (!temasJaVistos.contains(chave)) {
+                if (!temaJaVisto(temasJaVistos, chave)) {
                     dataFim = popularTemaNosDiasSemana(dataInicio, semestreSelecionado.getData_fim(),
                             hmapDiaSemanaHorarios, chave, cargaHoraria,
-                            datasBloqueadas, cancelamentosAdm, cancelamentosAhmPorCaId);
+                            datasBloqueadas, cancelamentosAdm, cancelamentosAhmPorCaId,
+                            sprints, semestreSelecionado);
                     temasJaVistos.add(chave);
                     if (!dataFim.equals(dataInicio)) dataInicio = dataFim;
                 }
@@ -374,7 +427,8 @@ public class ProfPlanejamentoController {
                         popularTemaNosSabados(semestreSelecionado.getData_inicio(),
                                 semestreSelecionado.getData_fim(), hmapDiaSemanaHorarios,
                                 chave, cargaHoraria, datasBloqueadas, cancelamentosAdm,
-                                cancelamentosAhmPorCaId);
+                                cancelamentosAhmPorCaId,
+                                sprints, semestreSelecionado);
                     }
                 }
             }
@@ -385,17 +439,19 @@ public class ProfPlanejamentoController {
                     if (contadorCargaH >= cargaHoraria) break;
                     List<Tema> dependenciasOrd = hmapTemaPrioDepend.get(chave);
                     for (Tema temaDepen : dependenciasOrd) {
-                        if (!temasJaVistos.contains(temaDepen)) {
+                        if (!temaJaVisto(temasJaVistos, temaDepen)) {
                             dataFim = popularTemaNosDiasSemana(dataInicio, semestreSelecionado.getData_fim(),
                                     hmapDiaSemanaHorarios, temaDepen, cargaHoraria,
-                                    datasBloqueadas, cancelamentosAdm, cancelamentosAhmPorCaId);
+                                    datasBloqueadas, cancelamentosAdm, cancelamentosAhmPorCaId,
+                                    sprints, semestreSelecionado);
                             temasJaVistos.add(temaDepen);
                             if (!dataFim.equals(dataInicio)) dataInicio = dataFim;
                         }
                     }
                     dataFim = popularTemaNosDiasSemana(dataInicio, semestreSelecionado.getData_fim(),
                             hmapDiaSemanaHorarios, chave, cargaHoraria,
-                            datasBloqueadas, cancelamentosAdm, cancelamentosAhmPorCaId);
+                            datasBloqueadas, cancelamentosAdm, cancelamentosAhmPorCaId,
+                            sprints, semestreSelecionado);
                     temasJaVistos.add(chave);
                     if (!dataFim.equals(dataInicio)) dataInicio = dataFim;
                 }
@@ -542,7 +598,7 @@ public class ProfPlanejamentoController {
                 this.cargaMinima.set(chMinima);
                 this.totalTemas.set(totalTemas);
 
-                double progresso = (totalAulas > 0) ? (double) ministradas / totalAulas : 0.0;
+                double progresso = (chMinima > 0) ? (double) ministradas / chMinima : 0.0;
                 this.percentualConclusao.set(progresso);
 
                 ObservableList<PieChart.Data> dadosGrafico = FXCollections.observableArrayList(
