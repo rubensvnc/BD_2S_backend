@@ -6,6 +6,7 @@ import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
+import javafx.scene.control.Button;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.ToggleButton;
@@ -26,6 +27,9 @@ import java.io.IOException;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
+
+//VISUAL
+import javafx.scene.layout.Pane;
 
 public class MainShellController {
     @FXML private ComboBox<String> cbAno;
@@ -83,6 +87,7 @@ public class MainShellController {
         configurarResetInicial();
         configurarValoresPreProgramados();
         processarDadosAnos();
+        estilizarMenuLateral();
     }
 
     private void configurarPreValoresAnos(){
@@ -478,6 +483,57 @@ public class MainShellController {
             calendarioAtivoController = null;
         } catch (IOException e) {
             e.printStackTrace();
+        }
+    }
+
+    // =========================================================================
+//  ESTILIZAÇÃO DO MENU LATERAL
+//  Reestiliza os botões do menuLateral para garantir boa legibilidade
+//  sobre o fundo escuro (#34495e), independente do CSS externo.
+// =========================================================================
+    private void estilizarMenuLateral() {
+        if (menuLateral == null) return;
+
+        for (javafx.scene.Node secaoNode : menuLateral.getChildren()) {
+            if (!(secaoNode instanceof VBox secao)) continue;
+
+            for (javafx.scene.Node filho : secao.getChildren()) {
+
+                // ── Labels de categoria (ex: "ADMINISTRADOR", "PROFESSOR") ──────
+                if (filho instanceof Label lbl) {
+                    lbl.setStyle(
+                            "-fx-text-fill: #95a5a6;"  +
+                                    "-fx-font-size: 10px;"     +
+                                    "-fx-font-weight: bold;"   +
+                                    "-fx-padding: 6 0 2 4;"
+                    );
+                }
+
+                // ── Botões de navegação ──────────────────────────────────────────
+                if (filho instanceof Button btn) {
+                    String baseStyle =
+                            "-fx-background-color: transparent;"  +
+                                    "-fx-text-fill: #ecf0f1;"             +
+                                    "-fx-font-size: 13px;"                +
+                                    "-fx-alignment: CENTER-LEFT;"         +
+                                    "-fx-padding: 8 12;"                  +
+                                    "-fx-cursor: hand;"                   +
+                                    "-fx-background-radius: 6;";
+
+                    btn.setStyle(baseStyle);
+
+                    // Hover: clareia o fundo ao passar o mouse
+                    btn.setOnMouseEntered(e ->
+                            btn.setStyle(baseStyle.replace(
+                                    "-fx-background-color: transparent;",
+                                    "-fx-background-color: #3d566e;"
+                            ))
+                    );
+
+                    // Retorna ao estilo base ao sair
+                    btn.setOnMouseExited(e -> btn.setStyle(baseStyle));
+                }
+            }
         }
     }
 }
