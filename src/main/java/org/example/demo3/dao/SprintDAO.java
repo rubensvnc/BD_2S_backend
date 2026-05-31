@@ -4,10 +4,45 @@ import org.example.demo3.DatabaseConnection;
 import org.example.demo3.entity.Sprint;
 
 import java.sql.*;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
 public class SprintDAO {
+
+    public List<Sprint> listarPorSemestre(Integer idSemestreLetivo) {
+        String sql = """
+        SELECT id_sprint, semestre_letivo_id, numero, data_inicio, data_fim, data_review
+        FROM sprint
+        WHERE semestre_letivo_id = ?
+        ORDER BY numero;
+        """;
+
+        List<Sprint> sprints = new ArrayList<>();
+
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            ps.setInt(1, idSemestreLetivo);
+
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    Sprint sprint = new Sprint();
+                    sprint.setId_sprint(rs.getInt("id_sprint"));
+                    sprint.setSemestre_letivo_id(rs.getInt("semestre_letivo_id"));
+                    sprint.setNumero(rs.getInt("numero"));
+                    sprint.setData_inicio(rs.getObject("data_inicio", LocalDate.class));
+                    sprint.setData_fim(rs.getObject("data_fim", LocalDate.class));
+                    sprint.setData_review(rs.getObject("data_review", LocalDate.class));
+                    sprints.add(sprint);
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        return sprints;
+    }
 
     public void inserirSprint(Sprint sprint) {
         String sql = """
