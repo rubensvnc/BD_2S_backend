@@ -192,6 +192,27 @@ public class PlanejamentoDAO {
         return null;
     }
 
+    public boolean professorTemPlanejamento(Integer idProfessor, Integer idSemestreLetivo) {
+        String sql = """
+        SELECT COUNT(*) FROM planejamento p
+        INNER JOIN atribuicao_professor ap
+                ON ap.id_atribuicao_professor = p.atribuicao_professor_id
+        WHERE ap.professor_id = ?
+          AND ap.semestre_letivo_id = ?;
+        """;
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, idProfessor);
+            ps.setInt(2, idSemestreLetivo);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) return rs.getInt(1) > 0;
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+
 
     public void atualizarPlanejamento(Planejamento planejamento) {
 
