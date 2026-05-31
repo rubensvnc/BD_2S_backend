@@ -85,9 +85,10 @@ public class CoordPainelController {
     @FXML private TabPane          tabVisorCoord;
     @FXML private TreeView<Object> treePlanoCoord;
     @FXML private VBox             painelEstatCoord;
+    @FXML private ListView<Usuario> listaProfessoresEsquerda;
 
     // Componentes da aba 4 sem fx:id, mapeados dinamicamente
-    private ListView<Usuario> listaProfessoresEsquerda;
+
     private Label lblTotalTemas;
     private Label lblAulasGeradas;
     private Label lblAulasMinistradas;
@@ -1088,7 +1089,7 @@ public class CoordPainelController {
                 @Override
                 protected void updateItem(Usuario item, boolean empty) {
                     super.updateItem(item, empty);
-                    setText(empty || item == null ? null : item.getNome());
+                    setText(empty || item == null ? null : item.getEmail());
                 }
             });
 
@@ -1208,14 +1209,23 @@ public class CoordPainelController {
             Map<String, Object> metricas = planejamentoDAO.obterEstatisticasGlobais(
                     ano, semestreAno, id_curso, id_disciplina, idProfessor);
 
+            this.totalTemas.set(0);
+            this.aulasGeradas.set(0);
+            this.aulasMinistradas.set(0);
+            this.aulasPendentes.set(0);
+            this.aulasCanceladas.set(0);
+            this.cargaMinima.set(0);
+            this.percentualConclusao.set(0.0);
+            if (chartStatusAulas != null) chartStatusAulas.getData().clear();
+
             if (metricas == null || metricas.isEmpty()) return;
 
-            int totalAulas  = (int) metricas.getOrDefault("totalAulas",  0);
-            int ministradas = (int) metricas.getOrDefault("ministradas", 0);
-            int pendentes   = (int) metricas.getOrDefault("pendentes",   0);
-            int canceladas  = (int) metricas.getOrDefault("canceladas",  0);
-            int chMinima    = (int) metricas.getOrDefault("chMinima",    0);
-            int totalT      = (int) metricas.getOrDefault("totalTemas",  0);
+            int totalAulas  = toInt(metricas.get("totalAulas"));
+            int ministradas = toInt(metricas.get("ministradas"));
+            int pendentes   = toInt(metricas.get("pendentes"));
+            int canceladas  = toInt(metricas.get("canceladas"));
+            int chMinima    = toInt(metricas.get("chMinima"));
+            int totalT      = toInt(metricas.get("totalTemas"));
 
             this.aulasGeradas.set(totalAulas);
             this.aulasMinistradas.set(ministradas);
@@ -1226,15 +1236,23 @@ public class CoordPainelController {
             this.percentualConclusao.set(totalAulas > 0 ? (double) ministradas / totalAulas : 0.0);
 
             if (chartStatusAulas != null) {
-                chartStatusAulas.setData(FXCollections.observableArrayList(
-                        new PieChart.Data("Ministradas (" + ministradas + ")", ministradas),
-                        new PieChart.Data("Pendentes ("   + pendentes   + ")", pendentes),
-                        new PieChart.Data("Canceladas ("  + canceladas  + ")", canceladas)
-                ));
+                ObservableList<PieChart.Data> fatias = FXCollections.observableArrayList();
+                if (ministradas > 0)
+                    fatias.add(new PieChart.Data("Ministradas (" + ministradas + ")", ministradas));
+                if (pendentes > 0)
+                    fatias.add(new PieChart.Data("Pendentes ("   + pendentes   + ")", pendentes));
+                if (canceladas > 0)
+                    fatias.add(new PieChart.Data("Canceladas ("  + canceladas  + ")", canceladas));
+                chartStatusAulas.setData(fatias);
             }
         } catch (Exception e) {
             e.printStackTrace();
         }
+    }
+
+    private int toInt(Object valor) {
+        if (valor instanceof Number) return ((Number) valor).intValue();
+        return 0;
     }
 
     // ── Wrapper para formatação visual dos slots na TreeView ─────────────────

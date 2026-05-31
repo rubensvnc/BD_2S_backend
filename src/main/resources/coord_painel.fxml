@@ -198,7 +198,7 @@
                     <VBox spacing="8">
                         <padding><Insets bottom="12" left="14" right="8" top="12" /></padding>
                         <Label style="-fx-font-weight: bold;" text="Professores" />
-                  <ListView />
+                  <ListView fx:id="listaProfessoresEsquerda" />
                     </VBox>
 
                     <!-- Planejamento + Estatísticas do item selecionado -->
