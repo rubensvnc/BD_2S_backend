@@ -29,6 +29,7 @@ public class ProfPlanejamentoController {
     @FXML private Label lblAulasPendentes;
     @FXML private Label lblAulasCanceladas;
     @FXML private Label lblCargaHorariaMinima;
+    @FXML private Label lblAvisoCargaInsuficiente;
     @FXML private ProgressBar progressConclusao;
     @FXML private Label lblPercentual;
     @FXML private PieChart chartStatusAulas;
@@ -591,6 +592,10 @@ public class ProfPlanejamentoController {
                 int chMinima = (int) metricas.getOrDefault("chMinima", 0);
                 int totalTemas = (int) metricas.getOrDefault("totalTemas", 0);
 
+                boolean insuficiente = chMinima > 0 && totalAulas < chMinima;
+                lblAvisoCargaInsuficiente.setVisible(insuficiente);
+                lblAvisoCargaInsuficiente.setManaged(insuficiente);
+
                 this.aulasGeradas.set(totalAulas);
                 this.aulasMinistradas.set(ministradas);
                 this.aulasPendentes.set(pendentes);
@@ -624,6 +629,9 @@ public class ProfPlanejamentoController {
         this.cargaMinima.set(0);
         this.totalTemas.set(0);
         this.percentualConclusao.set(0.0);
+
+        lblAvisoCargaInsuficiente.setVisible(false);
+        lblAvisoCargaInsuficiente.setManaged(false);
         chartStatusAulas.getData().clear();
     }
 
