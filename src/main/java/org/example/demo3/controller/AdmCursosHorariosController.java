@@ -16,6 +16,7 @@ import org.example.demo3.dto.AdmCursoExibicao;
 import org.example.demo3.entity.*;
 
 import java.sql.SQLException;
+import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -694,6 +695,16 @@ public class AdmCursosHorariosController {
 
             linhasHorarios.add(nova_linha);
             tabelaHorarios.setItems(linhasHorarios);
+        } else {
+            TemplateHorarioTurno nova_linha = new TemplateHorarioTurno();
+            nova_linha.setTurno(turnoProcessando);
+            nova_linha.setTipo("aula");
+            nova_linha.setNumero_ordem(1);
+            nova_linha.setHora_inicio(LocalTime.now());
+            nova_linha.setHora_fim(LocalTime.now());
+
+            linhasHorarios.add(nova_linha);
+            tabelaHorarios.setItems(linhasHorarios);
         }
     }
 
@@ -702,14 +713,20 @@ public class AdmCursosHorariosController {
         // TODO: Validar o encadeamento cronológico das linhas e salvar as alterações na tabela de horários
         HorarioCursoDAO hcDao = new HorarioCursoDAO();
         try {
-            hcDao.inserirTemplateHorarioCurso(thtProcessando, idCursoProcessando, idSemestreLetivoProcessando);
+            if (idSemestreLetivoProcessando == null) {
+                SemestreLetivoDAO slDao = new SemestreLetivoDAO();
+                idSemestreLetivoProcessando = slDao.getIdSemestreLetivo(logado.getAno(), logado.getAnoSemestre());
+            }
+
+            hcDao.inserirTemplateHorarioCurso(new ArrayList<>(tabelaHorarios.getItems()), idCursoProcessando, idSemestreLetivoProcessando);
             alterarEstadoEdicaoDadosCurso(false);
             btnSalvarCurso.setDisable(false);
             lblProcessoSalvarCurso.setVisible(false);
             lblProcessoSalvarCurso.setManaged(false);
             carregarCursos();
         } catch (SQLException e){
-
+            e.printStackTrace();
+            exibirAlerta("Erro ao salvar", "Não foi possível salvar os horários.", Alert.AlertType.ERROR);
         }
     }
 }

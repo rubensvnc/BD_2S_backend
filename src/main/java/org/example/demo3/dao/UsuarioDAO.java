@@ -13,6 +13,22 @@ public class UsuarioDAO {
 
     public UsuarioDAO() {}
 
+    public boolean existeAdministrador() throws SQLException {
+        String sql = """
+        SELECT COUNT(*) FROM usuario u INNER JOIN 
+        usuario_tipo ut ON u.id_usuario = ut.usuario_id
+        WHERE tipo = 'ADM';
+        """;
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()){
+            if (rs.next()) {
+                return rs.getInt(1) > 0;
+            }
+        }
+        return false;
+    }
+
     public Map<String, Object> buscarUsuarioPorEmail(String email) throws SQLException {
         String sql = """
         SELECT u.id_usuario, u.nome, u.senha_hash, ut.tipo 

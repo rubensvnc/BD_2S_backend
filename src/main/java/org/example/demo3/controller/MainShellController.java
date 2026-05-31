@@ -59,19 +59,29 @@ public class MainShellController {
 
     @FXML
     public void initialize() {
-        configurarResetInicial();
+        UsuarioAtual logado = UsuarioAtual.getInstancia();
 
-        if (logado.getTipo() == null) {
-            logado.setId_usuario(1);
-            logado.setTipo("ADM");
+        if (logado.getId_usuario() == null) {
+            System.out.println("Erro: Nenhum usuário logado!");
+            carregarConteudo("/login.fxml");
+            return;
         }
 
         if (lblPerfilUsuario != null) {
             lblPerfilUsuario.setText("Perfil: " + logado.getTipo());
         }
 
-        configurarValoresPreProgramados();
+        logado.anoProperty().addListener((obs, oldVal, newVal) -> {
+            if (newVal != null) processarDadosAnos();
+        });
+
+        logado.anoSemestreProperty().addListener((obs, oldVal, newVal) -> {
+            if (newVal != null) processarDadosAnos();
+        });
+
         configurarInterfacePorPerfil(logado.getTipo());
+        configurarResetInicial();
+        configurarValoresPreProgramados();
         processarDadosAnos();
     }
 
