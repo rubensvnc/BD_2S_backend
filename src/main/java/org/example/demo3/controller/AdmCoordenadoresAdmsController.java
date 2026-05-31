@@ -7,6 +7,7 @@ import javafx.fxml.FXML;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.input.MouseEvent;
+import org.example.demo3.DatabaseConnection;
 import org.example.demo3.UsuarioAtual;
 import org.example.demo3.dao.CursoDAO;
 import org.example.demo3.dao.UsuarioDAO;
@@ -17,7 +18,11 @@ import org.example.demo3.entity.UsuarioTipo;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -36,16 +41,19 @@ public class AdmCoordenadoresAdmsController {
     @FXML private TextField        tfCoordEmail;
     @FXML private PasswordField    pfCoordSenha;
     @FXML private ComboBox<String> cbCoordCurso;
+    @FXML private Button           btnSalvarCoord;   // fx:id no FXML
 
     // ─── Administradores ──────────────────────────────────────────────────────
     @FXML private TableView<Usuario>           tabelaAdms;
     @FXML private TableColumn<Usuario, String> colAdmNome;
     @FXML private TableColumn<Usuario, String> colAdmEmail;
+    @FXML private TableColumn<Usuario, Void>   colAdmAcoes;
 
     @FXML private Label         lblTituloFormAdm;
     @FXML private TextField     tfAdmNome;
     @FXML private TextField     tfAdmEmail;
     @FXML private PasswordField pfAdmSenha;
+    @FXML private Button        btnSalvarAdm;       // fx:id no FXML
 
     // ─── DAOs ─────────────────────────────────────────────────────────────────
     private final UsuarioDAO     usuarioDAO     = new UsuarioDAO();
@@ -73,6 +81,9 @@ public class AdmCoordenadoresAdmsController {
     private Usuario coordenadorSelecionado;
     private Usuario admSelecionado;
 
+    // Senha mínima de 6 caracteres
+    private static final int SENHA_MIN = 6;
+
     // =========================================================================
     //  INICIALIZAÇÃO
     // =========================================================================
@@ -81,12 +92,12 @@ public class AdmCoordenadoresAdmsController {
     public void initialize() {
 
         // ── Colunas de coordenadores ──────────────────────────────────────────
-        colCoordNome.setCellValueFactory(new PropertyValueFactory<>("nome"));
+        colCoordNome .setCellValueFactory(new PropertyValueFactory<>("nome"));
         colCoordEmail.setCellValueFactory(new PropertyValueFactory<>("email"));
 
         if (colCoordCurso != null) {
             colCoordCurso.setCellValueFactory(cellData -> {
-                Integer idCoord  = cellData.getValue().getId_usuario();
+                Integer idCoord   = cellData.getValue().getId_usuario();
                 String  nomeCurso = mapaCoordParaCurso.getOrDefault(idCoord, "—");
                 return new SimpleStringProperty(nomeCurso);
             });
@@ -95,14 +106,62 @@ public class AdmCoordenadoresAdmsController {
         configurarColunaAcoesCoord();
 
         // ── Colunas de administradores ────────────────────────────────────────
-        colAdmNome.setCellValueFactory(new PropertyValueFactory<>("nome"));
+        colAdmNome .setCellValueFactory(new PropertyValueFactory<>("nome"));
         colAdmEmail.setCellValueFactory(new PropertyValueFactory<>("email"));
 
+        if (colAdmAcoes != null) {
+            configurarColunaAcoesAdm();
+        }
+
         tabelaCoordenadores.setItems(listaCoordenadoresFX);
-        tabelaAdms.setItems(listaAdmsFX);
+        tabelaAdms         .setItems(listaAdmsFX);
+
+        // ── Validação de senha em tempo real ──────────────────────────────────
+        configurarValidacaoSenha();
 
         atualizarTabelas();
-        recarregarComboBoxCurso();
+        recarregarComboBoxCurso(null);
+    }
+
+    // =========================================================================
+    //  VALIDAÇÃO DE SENHA — botões desabilitados enquanto senha < 6 dígitos
+    //  Na edição (senha em branco = "não alterar") o botão permanece habilitado.
+    // =========================================================================
+
+    private void configurarValidacaoSenha() {
+        // Coordenador
+        pfCoordSenha.textProperty().addListener((obs, antigo, novo) ->
+                atualizarEstadoBtnCoord()
+        );
+
+        // Administrador
+        pfAdmSenha.textProperty().addListener((obs, antigo, novo) ->
+                atualizarEstadoBtnAdm()
+        );
+    }
+
+    /**
+     * Habilita o botão de salvar coordenador se:
+     *  - modo edição e senha em branco (não vai alterar a senha), OU
+     *  - senha digitada tem >= SENHA_MIN caracteres.
+     */
+    private void atualizarEstadoBtnCoord() {
+        if (btnSalvarCoord == null) return;
+        String senha = pfCoordSenha.getText();
+        boolean modoEdicao = coordenadorSelecionado != null;
+        boolean senhaOk    = senha.isEmpty() && modoEdicao   // edição sem trocar senha
+                || senha.length() >= SENHA_MIN;    // nova senha válida
+        btnSalvarCoord.setDisable(!senhaOk);
+    }
+
+    /** Mesma lógica para administradores. */
+    private void atualizarEstadoBtnAdm() {
+        if (btnSalvarAdm == null) return;
+        String senha = pfAdmSenha.getText();
+        boolean modoEdicao = admSelecionado != null;
+        boolean senhaOk    = senha.isEmpty() && modoEdicao
+                || senha.length() >= SENHA_MIN;
+        btnSalvarAdm.setDisable(!senhaOk);
     }
 
     // =========================================================================
@@ -135,7 +194,48 @@ public class AdmCoordenadoresAdmsController {
     }
 
     // =========================================================================
+    //  COLUNA DE AÇÕES — ADMINISTRADORES
+    //  O botão NÃO aparece para o ADM de id = 1 (superusuário protegido).
+    // =========================================================================
+
+    private void configurarColunaAcoesAdm() {
+        colAdmAcoes.setCellFactory(col -> new TableCell<>() {
+
+            private final Button btnDeletar = new Button("Excluir");
+
+            {
+                btnDeletar.setStyle(
+                        "-fx-background-color: #e74c3c;" +
+                                "-fx-text-fill: white;"          +
+                                "-fx-cursor: hand;"
+                );
+                btnDeletar.setOnAction(e -> {
+                    Usuario adm = getTableView().getItems().get(getIndex());
+                    excluirAdm(adm);
+                });
+            }
+
+            @Override
+            protected void updateItem(Void item, boolean empty) {
+                super.updateItem(item, empty);
+                if (empty) { setGraphic(null); return; }
+                Usuario adm = getTableView().getItems().get(getIndex());
+                // Oculta o botão para o superusuário protegido (id = 1)
+                boolean protegido = adm != null && adm.getId_usuario() == 1;
+                setGraphic(protegido ? null : btnDeletar);
+            }
+        });
+    }
+
+    // =========================================================================
     //  CARREGAMENTO DE DADOS
+    //
+    //  Problema anterior: mapaTipos usava put() simples, então um usuário com
+    //  dois registros em usuario_tipo (ex: COORD + PROF) tinha seu tipo
+    //  sobrescrito pelo último lido — fazendo coordenadores "sumírem" da tabela.
+    //
+    //  Solução: buscar coordenadores e adms diretamente por tipo via SQL,
+    //  sem depender de um mapa que pode ser sobrescrito.
     // =========================================================================
 
     private void atualizarTabelas() {
@@ -144,35 +244,29 @@ public class AdmCoordenadoresAdmsController {
             listaAdmsFX.clear();
             mapaCoordParaCurso.clear();
 
-            List<Usuario>     todosUsuarios = usuarioDAO.listarUsuarios();
-            List<UsuarioTipo> todosTipos    = usuarioTipoDAO.listarUsuariosTipo();
-            List<Curso>       todosCursos   = cursoDAO.listarCursos();
-
-            // Monta mapa coordenador_id → nome do curso
-            for (Curso c : todosCursos) {
+            // ── 1. Mapa coordenador_id → nome do curso ────────────────────────
+            // getCoordenador_id() retorna 0 quando o campo é NULL no banco
+            // (comportamento padrão do ResultSet.getInt para NULL).
+            for (Curso c : cursoDAO.listarCursos()) {
                 if (c.getCoordenador_id() != 0) {
                     mapaCoordParaCurso.put(c.getCoordenador_id(), c.getNome());
                 }
             }
 
-            // Monta mapa usuario_id → tipo
-            Map<Integer, String> mapaTipos = new HashMap<>();
-            for (UsuarioTipo ut : todosTipos) {
-                mapaTipos.put(ut.getUsuario_id(), ut.getTipo());
-            }
+            // ── 2. Carrega coordenadores e adms separadamente por tipo ─────────
+            // Isso evita o problema de sobrescrita no mapa quando um usuário
+            // possui múltiplos registros em usuario_tipo (ex: COORD + PROF).
+            List<Usuario> coordenadores = listarUsuariosPorTipo("COORD");
+            List<Usuario> adms          = listarUsuariosPorTipo("ADM");
 
-            for (Usuario user : todosUsuarios) {
-                String tipo = mapaTipos.get(user.getId_usuario());
-                if (tipo == null) continue;
+            // Ordena por id_usuario crescente (menor → maior, de cima para baixo)
+            coordenadores.stream()
+                    .sorted(Comparator.comparingInt(Usuario::getId_usuario))
+                    .forEach(listaCoordenadoresFX::add);
 
-                user.setTipo(tipo);
-
-                if ("COORD".equalsIgnoreCase(tipo)) {
-                    listaCoordenadoresFX.add(user);
-                } else if ("ADM".equalsIgnoreCase(tipo)) {
-                    listaAdmsFX.add(user);
-                }
-            }
+            adms.stream()
+                    .sorted(Comparator.comparingInt(Usuario::getId_usuario))
+                    .forEach(listaAdmsFX::add);
 
             // Força redesenho da coluna Curso (o mapa foi reconstruído)
             tabelaCoordenadores.refresh();
@@ -182,15 +276,62 @@ public class AdmCoordenadoresAdmsController {
         }
     }
 
-    /** Popula o ComboBox com TODOS os cursos cadastrados. */
-    private void recarregarComboBoxCurso() {
+    /**
+     * Busca todos os usuários ativos de um determinado tipo diretamente no banco.
+     * Evita qualquer problema de sobrescrita de mapa ao lidar com usuários
+     * que possuem múltiplos registros em usuario_tipo.
+     */
+    private List<Usuario> listarUsuariosPorTipo(String tipo) throws SQLException {
+        List<Usuario> lista = new ArrayList<>();
+        String sql = """
+                SELECT u.id_usuario, u.nome, u.email, u.senha_hash
+                FROM usuario u
+                INNER JOIN usuario_tipo ut ON ut.usuario_id = u.id_usuario
+                WHERE ut.tipo = ?
+                  AND u.deletado_em IS NULL
+                ORDER BY u.id_usuario ASC
+                """;
+
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, tipo);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    Usuario u = new Usuario();
+                    u.setId_usuario(rs.getInt("id_usuario"));
+                    u.setNome(rs.getString("nome"));
+                    u.setEmail(rs.getString("email"));
+                    u.setSenha_hash(rs.getString("senha_hash"));
+                    u.setTipo(tipo);
+                    lista.add(u);
+                }
+            }
+        }
+        return lista;
+    }
+
+    /**
+     * Popula o ComboBox apenas com cursos que ainda NÃO possuem coordenador.
+     * Se um coordenador está sendo editado, inclui o curso já vinculado a ele
+     * para que possa ser mantido ou trocado.
+     *
+     * @param cursoAtualDoCoord nome do curso já vinculado ao coordenador em edição
+     *                          (null para novo cadastro).
+     */
+    private void recarregarComboBoxCurso(String cursoAtualDoCoord) {
         try {
             mapaNomeCursoParaId.clear();
             ObservableList<String> nomes = FXCollections.observableArrayList();
 
             for (Curso c : cursoDAO.listarCursos()) {
-                nomes.add(c.getNome());
-                mapaNomeCursoParaId.put(c.getNome(), c.getId_curso());
+                // getCoordenador_id() == 0 significa NULL no banco
+                boolean semCoordenador = (c.getCoordenador_id() == 0);
+                boolean eCursoAtual    = c.getNome().equals(cursoAtualDoCoord);
+
+                if (semCoordenador || eCursoAtual) {
+                    nomes.add(c.getNome());
+                    mapaNomeCursoParaId.put(c.getNome(), c.getId_curso());
+                }
             }
 
             cbCoordCurso.setItems(nomes);
@@ -215,9 +356,12 @@ public class AdmCoordenadoresAdmsController {
         tfCoordEmail.setText(coordenadorSelecionado.getEmail());
         pfCoordSenha.clear();
 
-        // Pré-seleciona o curso atual do coordenador no ComboBox
         String cursoAtual = mapaCoordParaCurso.get(coordenadorSelecionado.getId_usuario());
+        recarregarComboBoxCurso(cursoAtual);
         cbCoordCurso.setValue(cursoAtual != null ? cursoAtual : null);
+
+        // Modo edição: senha vazia é permitida (não altera), então habilita o botão
+        atualizarEstadoBtnCoord();
     }
 
     // =========================================================================
@@ -229,7 +373,10 @@ public class AdmCoordenadoresAdmsController {
         coordenadorSelecionado = null;
         tabelaCoordenadores.getSelectionModel().clearSelection();
         lblTituloFormCoord.setText("Novo Coordenador");
+        recarregarComboBoxCurso(null);
         handleLimparFormCoord();
+        // Novo cadastro exige senha: desabilita o botão até senha válida
+        atualizarEstadoBtnCoord();
     }
 
     @FXML
@@ -252,15 +399,30 @@ public class AdmCoordenadoresAdmsController {
             return;
         }
 
+        // Validação de senha (redundante com o listener, mas garante consistência)
+        boolean modoEdicao = coordenadorSelecionado != null;
+        if (!senha.isEmpty() && senha.length() < SENHA_MIN) {
+            exibirAlerta("Erro", "A senha deve ter no mínimo " + SENHA_MIN + " caracteres.");
+            return;
+        }
+        if (!modoEdicao && senha.isEmpty()) {
+            exibirAlerta("Erro", "Informe uma senha para o novo coordenador.");
+            return;
+        }
+
         Integer idCursoSelecionado = (cursoNome != null)
                 ? mapaNomeCursoParaId.get(cursoNome)
                 : null;
 
         try {
-            if (coordenadorSelecionado == null) {
+            if (!modoEdicao) {
                 // ── INSERÇÃO ──────────────────────────────────────────────────
                 if (usuarioDAO.emailJaExiste(email)) {
                     exibirAlerta("Erro", "Este e-mail já está cadastrado.");
+                    return;
+                }
+                if (idCursoSelecionado != null && cursoJaPossuiCoordenador(idCursoSelecionado)) {
+                    exibirAlerta("Erro", "O curso selecionado já possui um coordenador.");
                     return;
                 }
 
@@ -297,7 +459,6 @@ public class AdmCoordenadoresAdmsController {
 
                 usuarioDAO.editarUsuario(coordenadorSelecionado);
 
-                // Remove vínculos antigos e aplica o novo
                 for (Curso c : cursoDAO.buscarCursoCoordenador(coordenadorSelecionado.getId_usuario())) {
                     cursoDAO.removerCoordenadorDeCurso(c.getId_curso());
                 }
@@ -326,7 +487,7 @@ public class AdmCoordenadoresAdmsController {
     }
 
     // =========================================================================
-    //  COORDENADORES — EXCLUSÃO (compartilhada pelo botão inline e pelo handler)
+    //  COORDENADORES — EXCLUSÃO
     // =========================================================================
 
     private void excluirCoordenador(Usuario coord) {
@@ -335,8 +496,7 @@ public class AdmCoordenadoresAdmsController {
         Alert confirmacao = new Alert(Alert.AlertType.CONFIRMATION);
         confirmacao.setTitle("Confirmar exclusão");
         confirmacao.setHeaderText(null);
-        confirmacao.setContentText(
-                "Deseja excluir o coordenador \"" + coord.getNome() + "\"?");
+        confirmacao.setContentText("Deseja excluir o coordenador \"" + coord.getNome() + "\"?");
 
         confirmacao.showAndWait().ifPresent(resposta -> {
             if (resposta != ButtonType.OK) return;
@@ -371,6 +531,9 @@ public class AdmCoordenadoresAdmsController {
         tfAdmNome.setText(admSelecionado.getNome());
         tfAdmEmail.setText(admSelecionado.getEmail());
         pfAdmSenha.clear();
+
+        // Modo edição: senha vazia é permitida
+        atualizarEstadoBtnAdm();
     }
 
     // =========================================================================
@@ -383,6 +546,8 @@ public class AdmCoordenadoresAdmsController {
         tabelaAdms.getSelectionModel().clearSelection();
         lblTituloFormAdm.setText("Novo Administrador");
         handleLimparFormAdm();
+        // Novo cadastro exige senha: desabilita o botão até senha válida
+        atualizarEstadoBtnAdm();
     }
 
     @FXML
@@ -403,8 +568,20 @@ public class AdmCoordenadoresAdmsController {
             return;
         }
 
+        boolean modoEdicao = admSelecionado != null;
+
+        // Validação de senha (redundante com o listener, mas garante consistência)
+        if (!senha.isEmpty() && senha.length() < SENHA_MIN) {
+            exibirAlerta("Erro", "A senha deve ter no mínimo " + SENHA_MIN + " caracteres.");
+            return;
+        }
+        if (!modoEdicao && senha.isEmpty()) {
+            exibirAlerta("Erro", "Informe uma senha para o novo administrador.");
+            return;
+        }
+
         try {
-            if (admSelecionado == null) {
+            if (!modoEdicao) {
                 if (usuarioDAO.emailJaExiste(email)) {
                     exibirAlerta("Erro", "Este e-mail já está cadastrado.");
                     return;
@@ -449,16 +626,29 @@ public class AdmCoordenadoresAdmsController {
             exibirAlerta("Aviso", "Selecione um administrador para excluir.");
             return;
         }
+        excluirAdm(admSelecionado);
+    }
 
-        // Impede que o ADM logado remova a própria conta
-        if (admSelecionado.getId_usuario().equals(logado.getId_usuario())) {
+    // =========================================================================
+    //  ADMINISTRADORES — EXCLUSÃO
+    //  O ADM de id = 1 é o superusuário protegido e nunca pode ser removido.
+    // =========================================================================
+
+    private void excluirAdm(Usuario adm) {
+        if (adm == null) return;
+
+        if (adm.getId_usuario() == 1) {
+            exibirAlerta("Aviso", "Este administrador não pode ser removido.");
+            return;
+        }
+        if (adm.getId_usuario().equals(logado.getId_usuario())) {
             exibirAlerta("Aviso", "Você não pode remover sua própria conta.");
             return;
         }
 
         try {
-            usuarioTipoDAO.excluirUsuarioTipo(admSelecionado.getId_usuario(), "ADM");
-            usuarioDAO.excluirUsuario(admSelecionado.getId_usuario());
+            usuarioTipoDAO.excluirUsuarioTipo(adm.getId_usuario(), "ADM");
+            usuarioDAO.excluirUsuario(adm.getId_usuario());
             exibirAlerta("Sucesso", "Administrador removido.");
             atualizarTabelas();
             handleNovoAdm();
@@ -471,10 +661,25 @@ public class AdmCoordenadoresAdmsController {
     //  UTILITÁRIOS PRIVADOS
     // =========================================================================
 
+    /**
+     * Verifica no banco se o curso já possui um coordenador vinculado.
+     * Proteção extra para o caso de o ComboBox ser burlado.
+     */
+    private boolean cursoJaPossuiCoordenador(int idCurso) {
+        try {
+            for (Curso c : cursoDAO.listarCursos()) {
+                if (c.getId_curso() == idCurso && c.getCoordenador_id() != 0) {
+                    return true;
+                }
+            }
+        } catch (Exception ignored) {}
+        return false;
+    }
+
     /** Vincula um coordenador a um curso via UPDATE direto no banco. */
     private void vincularCoordAoCurso(int coordId, int idCurso) throws Exception {
         String sql = "UPDATE curso SET coordenador_id = ? WHERE id_curso = ?";
-        try (Connection conn = org.example.demo3.DatabaseConnection.getConnection();
+        try (Connection conn = DatabaseConnection.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1, coordId);
             ps.setInt(2, idCurso);
