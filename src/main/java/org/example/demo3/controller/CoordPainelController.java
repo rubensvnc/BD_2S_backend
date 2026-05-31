@@ -945,31 +945,52 @@ public class CoordPainelController {
                 for (int dia = 1; dia <= 6; dia++) {
                     String chave = dia + "_" + hc.getId_horario_curso();
                     CheckBox cb = new CheckBox();
-                    cb.setSelected(marcados.contains(chave));
+                    boolean jaMarcado = marcados.contains(chave);
+                    cb.setSelected(jaMarcado);
                     mapaCheckBoxes.put(chave, cb);
 
                     int atribuicaoIdExcluir = atribuicaoAtual != null
                             ? atribuicaoAtual.getId_atribuicao_professor() : -1;
 
-                    String nomeConflitoDisc = atribuicaoHorarioDAO.buscarConflitoParaProfessor(
-                            prof.getId_usuario(),
-                            idSemestreLetivoAtual,
-                            dia,
-                            hc.getNumero_ordem(),   // ← corrigido
-                            atribuicaoIdExcluir);
+                    // Só verifica conflito em horários que NÃO pertencem à atribuição atual
+                    if (!jaMarcado) {
+                        String conflitoProfessor = atribuicaoHorarioDAO.buscarConflitoParaProfessor(
+                                prof.getId_usuario(),
+                                idSemestreLetivoAtual,
+                                dia,
+                                hc.getId_horario_curso(),
+                                atribuicaoIdExcluir);
 
-                    if (nomeConflitoDisc != null) {
-                        cb.setStyle("-fx-border-color: #e74c3c; -fx-border-width: 2px; -fx-border-radius: 3px; -fx-padding: 1px;");
-                        cb.setTooltip(new Tooltip("Professor já leciona: " + nomeConflitoDisc + " neste horário"));
-                        cb.setDisable(true);
+                        String conflitoCurso = (conflitoProfessor == null)
+                                ? atribuicaoHorarioDAO.buscarConflitoNoCurso(
+                                disc.getCurso_id(),
+                                disc.getSemestre_curso(),
+                                idSemestreLetivoAtual,
+                                dia,
+                                hc.getId_horario_curso(),
+                                atribuicaoIdExcluir)
+                                : null;
+
+                        if (conflitoProfessor != null) {
+                            cb.setStyle("-fx-border-color: #e74c3c; -fx-border-width: 2px; " +
+                                    "-fx-border-radius: 3px; -fx-padding: 1px;");
+                            cb.setTooltip(new Tooltip(
+                                    prof.getNome() + " já leciona \"" + conflitoProfessor + "\" neste horário"));
+                            cb.setDisable(true);
+                        } else if (conflitoCurso != null) {
+                            cb.setStyle("-fx-border-color: #e67e22; -fx-border-width: 2px; " +
+                                    "-fx-border-radius: 3px; -fx-padding: 1px;");
+                            cb.setTooltip(new Tooltip(
+                                    "Prof. " + conflitoCurso + " já ocupa este horário neste semestre do curso"));
+                            cb.setDisable(true);
+                        }
                     }
 
-                    final int diaFinal      = dia;
-                    final int numeroOrdem   = hc.getNumero_ordem(); // ← corrigido
-                    CoordPainelController self = this;
+                    final int diaFinal  = dia;
+                    final int horarioId = hc.getId_horario_curso();
                     cb.setOnAction(e -> {
-                        self.verificarConflito(prof, diaFinal, numeroOrdem, cb);
-                        self.atualizarBotaoSalvar();
+                        verificarConflito(prof, diaFinal, horarioId, cb);
+                        atualizarBotaoSalvar();
                     });
 
                     gradeAtribuicao.add(cb, dia, row + 1);
@@ -983,7 +1004,7 @@ public class CoordPainelController {
         }
     }
 
-    private void verificarConflito(Usuario prof, int diaSemana, int numeroOrdem, CheckBox cb) {
+    private void verificarConflito(Usuario prof, int diaSemana, int horarioCursoId, CheckBox cb) {
         if (!cb.isSelected()) {
             lblConflito.setVisible(false);
             lblConflito.setManaged(false);
@@ -993,20 +1014,43 @@ public class CoordPainelController {
             int atribuicaoIdExcluir = atribuicaoAtual != null
                     ? atribuicaoAtual.getId_atribuicao_professor() : -1;
 
-            String nomeDisc = atribuicaoHorarioDAO.buscarConflitoParaProfessor(
+            // Conflito 1: professor já tem esse horário em outro lugar
+            String conflitoProfessor = atribuicaoHorarioDAO.buscarConflitoParaProfessor(
                     prof.getId_usuario(),
                     idSemestreLetivoAtual,
                     diaSemana,
-                    numeroOrdem,
+                    horarioCursoId,
                     atribuicaoIdExcluir);
 
-            if (nomeDisc != null) {
+            if (conflitoProfessor != null) {
                 lblConflito.setText("⚠ " + prof.getNome() +
-                        " já está alocado em \"" + nomeDisc + "\" neste horário.");
+                        " já está alocado em \"" + conflitoProfessor + "\" neste horário.");
                 lblConflito.setVisible(true);
                 lblConflito.setManaged(true);
                 cb.setSelected(false);
+                return;
             }
+
+            // Conflito 2: outro professor já ocupa o horário no curso+semestre_curso
+            Disciplina disc = cbAtribDisc.getValue();
+            if (disc != null) {
+                String conflitoCurso = atribuicaoHorarioDAO.buscarConflitoNoCurso(
+                        disc.getCurso_id(),
+                        disc.getSemestre_curso(),
+                        idSemestreLetivoAtual,
+                        diaSemana,
+                        horarioCursoId,
+                        atribuicaoIdExcluir);
+
+                if (conflitoCurso != null) {
+                    lblConflito.setText("⚠ Prof. " + conflitoCurso +
+                            " já ocupa este horário neste semestre do curso.");
+                    lblConflito.setVisible(true);
+                    lblConflito.setManaged(true);
+                    cb.setSelected(false);
+                }
+            }
+
         } catch (SQLException e) {
             System.err.println("Erro ao verificar conflito: " + e.getMessage());
         }
