@@ -134,6 +134,7 @@ public class CoordPainelController {
     // Aba 3
     private AtribuicaoProfessor atribuicaoAtual;
     private final Map<String, CheckBox> mapaCheckBoxes = new HashMap<>();
+    private void atualizarBotaoSalvar() {boolean algumMarcado = mapaCheckBoxes.values().stream().anyMatch(CheckBox::isSelected);btnSalvarAtrib.setDisable(!algumMarcado);}
 
     // Aba 4
     private final IntegerProperty totalTemas           = new SimpleIntegerProperty(0);
@@ -784,15 +785,34 @@ public class CoordPainelController {
         }
 
         try {
+            // Guarda de conflito antes de salvar
+            int atribuicaoIdExcluir = atribuicaoAtual != null
+                    ? atribuicaoAtual.getId_atribuicao_professor() : -1;
+
+            for (AtribuicaoHorario ah : horariosSelecionados) {
+                HorarioCurso hc = horarioCursoDAO.buscarPorId(ah.getHorario_curso_id());
+                String conflito = atribuicaoHorarioDAO.buscarConflitoParaProfessor(
+                        prof.getId_usuario(),
+                        idSemestreLetivoAtual,
+                        ah.getDia_semana(),
+                        hc.getNumero_ordem(),
+                        atribuicaoIdExcluir);
+
+                if (conflito != null) {
+                    exibirAlerta(Alert.AlertType.ERROR, "Conflito de Horário",
+                            "O professor já leciona \"" + conflito +
+                                    "\" nesse horário neste semestre. Salvo cancelado.");
+                    return;
+                }
+            }
+
             if (atribuicaoAtual != null) {
-                // ── EDIÇÃO ───────────────────────────────────────────────────
                 horariosSelecionados.forEach(ah ->
                         ah.setAtribuicao_id(atribuicaoAtual.getId_atribuicao_professor()));
                 atribuicaoHorarioDAO.substituirHorarios(
                         atribuicaoAtual.getId_atribuicao_professor(), horariosSelecionados);
 
             } else {
-                // ── INSERÇÃO ─────────────────────────────────────────────────
                 AtribuicaoProfessor novaAtrib = new AtribuicaoProfessor();
                 novaAtrib.setProfessor_id(prof.getId_usuario());
                 novaAtrib.setDisciplina_id(disc.getId_disciplina());
@@ -879,7 +899,6 @@ public class CoordPainelController {
         if (prof == null || disc == null || idSemestreLetivoAtual == null) return;
 
         try {
-            // Bloqueia se a disciplina já tem outro professor neste semestre
             AtribuicaoProfessor atribuicaoExistente = atribuicaoProfessorDAO
                     .buscarPorDisciplinaESemestre(disc.getId_disciplina(), idSemestreLetivoAtual);
 
@@ -901,7 +920,6 @@ public class CoordPainelController {
 
             if (horarios.isEmpty()) return;
 
-            // Marca horários já salvos
             Set<String> marcados = new HashSet<>();
             if (atribuicaoAtual != null) {
                 atribuicaoHorarioDAO
@@ -909,7 +927,6 @@ public class CoordPainelController {
                         .forEach(ah -> marcados.add(ah.getDia_semana() + "_" + ah.getHorario_curso_id()));
             }
 
-            // Cabeçalho dos dias
             String[] dias = {"Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"};
             for (int col = 0; col < dias.length; col++) {
                 Label lblDia = new Label(dias[col]);
@@ -917,7 +934,6 @@ public class CoordPainelController {
                 gradeAtribuicao.add(lblDia, col + 1, 0);
             }
 
-            // Linhas de horários
             for (int row = 0; row < horarios.size(); row++) {
                 HorarioCurso hc = horarios.get(row);
 
@@ -925,36 +941,34 @@ public class CoordPainelController {
                 lblHorario.setStyle("-fx-font-size: 11px;");
                 gradeAtribuicao.add(lblHorario, 0, row + 1);
 
-                // ── dentro do loop de dias, onde pinta a borda vermelha ──────────────────
-
                 for (int dia = 1; dia <= 6; dia++) {
                     String chave = dia + "_" + hc.getId_horario_curso();
                     CheckBox cb = new CheckBox();
                     cb.setSelected(marcados.contains(chave));
                     mapaCheckBoxes.put(chave, cb);
 
-                    // Conflito: o professor selecionado já tem esse horário em outra disciplina
                     int atribuicaoIdExcluir = atribuicaoAtual != null
                             ? atribuicaoAtual.getId_atribuicao_professor() : -1;
 
                     String nomeConflitoDisc = atribuicaoHorarioDAO.buscarConflitoParaProfessor(
-                            prof.getId_usuario(),          // ← filtra pelo professor selecionado
+                            prof.getId_usuario(),
                             idSemestreLetivoAtual,
                             dia,
-                            hc.getId_horario_curso(),
+                            hc.getNumero_ordem(),   // ← corrigido
                             atribuicaoIdExcluir);
 
                     if (nomeConflitoDisc != null) {
                         cb.setStyle("-fx-border-color: #e74c3c; -fx-border-width: 2px; -fx-border-radius: 3px; -fx-padding: 1px;");
                         cb.setTooltip(new Tooltip("Professor já leciona: " + nomeConflitoDisc + " neste horário"));
-                        cb.setDisable(true); // ← desabilita, pois é conflito real do professor
+                        cb.setDisable(true);
                     }
 
-                    final int diaFinal  = dia;
-                    final int horarioId = hc.getId_horario_curso();
+                    final int diaFinal      = dia;
+                    final int numeroOrdem   = hc.getNumero_ordem(); // ← corrigido
+                    CoordPainelController self = this;
                     cb.setOnAction(e -> {
-                        verificarConflito(prof, diaFinal, horarioId, cb);
-                        atualizarBotaoSalvar();
+                        self.verificarConflito(prof, diaFinal, numeroOrdem, cb);
+                        self.atualizarBotaoSalvar();
                     });
 
                     gradeAtribuicao.add(cb, dia, row + 1);
@@ -968,7 +982,7 @@ public class CoordPainelController {
         }
     }
 
-    private void verificarConflito(Usuario prof, int diaSemana, int horarioCursoId, CheckBox cb) {
+    private void verificarConflito(Usuario prof, int diaSemana, int numeroOrdem, CheckBox cb) {
         if (!cb.isSelected()) {
             lblConflito.setVisible(false);
             lblConflito.setManaged(false);
@@ -978,12 +992,11 @@ public class CoordPainelController {
             int atribuicaoIdExcluir = atribuicaoAtual != null
                     ? atribuicaoAtual.getId_atribuicao_professor() : -1;
 
-            // Verifica se o professor já tem esse horário em outra disciplina no mesmo semestre
             String nomeDisc = atribuicaoHorarioDAO.buscarConflitoParaProfessor(
                     prof.getId_usuario(),
                     idSemestreLetivoAtual,
                     diaSemana,
-                    horarioCursoId,
+                    numeroOrdem,
                     atribuicaoIdExcluir);
 
             if (nomeDisc != null) {
@@ -996,11 +1009,6 @@ public class CoordPainelController {
         } catch (SQLException e) {
             System.err.println("Erro ao verificar conflito: " + e.getMessage());
         }
-    }
-
-    private void atualizarBotaoSalvar() {
-        boolean algumMarcado = mapaCheckBoxes.values().stream().anyMatch(CheckBox::isSelected);
-        btnSalvarAtrib.setDisable(!algumMarcado);
     }
 
     // ════════════════════════════════════════════════════════════════════════
