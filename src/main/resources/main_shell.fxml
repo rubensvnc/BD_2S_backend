@@ -13,7 +13,7 @@
 <?import javafx.scene.layout.StackPane?>
 <?import javafx.scene.layout.VBox?>
 
-<BorderPane prefHeight="768" prefWidth="1366" xmlns="http://javafx.com/javafx/25" xmlns:fx="http://javafx.com/fxml/1" fx:controller="org.example.demo3.controller.MainShellController">
+<BorderPane prefHeight="768" prefWidth="1366" xmlns="http://javafx.com/javafx/25" xmlns:fx="http://javafx.com/fxml/1" fx:controller="org.example.demo3.controller.MainShellController" stylesheets="@style.css">
 
     <top>
         <VBox>
@@ -25,8 +25,8 @@
                 <Separator opacity="0.0" orientation="VERTICAL" />
 
                 <Label style="-fx-text-fill: #ecf0f1;" text="Semestre:" />
-                <ToggleButton fx:id="tbSem1" onAction="#handleSemestreToggle" text="1º" />
-                <ToggleButton fx:id="tbSem2" onAction="#handleSemestreToggle" text="2º" />
+                <ToggleButton fx:id="tbSem1" onAction="#handleSemestreToggle" text="1º"/>
+                <ToggleButton fx:id="tbSem2" onAction="#handleSemestreToggle" text="2º"/>
 
                 <Separator opacity="0.0" orientation="VERTICAL" />
 
@@ -49,7 +49,7 @@
                 <Region HBox.hgrow="ALWAYS" />
 
                 <Label fx:id="lblNomeUsuario" style="-fx-text-fill: #ecf0f1; -fx-font-weight: bold;" />
-                <Label fx:id="lblPerfilUsuario" style="-fx-text-fill: #95a5a6; -fx-font-size: 11px;" />
+                <Label fx:id="lblPerfilUsuario" style="-fx-text-fill: #ffffff; -fx-font-size: 11px;" />
                 <Separator opacity="0.0" orientation="VERTICAL" />
                 <Button onAction="#handleLogout" style="-fx-background-color: transparent; -fx-text-fill: #ecf0f1; -fx-border-color: #7f8c8d; -fx-border-radius: 3;" text="Sair" />
             </ToolBar>
@@ -63,22 +63,22 @@
             <padding><Insets bottom="14" left="8" right="8" top="14" /></padding>
 
             <VBox fx:id="secaoAdm" managed="false" spacing="2" visible="false">
-                <Label style="-fx-text-fill: #95a5a6; -fx-font-size: 10px; -fx-padding: 6 0 2 4;" text="ADMINISTRADOR" />
-                <Button maxWidth="Infinity" onAction="#navCalendario" styleClass="menu-item" text="📅  Calendário Acadêmico" />
-                <Button maxWidth="Infinity" onAction="#navCursosHorarios" styleClass="menu-item" text="🏫  Cursos e Horários" />
-                <Button maxWidth="Infinity" onAction="#navCoordenaodresAdms" styleClass="menu-item" text="👥  Coordenadores / ADMs" />
-                <Button maxWidth="Infinity" onAction="#navCalendario" styleClass="menu-item" text="🚫  Bloqueios e Cancelamentos" />
+                <Label style="-fx-text-fill: #ffffff; -fx-font-weight: bold; -fx-font-size: 10px; -fx-padding: 6 0 2 4;" text="ADMINISTRADOR" />
+                <Button maxWidth="Infinity" onAction="#navCalendario" styleClass="menu-item" style="-fx-text-fill: white; -fx-background-color: transparent; -fx-alignment: center-left;" text="📅  Calendário Acadêmico" />
+                <Button maxWidth="Infinity" onAction="#navCursosHorarios" styleClass="menu-item" style="-fx-text-fill: white; -fx-background-color: transparent; -fx-alignment: center-left;" text="🏫  Cursos e Horários" />
+                <Button maxWidth="Infinity" onAction="#navCoordenaodresAdms" styleClass="menu-item" style="-fx-text-fill: white; -fx-background-color: transparent; -fx-alignment: center-left;" text="👥  Coordenadores / ADMs" />
+                <Button maxWidth="Infinity" onAction="#navCalendario" styleClass="menu-item" style="-fx-text-fill: white; -fx-background-color: transparent; -fx-alignment: center-left;" text="🚫  Bloqueios e Cancelamentos" />
             </VBox>
 
             <VBox fx:id="secaoCoordenador" managed="false" spacing="2" visible="false">
-                <Label style="-fx-text-fill: #95a5a6; -fx-font-size: 10px; -fx-padding: 6 0 2 4;" text="COORDENADOR" />
-                <Button maxWidth="Infinity" onAction="#navCoordPainel" styleClass="menu-item" text="📚  Disciplinas e Professores" />
+                <Label style="-fx-text-fill: #ffffff; -fx-font-weight: bold; -fx-font-size: 10px; -fx-padding: 6 0 2 4;" text="COORDENADOR" />
+                <Button maxWidth="Infinity" onAction="#navCoordPainel" styleClass="menu-item" style="-fx-text-fill: white; -fx-background-color: transparent; -fx-alignment: center-left;" text="📚  Disciplinas e Professores" />
             </VBox>
 
             <VBox fx:id="secaoProfessor" managed="false" spacing="2" visible="false">
-                <Label style="-fx-text-fill: #95a5a6; -fx-font-size: 10px; -fx-padding: 6 0 2 4;" text="PROFESSOR" />
-                <Button maxWidth="Infinity" onAction="#navTemas" styleClass="menu-item" text="📝  Temas" />
-                <Button maxWidth="Infinity" onAction="#navPlanejamento" styleClass="menu-item" text="📋  Planejamento e Estatísticas" />
+                <Label style="-fx-text-fill: #ffffff; -fx-font-weight: bold; -fx-font-size: 10px; -fx-padding: 6 0 2 4;" text="PROFESSOR" />
+                <Button maxWidth="Infinity" onAction="#navTemas" styleClass="menu-item" style="-fx-text-fill: white; -fx-background-color: transparent; -fx-alignment: center-left;" text="📝  Temas" />
+                <Button maxWidth="Infinity" onAction="#navPlanejamento" styleClass="menu-item" style="-fx-text-fill: white; -fx-background-color: transparent; -fx-alignment: center-left;" text="📋  Planejamento e Estatísticas" />
             </VBox>
 
         </VBox>
