@@ -55,10 +55,11 @@ public class AdmCalendarioBloqueiosController {
     private LocalDate dataSelecionadaNoCalendario;
 
     private int idSemestreAtual = 1;
-    private final int ID_ADM_LOGADO = 1;
+    private int ID_ADM_LOGADO = logado.getId_usuario();
 
     @FXML
     public void initialize() {
+        ID_ADM_LOGADO = logado.getId_usuario();
         configurarTabelaSprints();
         configurarAbaBloqueios();
 
@@ -109,7 +110,7 @@ public class AdmCalendarioBloqueiosController {
         } catch (SQLException e) {
             System.err.println("Erro ao buscar id_semestre_letivo dinamico: " + e.getMessage());
         }
-        return 1;
+        return -1;
     }
 
     private void buscarEPreencherDatasMacro(int idSemestre, int anoFiltro, int numeroSemestre) {
@@ -213,20 +214,50 @@ public class AdmCalendarioBloqueiosController {
         try (Connection connection = DatabaseConnection.getConnection()) {
             connection.setAutoCommit(false);
             try {
-                sprintDAO.salvarOuAtualizarSprintsEmLote(connection, listaSprintsFX);
+                int anoSemestre = inicio.getMonthValue() >= 7 ? 2 : 1;
 
-                String sqlUpdateSemestre = "UPDATE semestre_letivo SET data_inicio = ?, data_fim = ?, data_tg = ?, data_feira = ? WHERE id_semestre_letivo = ?";
-                try (PreparedStatement stmtSem = connection.prepareStatement(sqlUpdateSemestre)) {
-                    stmtSem.setDate(1, java.sql.Date.valueOf(inicio));
-                    stmtSem.setDate(2, java.sql.Date.valueOf(fim));
-                    stmtSem.setDate(3, java.sql.Date.valueOf(tcc));
-                    stmtSem.setDate(4, java.sql.Date.valueOf(feira));
-                    stmtSem.setInt(5, this.idSemestreAtual);
+                String sqlUpsert = """
+                    INSERT INTO semestre_letivo
+                        (criado_por_adm_id, ano, numero_semestre, data_inicio, data_fim, data_tg, data_feira)
+                    VALUES (?, ?, ?, ?, ?, ?, ?)
+                    ON DUPLICATE KEY UPDATE
+                        data_inicio = VALUES(data_inicio),
+                        data_fim    = VALUES(data_fim),
+                        data_tg     = VALUES(data_tg),
+                        data_feira  = VALUES(data_feira)
+                """;
+
+                try (PreparedStatement stmtSem = connection.prepareStatement(
+                        sqlUpsert, PreparedStatement.RETURN_GENERATED_KEYS)) {
+                    stmtSem.setInt(1, ID_ADM_LOGADO);
+                    stmtSem.setInt(2, inicio.getYear());
+                    stmtSem.setInt(3, anoSemestre);
+                    stmtSem.setDate(4, java.sql.Date.valueOf(inicio));
+                    stmtSem.setDate(5, java.sql.Date.valueOf(fim));
+                    stmtSem.setDate(6, java.sql.Date.valueOf(tcc));
+                    stmtSem.setDate(7, java.sql.Date.valueOf(feira));
                     stmtSem.executeUpdate();
+
+                    ResultSet keys = stmtSem.getGeneratedKeys();
+                    if (keys.next()) {
+                        this.idSemestreAtual = keys.getInt(1);
+                    } else {
+                        this.idSemestreAtual = buscarIdSemestreDoBanco(inicio.getYear(), anoSemestre);
+                    }
                 }
 
+                for (Sprint sprint : listaSprintsFX) {
+                    sprint.setSemestre_letivo_id(this.idSemestreAtual);
+                }
+
+                sprintDAO.salvarOuAtualizarSprintsEmLote(connection, listaSprintsFX);
+
                 connection.commit();
-                carregarDadosPorAnoESemestre(inicio.getYear(), (inicio.getMonthValue() >= 7) ? 2 : 1);
+
+                logado.setAno(inicio.getYear());
+                logado.setAnoSemestre(anoSemestre);
+
+                carregarDadosPorAnoESemestre(inicio.getYear(), anoSemestre);
                 exibirFeedback(lblFeedbackCalendario, "Calendario e as 3 Sprints salvos com sucesso!", false);
             } catch (SQLException e) {
                 connection.rollback();
