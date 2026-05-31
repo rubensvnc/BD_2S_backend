@@ -109,4 +109,86 @@ public class UsuarioTipoDAO {
             }
         }
     }
+
+
+    public boolean usuarioPossuiTipoAtivo(Integer usuarioId, String tipo) {
+        String sql = """
+        SELECT 1
+        FROM usuario_tipo ut
+        INNER JOIN usuario u ON u.id_usuario = ut.usuario_id
+        WHERE ut.usuario_id = ?
+          AND ut.tipo = ?
+          AND u.deletado_em IS NULL
+        """;
+        try (Connection connection = DatabaseConnection.getConnection();
+             PreparedStatement ps = connection.prepareStatement(sql)) {
+            ps.setInt(1, usuarioId);
+            ps.setString(2, tipo);
+            try (ResultSet rs = ps.executeQuery()) {
+                return rs.next();
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    //MÉTODO EXCLUSIVO PARA AUTO-ATRIBUIÇÃO DO COORDENADOR
+    public void inserirCoordenadorAosProfessores(Integer usuarioId) {
+        String sql = "INSERT IGNORE INTO usuario_tipo (usuario_id, tipo) VALUES (?, 'PROF')";
+        Connection connection = null;
+        PreparedStatement ps = null;
+
+        try {
+            connection = DatabaseConnection.getConnection();
+            ps = connection.prepareStatement(sql);
+            ps.setInt(1, usuarioId);
+            ps.executeUpdate();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        } finally {
+            try {
+                if (ps != null) ps.close();
+                if (connection != null) connection.close();
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    //TAMBÉM UTILIZADO NA EXCLUSÃO DO COORDENADOR DA TABELA DE PROFESSORES
+    public void excluirUsuarioTipoIgnorandoFK(Integer usuarioId, String tipo) {
+        String sqlOff = "SET FOREIGN_KEY_CHECKS = 0";
+        String sqlDel = "DELETE FROM usuario_tipo WHERE usuario_id = ? AND tipo = ?";
+        String sqlOn  = "SET FOREIGN_KEY_CHECKS = 1";
+
+        try (Connection connection = DatabaseConnection.getConnection()) {
+            connection.setAutoCommit(false);
+            try {
+                try (PreparedStatement psOff = connection.prepareStatement(sqlOff)) {
+                    psOff.executeUpdate();
+                }
+                try (PreparedStatement psDel = connection.prepareStatement(sqlDel)) {
+                    psDel.setInt(1, usuarioId);
+                    psDel.setString(2, tipo);
+                    psDel.executeUpdate();
+                }
+                try (PreparedStatement psOn = connection.prepareStatement(sqlOn)) {
+                    psOn.executeUpdate();
+                }
+                connection.commit();
+            } catch (SQLException e) {
+                connection.rollback();
+                // Garante que FK check é reativado mesmo em caso de erro
+                try (PreparedStatement psOn = connection.prepareStatement(sqlOn)) {
+                    psOn.executeUpdate();
+                }
+                throw e;
+            } finally {
+                connection.setAutoCommit(true);
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
 }
