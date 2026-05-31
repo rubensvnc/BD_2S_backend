@@ -145,7 +145,7 @@ public class CoordPainelController {
     private final IntegerProperty aulasCanceladas      = new SimpleIntegerProperty(0);
     private final IntegerProperty cargaMinima          = new SimpleIntegerProperty(0);
     private final DoubleProperty  percentualConclusao  = new SimpleDoubleProperty(0.0);
-
+    private Usuario professorSelecionado = new Usuario();
 
 // INICIALIZAÇÃO
 // ════════════════════════════════════════════════════════════════════════
@@ -1139,11 +1139,14 @@ public class CoordPainelController {
 
             listaProfessoresEsquerda.getSelectionModel().selectedItemProperty()
                     .addListener((obs, antigo, selecionado) -> {
-                        if (selecionado != null) montarEstruturaArvoreCentral(selecionado);
+                        if (selecionado != null) {
+                            montarEstruturaArvoreCentral(selecionado);
+                            professorSelecionado = selecionado;
+                        }
                     });
 
             try {
-                List<Usuario> proflist = atribuicaoProfessorDAO.listarProfessoresComAtribuicao();
+                List<Usuario> proflist = atribuicaoProfessorDAO.listarProfessoresComAtribuicao(logado.getId_usuario());
                 listaProfessoresEsquerda.getItems().setAll(proflist);
                 if (!proflist.isEmpty()) {
                     listaProfessoresEsquerda.getSelectionModel().selectFirst();
@@ -1163,7 +1166,18 @@ public class CoordPainelController {
             TreeItem<Object> rootNode = new TreeItem<>(professor.getNome());
             rootNode.setExpanded(true);
 
-            List<Disciplina> disciplinasDoCurso = disciplinaDAO.listarDisciplinasPorCurso(idCursoAtual);
+            System.out.println("PROFESSOR SELECIONADO: "+professorSelecionado);
+            this.professorSelecionado = usuarioDAO.buscarUsuarioPorEmailUnico(professor.getEmail());
+
+            if (this.professorSelecionado == null) {
+                System.err.println("Erro: Professor não encontrado no banco pelo email: " + professor.getEmail());
+                return;
+            }
+
+            List<Disciplina> disciplinasDoCurso = disciplinaDAO.listarDisciplinasProfessor(
+                    logado.getId_usuario(),
+                    this.professorSelecionado.getId_usuario()
+            );
 
             for (Disciplina disc : disciplinasDoCurso) {
                 List<Map<String, Object>> dadosBrutos = slotDAO.buscarDadosMixados(
@@ -1277,7 +1291,7 @@ public class CoordPainelController {
             this.aulasCanceladas.set(canceladas);
             this.cargaMinima.set(chMinima);
             this.totalTemas.set(totalT);
-            this.percentualConclusao.set(totalAulas > 0 ? (double) ministradas / totalAulas : 0.0);
+            this.percentualConclusao.set((chMinima > 0) ? (double) ministradas / chMinima : 0.0);
 
             if (chartStatusAulas != null) {
                 ObservableList<PieChart.Data> fatias = FXCollections.observableArrayList();
@@ -1325,8 +1339,8 @@ public class CoordPainelController {
             String conteudo = (nomeTema != null) ? nomeTema : "Aula sem tema definido";
             String hora     = (horaInicio != null && horaInicio.length() >= 5)
                     ? horaInicio.substring(0, 5) : "00:00";
-            return String.format("Aula %d (%s): %s %s",
-                    slot.getId_slot_planejamento(), hora, conteudo, tag);
+            return String.format("(%s): %s %s",
+                    hora, conteudo, tag);
         }
     }
 
