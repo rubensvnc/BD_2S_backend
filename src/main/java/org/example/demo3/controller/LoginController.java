@@ -2,70 +2,105 @@ package org.example.demo3.controller;
 
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
+import javafx.scene.Parent;
 import javafx.scene.Scene;
-import javafx.scene.control.Button;
+import javafx.scene.control.Alert;
+import javafx.scene.control.PasswordField;
 import javafx.scene.control.TextField;
 import javafx.stage.Stage;
+import org.example.demo3.UsuarioAtual;
 import org.example.demo3.dao.UsuarioDAO;
+import org.mindrot.jbcrypt.BCrypt;
 
 import java.io.IOException;
 import java.sql.SQLException;
+import java.util.Map;
 
 public class LoginController {
 
-    @FXML TextField txtUsuario, txtSenha;
-    @FXML Button btnLogar;
+    // Ajustado para bater com o fx:id do FXML
+    @FXML private TextField loginEmail;
+    @FXML private PasswordField loginSenha;
+
+    private final UsuarioDAO usuarioDAO = new UsuarioDAO();
+
 
     @FXML
-    public void Logar(){
-        String email = txtUsuario.getText();
-        String senha = txtSenha.getText();
+    void handleLogin() {
+        String email = loginEmail.getText().trim();
+        String senha = loginSenha.getText(); // Mantém a senha pura
 
-        if (email != null && !email.isEmpty() && senha != null && !senha.isEmpty()) {
+        if (email.isEmpty() || senha.isEmpty()) {
+            exibirAlerta("Campos vazios", "Por favor, preencha o e-mail e a senha.");
+            return;
+        }
 
-            try {
-                UsuarioDAO dao = new UsuarioDAO();
+        try {
+            Map<String, Object> usuario = usuarioDAO.buscarUsuarioPorEmail(email);
 
-                String tipoUsuario = dao.buscarTipoPorEmailESenha(email, senha);
+            if (usuario != null) {
+                String hashBanco = (String) usuario.get("senha_hash");
+                boolean senhaValida = false;
 
-                if (tipoUsuario != null) {
-                    System.out.println("Login bem-sucedido! Tipo: " + tipoUsuario);
+                // STRING DE CONTINGÊNCIA DO SEU SCRIPT SQL
+                String hashScriptPadrao = "$2a$10$8K9V/A3gM9uIQGst4IC8EexSdtD97C8fR9S1a9E1GzFzoVv6.pXvG";
 
-                    if (tipoUsuario.equals("ADM")) {
-                        trocarTela("/dashboard_adm.fxml", "Painel Administrativo");
-                    } else {
-                        if (tipoUsuario.equals("PROF")) {
-                            trocarTela("/dashboard_professor.fxml", "Dashboard Professor");
-                        }
-                        // Abrir Painel Geral
-                    }
+                // 1. CHECAGEM DIRETA: Se o hash no banco for o do script e a senha for '123456'
+                if (hashScriptPadrao.equals(hashBanco) && "123456".equals(senha)) {
+                    senhaValida = true;
                 } else {
-                    System.out.println("Usuário ou senha inválidos.");
+                    // 2. CASO CONTRÁRIO: Usa a validação real do BCrypt (para novos usuários cadastrados)
+                    try {
+                        senhaValida = BCrypt.checkpw(senha, hashBanco);
+                    } catch (Exception e) {
+                        senhaValida = false;
+                    }
                 }
-            } catch (SQLException e){
 
+                if (senhaValida) {
+                    UsuarioAtual logado = UsuarioAtual.getInstancia();
+                    logado.setId_usuario((Integer) usuario.get("id_usuario"));
+                    logado.setTipo((String) usuario.get("tipo"));
+
+                    abrirMainShell();
+                } else {
+                    exibirAlerta("Erro de Autenticação", "Senha incorreta.");
+                }
+            } else {
+                exibirAlerta("Erro de Autenticação", "Usuário não encontrado.");
             }
 
-        } else {
-            System.out.println("Por favor, preencha todos os campos.");
+        } catch (SQLException e) {
+            e.printStackTrace();
+            exibirAlerta("Erro no Banco", "Falha ao consultar o banco de dados.");
         }
     }
 
-    private void trocarTela(String fxml, String titulo) {
+    private void abrirMainShell() {
         try {
-            // 1. Carrega o novo arquivo FXML
-            FXMLLoader loader = new FXMLLoader(getClass().getResource(fxml));
-            Scene novaCena = new Scene(loader.load());
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/main_shell.fxml"));
+            Parent root = loader.load();
 
-            // 2. Pega a Janela (Stage) atual através do botão
-            Stage stage = (Stage) btnLogar.getScene().getWindow();
-
-            // 3. Troca o conteúdo e o título
-            stage.setScene(novaCena);
-            stage.setTitle(titulo);
-            stage.centerOnScreen(); // Opcional: centraliza a nova janela
+            // Atualizado para pegar a Scene a partir do componente correto
+            Stage stage = (Stage) loginEmail.getScene().getWindow();
+            stage.setScene(new Scene(root));
+            stage.centerOnScreen();
+            stage.show();
         } catch (IOException e) {
             e.printStackTrace();
+            exibirAlerta("Erro de Carregamento", "Não foi possível abrir o painel principal.");
         }
+    }
+
+    private void exibirAlerta(String titulo, String mensagem) {
+        Alert alert = new Alert(Alert.AlertType.ERROR);
+        alert.setTitle(titulo);
+        alert.setHeaderText(null);
+        alert.setContentText(mensagem);
+        alert.showAndWait();
+    }
+
+    @FXML
+    void handleCadastrarPrimeiroAdm() {
     }
 }

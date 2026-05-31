@@ -1,0 +1,159 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.geometry.*?>
+
+<BorderPane xmlns="http://javafx.com/javafx/21"
+            xmlns:fx="http://javafx.com/fxml/1"
+            fx:controller="org.example.demo3.controller.AdmCoordenadoresAdmsController">
+
+    <top>
+        <Label text="Coordenadores e Administradores"
+               style="-fx-font-size: 16px; -fx-font-weight: bold; -fx-padding: 12 16;"/>
+    </top>
+
+    <center>
+        <TabPane tabClosingPolicy="UNAVAILABLE">
+
+            <!-- ═══════════════════════════════════════════
+                 ABA 1 — COORDENADORES  (cobre seção 6.6)
+            ════════════════════════════════════════════ -->
+            <Tab text="👤 Coordenadores">
+                <SplitPane dividerPositions="0.56">
+
+                    <!-- Tabela -->
+                    <VBox spacing="10">
+                        <padding><Insets top="12" right="8" bottom="12" left="14"/></padding>
+                        <HBox spacing="8" alignment="CENTER_LEFT">
+                            <Label text="Coordenadores Cadastrados"
+                                   style="-fx-font-weight: bold;" HBox.hgrow="ALWAYS"/>
+                            <Button text="+ Novo" onAction="#handleNovoCoordenador"
+                                    style="-fx-background-color: #27ae60; -fx-text-fill: white;"/>
+                        </HBox>
+                        <TableView fx:id="tabelaCoordenadores"
+                                   onMouseClicked="#handleSelecionarCoordenador"
+                                   VBox.vgrow="ALWAYS">
+                            <columns>
+                                <TableColumn fx:id="colCoordNome"  text="Nome"    prefWidth="160"/>
+                                <TableColumn fx:id="colCoordEmail" text="E-mail"  prefWidth="190"/>
+                                <TableColumn fx:id="colCoordCurso" text="Curso"   prefWidth="150"/>
+                                <TableColumn fx:id="colCoordAcoes" text="Ações"   prefWidth="85"/>
+                            </columns>
+                            <placeholder><Label text="Nenhum coordenador cadastrado."/></placeholder>
+                        </TableView>
+                    </VBox>
+
+                    <!-- Formulário -->
+                    <VBox spacing="12">
+                        <padding><Insets top="12" right="14" bottom="12" left="8"/></padding>
+                        <Label fx:id="lblTituloFormCoord" text="Novo Coordenador"
+                               style="-fx-font-weight: bold; -fx-font-size: 13px;"/>
+
+                        <VBox spacing="4">
+                            <Label text="Nome *"/>
+                            <TextField fx:id="tfCoordNome" promptText="Nome completo"/>
+                            <Label fx:id="errCoordNome" styleClass="error-label"
+                                   visible="false" managed="false"/>
+                        </VBox>
+                        <VBox spacing="4">
+                            <Label text="E-mail *"/>
+                            <TextField fx:id="tfCoordEmail" promptText="email@inst.edu.br"/>
+                            <Label fx:id="errCoordEmail" styleClass="error-label"
+                                   visible="false" managed="false"/>
+                        </VBox>
+                        <VBox spacing="4">
+                            <Label text="Senha *"/>
+                            <PasswordField fx:id="pfCoordSenha" promptText="Mínimo 6 caracteres"/>
+                            <Label fx:id="errCoordSenha" styleClass="error-label"
+                                   visible="false" managed="false"/>
+                        </VBox>
+                        <VBox spacing="4">
+                            <Label text="Curso *"/>
+                            <!-- Lista apenas cursos sem coordenador vigente (exceto em modo edição) -->
+                            <ComboBox fx:id="cbCoordCurso" maxWidth="Infinity"
+                                      promptText="Selecione o curso"/>
+                            <Label fx:id="errCoordCurso" styleClass="error-label"
+                                   visible="false" managed="false"/>
+                        </VBox>
+
+                        <HBox spacing="8" alignment="CENTER_RIGHT">
+                            <Button text="Limpar" onAction="#handleLimparFormCoord"/>
+                            <Button text="Salvar" onAction="#handleSalvarCoordenador"
+                                    style="-fx-background-color: #2980b9; -fx-text-fill: white;"/>
+                        </HBox>
+                        <Label fx:id="lblFeedbackCoord"
+                               visible="false" managed="false" styleClass="feedback-label"/>
+                    </VBox>
+                </SplitPane>
+            </Tab>
+
+            <!-- ═══════════════════════════════════════════
+                 ABA 2 — ADMINISTRADORES  (cobre seção 6.7)
+            ════════════════════════════════════════════ -->
+            <Tab text="🔐 Administradores">
+                <SplitPane dividerPositions="0.56">
+
+                    <!-- Tabela -->
+                    <VBox spacing="10">
+                        <padding><Insets top="12" right="8" bottom="12" left="14"/></padding>
+                        <HBox spacing="8" alignment="CENTER_LEFT">
+                            <Label text="Administradores do Sistema"
+                                   style="-fx-font-weight: bold;" HBox.hgrow="ALWAYS"/>
+                            <Button text="+ Novo ADM" onAction="#handleNovoAdm"
+                                    style="-fx-background-color: #27ae60; -fx-text-fill: white;"/>
+                        </HBox>
+                        <TableView fx:id="tabelaAdms"
+                                   onMouseClicked="#handleSelecionarAdm"
+                                   VBox.vgrow="ALWAYS">
+                            <columns>
+                                <TableColumn fx:id="colAdmNome"  text="Nome"   prefWidth="200"/>
+                                <TableColumn fx:id="colAdmEmail" text="E-mail" prefWidth="220"/>
+                                <TableColumn fx:id="colAdmAcoes" text="Ações"  prefWidth="85"/>
+                            </columns>
+                            <placeholder><Label text="Nenhum ADM adicional cadastrado."/></placeholder>
+                        </TableView>
+                    </VBox>
+
+                    <!-- Formulário -->
+                    <VBox spacing="12">
+                        <padding><Insets top="12" right="14" bottom="12" left="8"/></padding>
+                        <Label fx:id="lblTituloFormAdm" text="Novo Administrador"
+                               style="-fx-font-weight: bold; -fx-font-size: 13px;"/>
+
+                        <VBox spacing="4">
+                            <Label text="Nome *"/>
+                            <TextField fx:id="tfAdmNome" promptText="Nome completo"/>
+                            <Label fx:id="errAdmNome" styleClass="error-label"
+                                   visible="false" managed="false"/>
+                        </VBox>
+                        <VBox spacing="4">
+                            <Label text="E-mail *"/>
+                            <TextField fx:id="tfAdmEmail" promptText="email@inst.edu.br"/>
+                            <Label fx:id="errAdmEmail" styleClass="error-label"
+                                   visible="false" managed="false"/>
+                        </VBox>
+                        <VBox spacing="4">
+                            <Label text="Senha *"/>
+                            <PasswordField fx:id="pfAdmSenha" promptText="Mínimo 6 caracteres"/>
+                            <Label fx:id="errAdmSenha" styleClass="error-label"
+                                   visible="false" managed="false"/>
+                        </VBox>
+
+                        <HBox spacing="8" alignment="CENTER_RIGHT">
+                            <Button text="Limpar" onAction="#handleLimparFormAdm"/>
+                            <Button text="Salvar" onAction="#handleSalvarAdm"
+                                    style="-fx-background-color: #2980b9; -fx-text-fill: white;"/>
+                        </HBox>
+                        <!-- Botão excluir desabilitado para o próprio ADM logado (via binding no controller) -->
+                        <Label fx:id="lblFeedbackAdm"
+                               visible="false" managed="false" styleClass="feedback-label"/>
+                    </VBox>
+
+                </SplitPane>
+            </Tab>
+
+        </TabPane>
+    </center>
+
+</BorderPane>

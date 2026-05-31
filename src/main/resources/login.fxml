@@ -1,128 +1,75 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<?import javafx.geometry.Insets?>
-<?import javafx.scene.control.Button?>
-<?import javafx.scene.control.Label?>
-<?import javafx.scene.control.TextField?>
-<?import javafx.scene.layout.AnchorPane?>
-<?import javafx.scene.layout.BorderPane?>
-<?import javafx.scene.layout.HBox?>
-<?import javafx.scene.layout.VBox?>
-<?import javafx.scene.text.Font?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.geometry.*?>
 
-<BorderPane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="820.0" prefWidth="1440.0" xmlns="http://javafx.com/javafx/26" xmlns:fx="http://javafx.com/fxml/1" fx:controller="org.example.demo3.controller.LoginController">
-   <center>
-      <AnchorPane prefHeight="200.0" prefWidth="200.0" BorderPane.alignment="CENTER">
-         <children>
-            <VBox AnchorPane.bottomAnchor="100.0" AnchorPane.leftAnchor="300.0">
-               <children>
-                  <HBox prefHeight="100.0">
-                     <children>
-                        <Label text="Usuario">
-                           <font>
-                              <Font size="30.0" />
-                           </font>
-                        </Label>
-                        <TextField fx:id="txtUsuario" promptText="Insira usuario">
-                           <font>
-                              <Font size="30.0" />
-                           </font>
-                        </TextField>
-                     </children>
-                  </HBox>
-                  <HBox prefHeight="100.0">
-                     <children>
-                        <Label text="Senha">
-                           <font>
-                              <Font size="30.0" />
-                           </font>
-                        </Label>
-                        <TextField fx:id="txtSenha" promptText="Insira senha">
-                           <font>
-                              <Font size="30.0" />
-                           </font>
-                        </TextField>
-                     </children>
-                  </HBox>
-                  <HBox prefHeight="100.0">
-                     <children>
-                        <Button fx:id="btnLogar" mnemonicParsing="false" onAction="#Logar" text="Logar">
-                           <font>
-                              <Font size="30.0" />
-                           </font>
-                        </Button>
-                     </children>
-                  </HBox>
-                  <Label text="Para fim de testes, uso os seguintes usuários:">
-                     <font>
-                        <Font size="20.0" />
-                     </font>
-                  </Label>
-                  <Label text="Administrador:">
-                     <padding>
-                        <Insets top="20.0" />
-                     </padding>
-                     <font>
-                        <Font size="17.0" />
-                     </font>
-                  </Label>
-                  <HBox>
-                     <children>
-                        <Label text="Usuario: admin@swiftplan.com">
-                           <font>
-                              <Font size="17.0" />
-                           </font>
-                        </Label>
-                        <Label text="Senha: hash123">
-                           <padding>
-                              <Insets left="50.0" />
-                           </padding>
-                           <font>
-                              <Font size="17.0" />
-                           </font>
-                        </Label>
-                     </children>
-                  </HBox>
-                  <Label text="Professor:">
-                     <padding>
-                        <Insets top="20.0" />
-                     </padding>
-                     <font>
-                        <Font size="17.0" />
-                     </font>
-                  </Label>
-                  <HBox>
-                     <children>
-                        <Label text="Usuario: julia@prof.com">
-                           <font>
-                              <Font size="17.0" />
-                           </font>
-                        </Label>
-                        <Label text="Senha: hash123">
-                           <padding>
-                              <Insets left="50.0" />
-                           </padding>
-                           <font>
-                              <Font size="17.0" />
-                           </font>
-                        </Label>
-                     </children>
-                  </HBox>
-               </children>
-            </VBox>
-         </children>
-      </AnchorPane>
-   </center>
-   <top>
-      <AnchorPane prefHeight="200.0" prefWidth="200.0" BorderPane.alignment="CENTER" />
-   </top>
-   <left>
-      <AnchorPane prefHeight="200.0" prefWidth="200.0" BorderPane.alignment="CENTER" />
-   </left>
-   <right>
-      <AnchorPane prefHeight="200.0" prefWidth="200.0" BorderPane.alignment="CENTER" />
-   </right>
-   <bottom>
-      <AnchorPane prefHeight="200.0" prefWidth="200.0" BorderPane.alignment="CENTER" />
-   </bottom>
-</BorderPane>
+<StackPane xmlns="http://javafx.com/javafx/21"
+           xmlns:fx="http://javafx.com/fxml/1"
+           fx:controller="org.example.demo3.controller.LoginController"
+           prefWidth="480" prefHeight="420">
+
+    <!-- PAINEL DE LOGIN (padrão) -->
+    <VBox fx:id="loginPane" alignment="CENTER" spacing="16" maxWidth="360">
+        <padding><Insets top="40" right="40" bottom="40" left="40"/></padding>
+
+        <Label text="SwiftPlan" style="-fx-font-size: 28px; -fx-font-weight: bold;"/>
+        <Label text="Sistema de Gestão e Planejamento Acadêmico"
+               style="-fx-font-size: 12px; -fx-text-fill: #7f8c8d;" wrapText="true"/>
+
+        <VBox spacing="4">
+            <Label text="E-mail"/>
+            <TextField fx:id="loginEmail" promptText="seu@email.com"/>
+            <Label fx:id="errLoginEmail" styleClass="error-label" visible="false" managed="false"/>
+        </VBox>
+
+        <VBox spacing="4">
+            <Label text="Senha"/>
+            <PasswordField fx:id="loginSenha" promptText="Sua senha"/>
+            <Label fx:id="errLoginSenha" styleClass="error-label" visible="false" managed="false"/>
+        </VBox>
+
+        <Label fx:id="errLoginGeral" styleClass="error-label" visible="false" managed="false"/>
+
+        <Button fx:id="btnLogin" text="Entrar" onAction="#handleLogin"
+                maxWidth="Infinity" defaultButton="true"
+                style="-fx-background-color: #2c3e50; -fx-text-fill: white;"/>
+    </VBox>
+
+    <!-- PAINEL DE PRIMEIRO ACESSO
+         Exibido automaticamente quando não há ADM no banco.
+         O controller alterna a visibilidade entre os dois painéis. -->
+    <VBox fx:id="primeiroAcessoPane" alignment="CENTER" spacing="16" maxWidth="360"
+          visible="false" managed="false">
+        <padding><Insets top="40" right="40" bottom="40" left="40"/></padding>
+
+        <Label text="Primeiro Acesso" style="-fx-font-size: 22px; -fx-font-weight: bold;"/>
+        <Label text="Nenhum administrador encontrado. Cadastre o primeiro ADM para continuar."
+               wrapText="true" style="-fx-font-size: 12px; -fx-text-fill: #7f8c8d;"/>
+
+        <VBox spacing="4">
+            <Label text="Nome *"/>
+            <TextField fx:id="admNome" promptText="Nome completo"/>
+            <Label fx:id="errAdmNome" styleClass="error-label" visible="false" managed="false"/>
+        </VBox>
+
+        <VBox spacing="4">
+            <Label text="E-mail *"/>
+            <TextField fx:id="admEmail" promptText="email@instituicao.edu.br"/>
+            <Label fx:id="errAdmEmail" styleClass="error-label" visible="false" managed="false"/>
+        </VBox>
+
+        <VBox spacing="4">
+            <Label text="Senha *"/>
+            <PasswordField fx:id="admSenha" promptText="Mínimo 6 caracteres"/>
+            <Label fx:id="errAdmSenha" styleClass="error-label" visible="false" managed="false"/>
+        </VBox>
+
+        <Button text="Cadastrar Administrador" onAction="#handleCadastrarPrimeiroAdm"
+                maxWidth="Infinity" defaultButton="true"
+                style="-fx-background-color: #27ae60; -fx-text-fill: white;"/>
+
+        <Label fx:id="feedbackPrimeiroAcesso" visible="false" managed="false" styleClass="feedback-label"/>
+    </VBox>
+
+</StackPane>

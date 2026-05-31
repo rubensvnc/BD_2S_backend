@@ -1,88 +1,115 @@
 package org.example.demo3.entity;
 
-import javafx.beans.property.*;
-import java.util.ArrayList;
-import java.util.List;
+import java.time.LocalDate;
 
 public class Tema {
-    private final IntegerProperty id = new SimpleIntegerProperty();
-    private final IntegerProperty disciplinaId = new SimpleIntegerProperty(); // Banco: disciplina_id
-    private final StringProperty nome = new SimpleStringProperty();
-    private final IntegerProperty prioridade = new SimpleIntegerProperty();
-    private final IntegerProperty qtdMinAulas = new SimpleIntegerProperty(1);
-    private final IntegerProperty qtdMaxAulas = new SimpleIntegerProperty(2);
-    private final BooleanProperty ehAvaliacao = new SimpleBooleanProperty(false); // Banco: eh_avaliacao
-    private final BooleanProperty ehOpcional = new SimpleBooleanProperty(false);   // Banco: eh_opcional
+    private Integer id_tema;
+    private Integer disciplina_id;
+    private Integer semestre_letivo_id;
+    private String nome;
+    private Integer eh_avaliacao;
+    private Integer qtd_min_aulas;
+    private Integer qtd_max_aulas;
+    private Integer prioridade;
+    private Integer eh_opcional;
+    private LocalDate deletado_em;
 
-    private String nomeDisciplina; // Auxiliar para o JOIN na TableView
-
-    //LISTA DE DEPENDENCIAS
-    private List<Tema> dependencias = new ArrayList<>();
-
-    public Tema() {}
-
-    public Tema(int id, String nome) {
-        setId(id);
-        setNome(nome);
+    public Tema() {
     }
 
-    //GETTERS E SETTERS
-
-    public int getId() { return id.get(); }
-    public void setId(int value) { id.set(value); }
-    public IntegerProperty idProperty() { return id; }
-
-    public int getDisciplinaId() { return disciplinaId.get(); }
-    public void setDisciplinaId(int value) { disciplinaId.set(value); }
-    public IntegerProperty disciplinaIdProperty() { return disciplinaId; }
-
-    public String getNome() { return nome.get(); }
-    public void setNome(String value) { nome.set(value); }
-    public StringProperty nomeProperty() { return nome; }
-
-    public int getPrioridade() { return prioridade.get(); }
-    public void setPrioridade(int value) { prioridade.set(value); }
-    public IntegerProperty prioridadeProperty() { return prioridade; }
-
-    public int getQtdMinAulas() { return qtdMinAulas.get(); }
-    public void setQtdMinAulas(int value) { qtdMinAulas.set(value); }
-    public IntegerProperty qtdMinAulasProperty() { return qtdMinAulas; }
-
-    public int getQtdMaxAulas() { return qtdMaxAulas.get(); }
-    public void setQtdMaxAulas(int value) { qtdMaxAulas.set(value); }
-    public IntegerProperty qtdMaxAulasProperty() { return qtdMaxAulas; }
-
-    public boolean isEhAvaliacao() { return ehAvaliacao.get(); }
-    public void setEhAvaliacao(boolean value) { ehAvaliacao.set(value); }
-    public BooleanProperty ehAvaliacaoProperty() { return ehAvaliacao; }
-
-    public boolean isEhOpcional() { return ehOpcional.get(); }
-    public void setEhOpcional(boolean value) { ehOpcional.set(value); }
-    public BooleanProperty ehOpcionalProperty() { return ehOpcional; }
-
-    //DEPENDENCIAS
-
-    public List<Tema> getDependencias() { return dependencias; }
-    public void setDependencias(List<Tema> dependencias) { this.dependencias = dependencias; }
-
-    public void adicionarDependencia(Tema tema) {
-        if (tema != null && tema.getId() != this.getId() && !this.dependencias.contains(tema)) {
-            this.dependencias.add(tema);
-        }
+    public Tema(Integer id_tema, Integer disciplina_id, Integer semestre_letivo_id, String nome,
+                Integer eh_avaliacao, Integer qtd_min_aulas, Integer qtd_max_aulas,
+                Integer prioridade, Integer eh_opcional, LocalDate deletado_em) {
+        this.id_tema = id_tema;
+        this.disciplina_id = disciplina_id;
+        this.semestre_letivo_id = semestre_letivo_id;
+        this.nome = nome;
+        this.eh_avaliacao = eh_avaliacao;
+        this.qtd_min_aulas = qtd_min_aulas;
+        this.qtd_max_aulas = qtd_max_aulas;
+        this.prioridade = prioridade;
+        this.eh_opcional = eh_opcional;
+        this.deletado_em = deletado_em;
     }
 
-    //CAMPO AUXILIAR PARA EXIBIÇÃO NA TABELA
-    public String getNomeDisciplina() { return nomeDisciplina; }
-    public void setNomeDisciplina(String nomeDisciplina) { this.nomeDisciplina = nomeDisciplina; }
+    // Getters e Setters
+    public Integer getId_tema() {
+        return id_tema;
+    }
 
-    @Override
-    public String toString() { return getNome(); }
+    public void setId_tema(Integer id_tema) {
+        this.id_tema = id_tema;
+    }
 
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        Tema tema = (Tema) o;
-        return getId() != 0 && getId() == tema.getId();
+    public Integer getDisciplina_id() {
+        return disciplina_id;
+    }
+
+    public void setDisciplina_id(Integer disciplina_id) {
+        this.disciplina_id = disciplina_id;
+    }
+
+    public Integer getSemestre_letivo_id() {
+        return semestre_letivo_id;
+    }
+
+    public void setSemestre_letivo_id(Integer semestre_letivo_id) {
+        this.semestre_letivo_id = semestre_letivo_id;
+    }
+
+    public String getNome() {
+        return nome;
+    }
+
+    public void setNome(String nome) {
+        this.nome = nome;
+    }
+
+    public Integer getEh_avaliacao() {
+        return eh_avaliacao;
+    }
+
+    public void setEh_avaliacao(Integer eh_avaliacao) {
+        this.eh_avaliacao = eh_avaliacao;
+    }
+
+    public Integer getQtd_min_aulas() {
+        return qtd_min_aulas;
+    }
+
+    public void setQtd_min_aulas(Integer qtd_min_aulas) {
+        this.qtd_min_aulas = qtd_min_aulas;
+    }
+
+    public Integer getQtd_max_aulas() {
+        return qtd_max_aulas;
+    }
+
+    public void setQtd_max_aulas(Integer qtd_max_aulas) {
+        this.qtd_max_aulas = qtd_max_aulas;
+    }
+
+    public Integer getPrioridade() {
+        return prioridade;
+    }
+
+    public void setPrioridade(Integer prioridade) {
+        this.prioridade = prioridade;
+    }
+
+    public Integer getEh_opcional() {
+        return eh_opcional;
+    }
+
+    public void setEh_opcional(Integer eh_opcional) {
+        this.eh_opcional = eh_opcional;
+    }
+
+    public LocalDate getDeletado_em() {
+        return deletado_em;
+    }
+
+    public void setDeletado_em(LocalDate deletado_em) {
+        this.deletado_em = deletado_em;
     }
 }

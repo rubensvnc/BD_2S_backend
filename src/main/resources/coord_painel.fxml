@@ -1,0 +1,230 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.ComboBox?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.ListView?>
+<?import javafx.scene.control.PasswordField?>
+<?import javafx.scene.control.ScrollPane?>
+<?import javafx.scene.control.Separator?>
+<?import javafx.scene.control.Spinner?>
+<?import javafx.scene.control.SplitPane?>
+<?import javafx.scene.control.Tab?>
+<?import javafx.scene.control.TabPane?>
+<?import javafx.scene.control.TableColumn?>
+<?import javafx.scene.control.TableView?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.control.TreeView?>
+<?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.GridPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.VBox?>
+
+<BorderPane xmlns="http://javafx.com/javafx/26" xmlns:fx="http://javafx.com/fxml/1" fx:controller="org.example.demo3.controller.CoordPainelController">
+
+    <top>
+        <Label style="-fx-font-size: 16px; -fx-font-weight: bold; -fx-padding: 12 16;" text="Painel do Coordenador" />
+    </top>
+
+    <center>
+        <TabPane tabClosingPolicy="UNAVAILABLE" fx:id="tabPanePrincipal">
+
+            <!-- ══════════════════════════════════════
+                 ABA 1 — DISCIPLINAS  (cobre seção 7.2)
+            ═══════════════════════════════════════ -->
+            <Tab text="📚 Disciplinas">
+                <SplitPane dividerPositions="0.56">
+
+                    <!-- Lista -->
+                    <VBox spacing="10">
+                        <padding><Insets bottom="12" left="14" right="8" top="12" /></padding>
+                        <HBox alignment="CENTER_LEFT" spacing="8">
+                            <Label style="-fx-font-weight: bold;" text="Disciplinas do Curso" HBox.hgrow="ALWAYS" />
+                            <Button onAction="#handleNovaDisciplina" style="-fx-background-color: #27ae60; -fx-text-fill: white;" text="+ Nova" />
+                        </HBox>
+                        <TableView fx:id="tabelaDisciplinas" onMouseClicked="#handleSelecionarDisciplina" VBox.vgrow="ALWAYS">
+                            <columns>
+                                <TableColumn fx:id="colDiscNome" prefWidth="190" text="Disciplina" />
+                                <TableColumn fx:id="colDiscSemCurso" prefWidth="90" text="Sem. Curso" />
+                                <TableColumn fx:id="colDiscCH" prefWidth="75" text="CH Mín." />
+                                <TableColumn fx:id="colDiscProf" prefWidth="150" text="Professor" />
+                                <TableColumn fx:id="colDiscAcoes" prefWidth="75" text="Ações" />
+                            </columns>
+                            <placeholder><Label text="Nenhuma disciplina cadastrada." /></placeholder>
+                        </TableView>
+                    </VBox>
+
+                    <!-- Formulário -->
+                    <VBox spacing="12">
+                        <padding><Insets bottom="12" left="8" right="14" top="12" /></padding>
+                        <Label fx:id="lblTituloFormDisc" style="-fx-font-weight: bold; -fx-font-size: 13px;" text="Nova Disciplina" />
+
+                        <VBox spacing="4">
+                            <Label text="Nome *" />
+                            <TextField fx:id="tfDiscNome" promptText="Ex.: Algoritmos e Lógica" />
+                            <Label fx:id="errDiscNome" managed="false" styleClass="error-label" visible="false" />
+                        </VBox>
+                        <HBox spacing="12">
+                            <VBox spacing="4" HBox.hgrow="ALWAYS">
+                                <Label text="Semestre do Curso *" />
+                                <ComboBox fx:id="cbDiscSemestreCurso" maxWidth="Infinity" />
+                            </VBox>
+                            <VBox spacing="4">
+                                <Label text="Carga Horária Mínima *" />
+                                <Spinner fx:id="spDiscCH" initialValue="80" max="999" min="1" prefWidth="100" />
+                            </VBox>
+                        </HBox>
+
+                        <HBox alignment="CENTER_RIGHT" spacing="8">
+                            <Button onAction="#handleLimparDisc" text="Limpar" />
+                            <Button onAction="#handleSalvarDisciplina" style="-fx-background-color: #2980b9; -fx-text-fill: white;" text="Salvar" />
+                        </HBox>
+                        <Label fx:id="lblFeedbackDisc" managed="false" styleClass="feedback-label" visible="false" />
+                    </VBox>
+                </SplitPane>
+            </Tab>
+
+            <!-- ══════════════════════════════════════
+                 ABA 2 — PROFESSORES  (cobre seção 7.3)
+            ═══════════════════════════════════════ -->
+            <Tab text="🧑‍🏫 Professores">
+                <SplitPane dividerPositions="0.56">
+
+                    <!-- Lista -->
+                    <VBox spacing="10">
+                        <padding><Insets bottom="12" left="14" right="8" top="12" /></padding>
+                        <HBox alignment="CENTER_LEFT" spacing="8">
+                            <Label style="-fx-font-weight: bold;" text="Professores do Curso" HBox.hgrow="ALWAYS" />
+                            <Button onAction="#handleNovoProfessor" style="-fx-background-color: #27ae60; -fx-text-fill: white;" text="+ Novo" />
+                        </HBox>
+                        <TableView fx:id="tabelaProfessores" onMouseClicked="#handleSelecionarProfessor" VBox.vgrow="ALWAYS">
+                            <columns>
+                                <TableColumn fx:id="colProfNome" prefWidth="200" text="Nome" />
+                                <TableColumn fx:id="colProfEmail" prefWidth="210" text="E-mail" />
+                                <TableColumn fx:id="colProfAcoes" prefWidth="75" text="Ações" />
+                            </columns>
+                            <placeholder><Label text="Nenhum professor cadastrado." /></placeholder>
+                        </TableView>
+                    </VBox>
+
+                    <!-- Formulário -->
+                    <VBox spacing="12">
+                        <padding><Insets bottom="12" left="8" right="14" top="12" /></padding>
+                        <Label fx:id="lblTituloFormProf" style="-fx-font-weight: bold; -fx-font-size: 13px;" text="Novo Professor" />
+
+                        <!-- Atalho: atribuir o próprio coordenador como professor -->
+                        <Button fx:id="btnAtribuirMesmo" maxWidth="Infinity" onAction="#handleAtribuirMesmo" style="-fx-background-color: #f39c12; -fx-text-fill: white;" text="👤 Atribuir a mim mesmo (sem criar novo usuário)" />
+                        <Separator />
+
+                        <VBox spacing="4">
+                            <Label text="Nome *" />
+                            <TextField fx:id="tfProfNome" promptText="Nome completo" />
+                            <Label fx:id="errProfNome" managed="false" styleClass="error-label" visible="false" />
+                        </VBox>
+                        <VBox spacing="4">
+                            <Label text="E-mail *" />
+                            <!-- Verificação de duplicata em tempo real (onKeyReleased) -->
+                            <TextField fx:id="tfProfEmail" onKeyReleased="#handleVerificarEmailProf" promptText="email@inst.edu.br" />
+                            <Label fx:id="avisoEmailDup" managed="false" style="-fx-text-fill: #e67e22;" text="⚠ Já existe um usuário com este e-mail." visible="false" />
+                            <Label fx:id="errProfEmail" managed="false" styleClass="error-label" visible="false" />
+                        </VBox>
+                        <VBox spacing="4">
+                            <Label text="Senha *" />
+                            <PasswordField fx:id="pfProfSenha" promptText="Mínimo 6 caracteres" />
+                            <Label fx:id="errProfSenha" managed="false" styleClass="error-label" visible="false" />
+                        </VBox>
+
+                        <HBox alignment="CENTER_RIGHT" spacing="8">
+                            <Button onAction="#handleLimparProf" text="Limpar" />
+                            <Button onAction="#handleSalvarProfessor" style="-fx-background-color: #2980b9; -fx-text-fill: white;" text="Salvar" />
+                        </HBox>
+                        <Label fx:id="lblFeedbackProf" managed="false" styleClass="feedback-label" visible="false" />
+                    </VBox>
+                </SplitPane>
+            </Tab>
+
+            <!-- ══════════════════════════════════════
+                 ABA 3 — ATRIBUIÇÕES  (cobre seção 7.4)
+            ═══════════════════════════════════════ -->
+            <Tab text="📋 Atribuições" fx:id="tabAtribuicoes">
+                <VBox spacing="12">
+                    <padding><Insets bottom="12" left="16" right="16" top="12" /></padding>
+
+                    <!-- Seletores de professor e disciplina -->
+                    <HBox alignment="CENTER_LEFT" spacing="20">
+                        <VBox spacing="4">
+                            <Label text="Professor *" />
+                            <ComboBox fx:id="cbAtribProf" onAction="#handleAtribContextChange" prefWidth="230" promptText="Selecione o professor" />
+                        </VBox>
+                        <VBox spacing="4">
+                            <Label text="Disciplina *" />
+                            <ComboBox fx:id="cbAtribDisc" onAction="#handleAtribContextChange" prefWidth="230" promptText="Selecione a disciplina" />
+                        </VBox>
+                    </HBox>
+
+                    <Label style="-fx-text-fill: #7f8c8d; -fx-font-size: 11px;" text="Marque os horários em que o professor leciona esta disciplina. Células em vermelho indicam conflito com outra atribuição (passe o mouse para detalhes)." wrapText="true" />
+
+                    <!-- Grade semanal gerada dinamicamente pelo controller via GridPane:
+                         Linha 0    = cabeçalhos Seg–Sáb
+                         Linhas 1..N = uma por horário de aula do curso
+                         Cada célula = CheckBox; células com conflito recebem estilo "conflict-cell" -->
+                    <ScrollPane fitToWidth="true" VBox.vgrow="ALWAYS">
+                        <GridPane fx:id="gradeAtribuicao" hgap="5" vgap="5">
+                            <padding><Insets bottom="4" left="4" right="4" top="4" /></padding>
+                        </GridPane>
+                    </ScrollPane>
+
+                    <!-- Mensagem de conflito detalhada -->
+                    <Label fx:id="lblConflito" managed="false" style="-fx-text-fill: #e74c3c; -fx-font-weight: bold;" visible="false" wrapText="true" />
+
+                    <HBox alignment="CENTER_RIGHT" spacing="8">
+                        <Button onAction="#handleLimparGrade" text="Limpar Seleção" />
+                        <Label fx:id="lblFeedbackAtrib" managed="false" styleClass="feedback-label" visible="false" />
+                        <!-- Botão habilitado somente quando não há conflitos (binding no controller) -->
+                        <Button fx:id="btnSalvarAtrib" disable="true" onAction="#handleSalvarAtribuicao" style="-fx-background-color: #27ae60; -fx-text-fill: white;" text="💾 Salvar Atribuição" />
+                    </HBox>
+                </VBox>
+            </Tab>
+
+            <!-- ═══════════════════════════════════════════════
+                 ABA 4 — PLANEJAMENTOS DOS PROFESSORES (seção 7.5)
+                 Modo leitura: coordenador visualiza tudo, não edita
+            ════════════════════════════════════════════════ -->
+            <Tab text="📊 Planejamentos dos Professores">
+                <SplitPane dividerPositions="0.28">
+
+                    <!-- Árvore: Professor → Disciplinas -->
+                    <VBox spacing="8">
+                        <padding><Insets bottom="12" left="14" right="8" top="12" /></padding>
+                        <Label style="-fx-font-weight: bold;" text="Professores" />
+                  <ListView fx:id="listaProfessoresEsquerda" />
+                    </VBox>
+
+                    <!-- Planejamento + Estatísticas do item selecionado -->
+                    <VBox spacing="8">
+                        <padding><Insets bottom="12" left="8" right="14" top="12" /></padding>
+                        <Label fx:id="lblTituloCoordVisor" style="-fx-font-weight: bold;" text="Selecione um professor e disciplina na árvore" />
+                        <TabPane fx:id="tabVisorCoord" tabClosingPolicy="UNAVAILABLE" VBox.vgrow="ALWAYS">
+                            <Tab text="Planejamento">
+                                <!-- Mesma estrutura de TreeView do módulo professor, somente leitura -->
+                                <TreeView fx:id="treePlanoCoord" editable="false" showRoot="false" />
+                            </Tab>
+                            <Tab text="Estatísticas">
+                                <ScrollPane fitToWidth="true">
+                                    <VBox fx:id="painelEstatCoord" spacing="10">
+                                        <padding><Insets bottom="8" left="8" right="8" top="8" /></padding>
+                                        <!-- Labels e ProgressBar preenchidos pelo controller -->
+                                    </VBox>
+                                </ScrollPane>
+                            </Tab>
+                        </TabPane>
+                    </VBox>
+
+                </SplitPane>
+            </Tab>
+
+        </TabPane>
+    </center>
+
+</BorderPane>

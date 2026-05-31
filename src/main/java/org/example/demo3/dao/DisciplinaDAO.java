@@ -1,115 +1,324 @@
 package org.example.demo3.dao;
 
 import org.example.demo3.DatabaseConnection;
-import org.example.demo3.entity.Tema;
+import org.example.demo3.entity.Disciplina;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
+import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 
 public class DisciplinaDAO {
 
-    public List<Tema> listarTemasPorProfessorECurso(int idUsuario, int idCurso, int idSemestre) {
-        List<Tema> lista = new ArrayList<>();
+    public Disciplina recuperarDisciplinaPorId(Integer id) throws SQLException{
+        String sql = "SELECT * FROM disciplina WHERE id_disciplina = ?";
 
-        // SQL utilizando GROUP_CONCAT para as dependências
-        String sql = "SELECT " +
-                "  t.id_tema, t.nome, t.prioridade, t.qtd_min_aulas, t.qtd_max_aulas, " +
-                "  t.eh_avaliacao, t.eh_opcional, t.disciplina_id, " +
-                "  d.nome AS nome_disciplina, " +
-                "  (SELECT GROUP_CONCAT(tdep.nome SEPARATOR ', ') " +
-                "   FROM tema_dependencia td " +
-                "   JOIN tema tdep ON td.tema_anterior = tdep.id_tema " +
-                "   WHERE td.tema_posterior = t.id_tema) AS nomes_dependencias " +
-                "FROM tema t " +
-                "INNER JOIN disciplina d ON t.disciplina_id = d.id_disciplina " +
-                "INNER JOIN atribuicao a ON d.id_disciplina = a.disciplina_id " +
-                "WHERE a.usuario_id = ? " +
-                "  AND d.curso_id = ? " +
-                "  AND a.semestre_id = ? " +
-                "ORDER BY d.nome, t.prioridade";
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql);
+             ) {
+
+            stmt.setInt(1, id);
+            ResultSet rs = stmt.executeQuery();
+            if (rs.next()) {
+                Disciplina d = new Disciplina();
+                d.setId_disciplina(rs.getInt("id_disciplina"));
+                d.setCurso_id(rs.getInt("curso_id"));
+                d.setNome(rs.getString("nome"));
+                d.setSemestre_curso(rs.getInt("semestre_curso"));
+                d.setCarga_horaria_minima(rs.getInt("carga_horaria_minima"));
+
+                Timestamp deletadoEm = rs.getTimestamp("deletado_em");
+                if (deletadoEm != null) d.setDeletado_em(deletadoEm.toLocalDateTime());
+
+                return d;
+            }
+
+        } catch (SQLException e) {
+            System.out.println("Erro ao listar disciplinas: " + e.getMessage());
+        }
+
+        return null;
+    }
+
+    // INSERÇÃO (SEM RETORNO DO ID)
+    public void inserirDisciplina(Disciplina disciplina) {
+        String sql = """
+            INSERT INTO disciplina (
+                curso_id,
+                nome,
+                semestre_curso,
+                carga_horaria_minima,
+                deletado_em
+            ) VALUES (?, ?, ?, ?, ?)
+            """;
 
         try (Connection conn = DatabaseConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
 
-            stmt.setInt(1, idUsuario);
-            stmt.setInt(2, idCurso);
-            stmt.setInt(3, idSemestre);
+            stmt.setInt(1, disciplina.getCurso_id());
+            stmt.setString(2, disciplina.getNome());
+            stmt.setInt(3, disciplina.getSemestre_curso());
+            stmt.setInt(4, disciplina.getCarga_horaria_minima());
+            stmt.setTimestamp(5, disciplina.getDeletado_em() != null
+                    ? Timestamp.valueOf(disciplina.getDeletado_em()) : null);
 
-            ResultSet rs = stmt.executeQuery();
+            stmt.executeUpdate();
+            System.out.println("Disciplina inserida com sucesso!");
+
+        } catch (SQLException e) {
+            System.out.println("Erro ao inserir disciplina: " + e.getMessage());
+        }
+    }
+
+
+    // INSERÇÃO (RETORNA O ID DA DISCIPLINA INSERIDA)
+    public Integer inserirDisciplinaRetornandoId(Disciplina disciplina) {
+        String sql = """
+            INSERT INTO disciplina (
+                curso_id,
+                nome,
+                semestre_curso,
+                carga_horaria_minima,
+                deletado_em
+            ) VALUES (?, ?, ?, ?, ?)
+            """;
+
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+
+            stmt.setInt(1, disciplina.getCurso_id());
+            stmt.setString(2, disciplina.getNome());
+            stmt.setInt(3, disciplina.getSemestre_curso());
+            stmt.setInt(4, disciplina.getCarga_horaria_minima());
+            stmt.setTimestamp(5, disciplina.getDeletado_em() != null
+                    ? Timestamp.valueOf(disciplina.getDeletado_em()) : null);
+
+            stmt.executeUpdate();
+
+            try (ResultSet rs = stmt.getGeneratedKeys()) {
+                if (rs.next()) return rs.getInt(1);
+            }
+
+        } catch (SQLException e) {
+            System.out.println("Erro ao inserir disciplina: " + e.getMessage());
+        }
+        return null;
+    }
+
+    // LISTA AS DISCIPLINAS
+    public List<Disciplina> listarDisciplinas() {
+        List<Disciplina> disciplinas = new ArrayList<>();
+        String sql = "SELECT * FROM disciplina WHERE deletado_em IS NULL";
+
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql);
+             ResultSet rs = stmt.executeQuery()) {
 
             while (rs.next()) {
-                Tema tema = new Tema();
-                tema.setId(rs.getInt("id_tema"));
-                tema.setNome(rs.getString("nome"));
-                tema.setPrioridade(rs.getInt("prioridade"));
-                tema.setQtdMinAulas(rs.getInt("qtd_min_aulas"));
-                tema.setQtdMaxAulas(rs.getInt("qtd_max_aulas"));
-                tema.setEhAvaliacao(rs.getBoolean("eh_avaliacao"));
-                tema.setEhOpcional(rs.getBoolean("eh_opcional"));
-                tema.setDisciplinaId(rs.getInt("disciplina_id"));
+                Disciplina d = new Disciplina();
+                d.setId_disciplina(rs.getInt("id_disciplina"));
+                d.setCurso_id(rs.getInt("curso_id"));
+                d.setNome(rs.getString("nome"));
+                d.setSemestre_curso(rs.getInt("semestre_curso"));
+                d.setCarga_horaria_minima(rs.getInt("carga_horaria_minima"));
 
-                // Preenche o campo auxiliar de nome da disciplina
-                tema.setNomeDisciplina(rs.getString("nome_disciplina"));
+                Timestamp deletadoEm = rs.getTimestamp("deletado_em");
+                if (deletadoEm != null) d.setDeletado_em(deletadoEm.toLocalDateTime());
 
-                // Como sua TableView precisa de uma String na coluna Dependências,
-                // vamos usar uma técnica: criar um objeto fictício na lista ou
-                // simplesmente passar a String concatenada para um campo auxiliar se preferir.
-                // Aqui, vou sugerir usar o campo "dependencias" do SQL diretamente no Controller.
-                String deps = rs.getString("nomes_dependencias");
-                if (deps != null) {
-                    // Adicionamos um "Tema fake" só com o nome concatenado para o toString funcionar
-                    // OU lidamos com isso diretamente na TableColumn (melhor prática).
-                    tema.adicionarDependencia(new Tema(0, deps));
-                }
-
-                lista.add(tema);
+                disciplinas.add(d);
             }
+
         } catch (SQLException e) {
-            e.printStackTrace();
+            System.out.println("Erro ao listar disciplinas: " + e.getMessage());
         }
+
+        return disciplinas;
+    }
+
+
+    // LISTAGEM — disciplinas de um curso/professor/semestre específico
+    public List<Disciplina> listarDisciplinasCurso(int professorId, int ano, int semestreAno, Integer id_curso) throws SQLException {
+        String sql = """
+            SELECT DISTINCT d.id_disciplina, d.semestre_curso, d.nome
+            FROM atribuicao_professor AS ap
+            INNER JOIN semestre_letivo AS sl ON sl.id_semestre_letivo = ap.semestre_letivo_id
+            INNER JOIN disciplina AS d ON ap.disciplina_id = d.id_disciplina
+            INNER JOIN curso AS c ON d.curso_id = c.id_curso
+            WHERE ap.professor_id = ?
+              AND sl.ano = ?
+              AND sl.numero_semestre = ?
+              AND c.id_curso = ?
+            """;
+
+        List<Disciplina> lista = new ArrayList<>();
+
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            ps.setInt(1, professorId);
+            ps.setInt(2, ano);
+            ps.setInt(3, semestreAno);
+            ps.setInt(4, id_curso);
+
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    Disciplina d = new Disciplina();
+                    d.setId_disciplina(rs.getInt("id_disciplina"));
+                    d.setSemestre_curso(rs.getInt("semestre_curso"));
+                    d.setNome(rs.getString("nome"));
+                    lista.add(d);
+                }
+            }
+
+        } catch (SQLException e) {
+            System.err.println("Erro ao listar disciplinas do curso: " + e.getMessage());
+            throw e;
+        }
+
         return lista;
     }
 
+    // ATUALIZAÇÃO
+    public void atualizarDisciplina(Disciplina disciplina) {
+        String sql = """
+            UPDATE disciplina
+            SET curso_id             = ?,
+                nome                 = ?,
+                semestre_curso       = ?,
+                carga_horaria_minima = ?,
+                deletado_em          = ?
+            WHERE id_disciplina = ?
+            """;
 
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
 
+            stmt.setInt(1, disciplina.getCurso_id());
+            stmt.setString(2, disciplina.getNome());
+            stmt.setInt(3, disciplina.getSemestre_curso());
+            stmt.setInt(4, disciplina.getCarga_horaria_minima());
+            stmt.setTimestamp(5, disciplina.getDeletado_em() != null
+                    ? Timestamp.valueOf(disciplina.getDeletado_em()) : null);
+            stmt.setInt(6, disciplina.getId_disciplina());
 
+            stmt.executeUpdate();
+            System.out.println("Disciplina updated com sucesso!");
 
-
-
-
-    public List<String> listarSemestresProfessorCurso(int idProfessor, int idCurso) throws SQLException {
-        String sql = "SELECT DISTINCT d.semestre " +
-                "FROM disciplina d " +
-                "JOIN atribuicao a ON d.id_disciplina = a.disciplina_id " +
-                "WHERE a.usuario_id = ? " +
-                "AND d.curso_id = ?";
-
-        Connection conn = null;
-        PreparedStatement ps = null;
-        ResultSet rs = null;
-        List<String> semestres = new ArrayList<>();
-
-        try {
-            conn = DatabaseConnection.getConnection();
-            ps = conn.prepareStatement(sql);
-            ps.setInt(1, idProfessor);
-            ps.setInt(2, idCurso);
-            rs = ps.executeQuery();
-
-            while (rs.next()) {
-                semestres.add(rs.getString("semestre"));
-            }
         } catch (SQLException e) {
-            System.err.println("Erro ao listar semestres: " + e.getMessage());
-            throw e;
-        } finally {
-            DatabaseConnection.closeConnection();
+            System.out.println("Erro ao atualizar disciplina: " + e.getMessage());
         }
-        return semestres;
     }
 
+    // EXCLUSÃO — soft delete
+    public void excluirDisciplina(Integer idDisciplina) {
+        String sql = """
+            UPDATE disciplina
+            SET deletado_em = CURRENT_DATE
+            WHERE id_disciplina = ?
+            """;
+
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            stmt.setInt(1, idDisciplina);
+            stmt.executeUpdate();
+            System.out.println("Disciplina removida com sucesso!");
+
+        } catch (SQLException e) {
+            System.out.println("Erro ao remover disciplina: " + e.getMessage());
+        }
+    }
+
+
+    public int descobrirIdDisciplinaPorNome(String nomeDisciplina) throws SQLException {
+        String sql = "SELECT id_disciplina FROM disciplina WHERE nome = ? AND deletado_em IS NULL";
+
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            ps.setString(1, nomeDisciplina);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getInt("id_disciplina");
+                }
+            }
+        } catch (SQLException e) {
+            System.err.println("Erro ao descobrir ID da disciplina por nome: " + e.getMessage());
+            throw e;
+        }
+        return 0;
+    }
+
+    public List<Disciplina> listarDisciplinasPorCurso(Integer cursoId) throws SQLException {
+        String sql = """
+        SELECT id_disciplina, curso_id, nome, semestre_curso, carga_horaria_minima
+        FROM disciplina
+        WHERE curso_id = ? AND deletado_em IS NULL
+        ORDER BY semestre_curso, nome
+        """;
+
+        List<Disciplina> lista = new ArrayList<>();
+
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            ps.setInt(1, cursoId);
+
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    Disciplina d = new Disciplina();
+                    d.setId_disciplina(rs.getInt("id_disciplina"));
+                    d.setCurso_id(rs.getInt("curso_id"));
+                    d.setNome(rs.getString("nome"));
+                    d.setSemestre_curso(rs.getInt("semestre_curso"));
+                    d.setCarga_horaria_minima(rs.getInt("carga_horaria_minima"));
+                    lista.add(d);
+                }
+            }
+
+        } catch (SQLException e) {
+            System.err.println("Erro ao listar disciplinas por curso: " + e.getMessage());
+            throw e;
+        }
+
+        return lista;
+    }
+
+    public List<Disciplina> listarDisciplinasProfessor(Integer coord_id, Integer id_usuario)
+        throws SQLException{
+
+        String sql = """
+        SELECT DISTINCT d.* FROM usuario u INNER JOIN 
+        atribuicao_professor ap ON professor_id = u.id_usuario INNER JOIN 
+        disciplina d ON d.id_disciplina = ap.disciplina_id INNER JOIN 
+        curso c ON c.id_curso = d.curso_id 
+        WHERE c.coordenador_id = ? AND u.id_usuario = ? AND d.deletado_em IS NULL;
+        """;
+
+        List<Disciplina> lista = new ArrayList<>();
+
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            ps.setInt(1, coord_id);
+            ps.setInt(2, id_usuario);
+
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    Disciplina d = new Disciplina();
+                    d.setId_disciplina(rs.getInt("d.id_disciplina"));
+                    d.setCurso_id(rs.getInt("d.curso_id"));
+                    d.setNome(rs.getString("d.nome"));
+                    d.setSemestre_curso(rs.getInt("d.semestre_curso"));
+                    d.setCarga_horaria_minima(rs.getInt("d.carga_horaria_minima"));
+                    lista.add(d);
+                }
+            }
+
+        } catch (SQLException e) {
+            System.err.println("Erro ao listar disciplinas por curso: " + e.getMessage());
+            throw e;
+        }
+
+        return lista;
+    }
 }
