@@ -98,6 +98,8 @@ public class CoordPainelController {
     private ProgressBar progressConclusao;
     private Label lblPercentual;
     private PieChart chartStatusAulas;
+    private Label lblAvisoCargaInsuficiente;
+    private Label lblLegendaVermelho;
 
     // ════════════════════════════════════════════════════════════════════════
     // DAOs
@@ -1074,6 +1076,12 @@ public class CoordPainelController {
                         for (Node node : vboxEsquerdo.getChildren()) {
                             if (node instanceof ListView) {
                                 this.listaProfessoresEsquerda = (ListView<Usuario>) node;
+
+                                lblLegendaVermelho = new Label(
+                                        "Os nomes em vermelho indicam que o professor ainda não gerou o planejamento.");
+                                lblLegendaVermelho.setStyle("-fx-text-fill: red; -fx-font-size: 11px; -fx-wrap-text: true;");
+                                vboxEsquerdo.getChildren().add(lblLegendaVermelho);
+
                                 break;
                             }
                         }
@@ -1108,7 +1116,14 @@ public class CoordPainelController {
                         new Label("Progresso Realizado:"), lblPercentual, progressConclusao);
                 progressConclusao.setPrefWidth(200);
 
-                painelEstatCoord.getChildren().addAll(grid, new Separator(), progressoBox, chartStatusAulas);
+                lblAvisoCargaInsuficiente = new Label(
+                        "Aulas insuficientes para preencher a carga horária! Adicione mais temas.");
+                lblAvisoCargaInsuficiente.setStyle("-fx-text-fill: red; -fx-font-weight: bold;");
+                lblAvisoCargaInsuficiente.setVisible(false);
+                lblAvisoCargaInsuficiente.setManaged(false);
+
+                painelEstatCoord.getChildren().addAll(grid, new Separator(), progressoBox,
+                        lblAvisoCargaInsuficiente, chartStatusAulas);
             }
         } catch (Exception e) {
             System.err.println("Aviso: Falha na varredura de componentes: " + e.getMessage());
@@ -1133,7 +1148,18 @@ public class CoordPainelController {
                 @Override
                 protected void updateItem(Usuario item, boolean empty) {
                     super.updateItem(item, empty);
-                    setText(empty || item == null ? null : item.getEmail());
+                    if (empty || item == null) {
+                        setText(null);
+                        setStyle("");
+                        return;
+                    }
+
+                    setText(item.getEmail());
+
+                    boolean temPlanejamento = planejamentoDAO.professorTemPlanejamento(
+                            item.getId_usuario(), idSemestreLetivoAtual);
+
+                    setStyle(temPlanejamento ? "" : "-fx-text-fill: red; -fx-font-weight: bold;");
                 }
             });
 
@@ -1292,6 +1318,12 @@ public class CoordPainelController {
             this.cargaMinima.set(chMinima);
             this.totalTemas.set(totalT);
             this.percentualConclusao.set((chMinima > 0) ? (double) ministradas / chMinima : 0.0);
+
+            if (lblAvisoCargaInsuficiente != null) {
+                boolean insuficiente = chMinima > 0 && totalAulas < chMinima;
+                lblAvisoCargaInsuficiente.setVisible(insuficiente);
+                lblAvisoCargaInsuficiente.setManaged(insuficiente);
+            }
 
             if (chartStatusAulas != null) {
                 ObservableList<PieChart.Data> fatias = FXCollections.observableArrayList();
