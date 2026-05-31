@@ -335,4 +335,15 @@ public class UsuarioDAO {
         }
     }
 
+    public void restaurarUsuario(Integer idUsuario) {
+        String sql = "UPDATE usuario SET deletado_em = NULL WHERE id_usuario = ?";
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, idUsuario);
+            ps.executeUpdate();
+        } catch (SQLException e) {
+            System.err.println("Erro ao restaurar usuário: " + e.getMessage());
+        }
+    }
+
 }
