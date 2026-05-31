@@ -205,6 +205,42 @@ public class AtribuicaoHorarioDAO {
         return null;
     }
 
+    public String buscarConflitoParaProfessor(int professorId, int semestreLetivoId,
+                                              int diaSemana, int horarioCursoId,
+                                              int excluirAtribuicaoId) throws SQLException {
+        String sql = """
+            SELECT d.nome AS nome_disciplina
+            FROM atribuicao_horario ah
+            INNER JOIN atribuicao_professor ap
+                    ON ap.id_atribuicao_professor = ah.atribuicao_id
+            INNER JOIN disciplina d
+                    ON d.id_disciplina = ap.disciplina_id
+            WHERE ap.professor_id       = ?
+              AND ap.semestre_letivo_id = ?
+              AND ah.dia_semana         = ?
+              AND ah.horario_curso_id   = ?
+              AND ah.atribuicao_id     != ?
+            LIMIT 1
+            """;
+
+        try (Connection con = DatabaseConnection.getConnection();
+             PreparedStatement ps = con.prepareStatement(sql)) {
+
+            ps.setInt(1, professorId);
+            ps.setInt(2, semestreLetivoId);
+            ps.setInt(3, diaSemana);
+            ps.setInt(4, horarioCursoId);
+            ps.setInt(5, excluirAtribuicaoId);
+
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getString("nome_disciplina");
+                }
+            }
+        }
+        return null;
+    }
+
     public void excluirPorAtribuicao(int atribuicaoId) throws SQLException {
         String sql = "DELETE FROM atribuicao_horario WHERE atribuicao_id = ?";
 
