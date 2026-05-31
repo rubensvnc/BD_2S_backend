@@ -244,6 +244,8 @@ public class ProfTemasController {
 
             carregarTemas();
             atualizarPainelDependencias();
+            limparFormulario();
+            temaSelecionado = null;
 
         } catch (Exception e) {
             lblFeedbackTema.setText("Erro ao salvar tema.");
