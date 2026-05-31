@@ -1,0 +1,20 @@
+/* Cor do botão quando NÃO está selecionado */
+.toggle-button {
+    -fx-background-color: #34495e;
+    -fx-text-fill: #bdc3c7;
+    -fx-background-radius: 5;
+}
+
+/* Cor do botão quando ESTÁ selecionado */
+.toggle-button:selected {
+    -fx-background-color: #3498db; /* Azul vibrante */
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+    /* Adiciona uma sombra interna para parecer pressionado */
+    -fx-effect: innershadow(three-pass-box, rgba(0,0,0,0.7), 5, 0, 0, 1);
+}
+
+/* Efeito ao passar o mouse */
+.toggle-button:hover {
+    -fx-background-color: #4e6a85;
+}
