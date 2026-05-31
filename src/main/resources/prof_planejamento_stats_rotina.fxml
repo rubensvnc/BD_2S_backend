@@ -12,9 +12,11 @@
 <?import javafx.scene.control.TitledPane?>
 <?import javafx.scene.control.TreeView?>
 <?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.ColumnConstraints?>
 <?import javafx.scene.layout.GridPane?>
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.Region?>
+<?import javafx.scene.layout.RowConstraints?>
 <?import javafx.scene.layout.StackPane?>
 <?import javafx.scene.layout.VBox?>
 
@@ -38,6 +40,7 @@
                             <children>
                                 <VBox spacing="10.0" HBox.hgrow="ALWAYS">
                                     <children>
+                                        <Label fx:id="lblAvisoCargaInsuficiente" managed="false" style="-fx-text-fill: red; -fx-font-weight: bold;" text="Aulas insuficientes para preencher a carga horária! Adicione mais temas." visible="false" />
                                         <TitledPane animated="false" text="🔊 Cancelamentos efetuados pela Secretaria" textFill="#c0392b" />
                                         <StackPane VBox.vgrow="ALWAYS">
                                             <children>
@@ -89,6 +92,14 @@
                                                 <javafx.scene.layout.ColumnConstraints minWidth="150.0" />
                                                 <javafx.scene.layout.ColumnConstraints hgrow="ALWAYS" />
                                             </columnConstraints>
+                                            <rowConstraints>
+                                                <RowConstraints />
+                                                <RowConstraints />
+                                                <RowConstraints />
+                                                <RowConstraints />
+                                                <RowConstraints />
+                                                <RowConstraints />
+                                            </rowConstraints>
                                         </GridPane>
                                         <PieChart fx:id="chartStatusAulas" labelsVisible="false" legendSide="BOTTOM" prefHeight="220.0" />
                                     </children>
