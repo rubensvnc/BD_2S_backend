@@ -172,56 +172,25 @@ public class AtribuicaoHorarioDAO {
         return lista;
     }
 
-    public String buscarConflito(int semestreLetivoId, int diaSemana,
-                                  int horarioCursoId, int excluirAtribuicaoId) throws SQLException {
+
+    // Em AtribuicaoHorarioDAO — substitui buscarConflito e existeConflito
+    public String buscarConflitoParaProfessor(int professorId, int semestreLetivoId, int diaSemana, int numeroOrdem, int excluirAtribuicaoId) throws SQLException {
         String sql = """
-                SELECT u.nome
-                FROM atribuicao_horario ah
-                INNER JOIN atribuicao_professor ap
-                        ON ap.id_atribuicao_professor = ah.atribuicao_id
-                INNER JOIN usuario u
-                        ON u.id_usuario = ap.professor_id
-                WHERE ap.semestre_letivo_id = ?
-                  AND ah.dia_semana          = ?
-                  AND ah.horario_curso_id    = ?
-                  AND ah.atribuicao_id      != ?
-                LIMIT 1
-                """;
-
-        try (Connection con = DatabaseConnection.getConnection();
-             PreparedStatement ps = con.prepareStatement(sql)) {
-
-            ps.setInt(1, semestreLetivoId);
-            ps.setInt(2, diaSemana);
-            ps.setInt(3, horarioCursoId);
-            ps.setInt(4, excluirAtribuicaoId);
-
-            try (ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) {
-                    return rs.getString("nome");
-                }
-            }
-        }
-        return null;
-    }
-
-    public String buscarConflitoParaProfessor(int professorId, int semestreLetivoId,
-                                              int diaSemana, int horarioCursoId,
-                                              int excluirAtribuicaoId) throws SQLException {
-        String sql = """
-            SELECT d.nome AS nome_disciplina
-            FROM atribuicao_horario ah
-            INNER JOIN atribuicao_professor ap
-                    ON ap.id_atribuicao_professor = ah.atribuicao_id
-            INNER JOIN disciplina d
-                    ON d.id_disciplina = ap.disciplina_id
-            WHERE ap.professor_id       = ?
-              AND ap.semestre_letivo_id = ?
-              AND ah.dia_semana         = ?
-              AND ah.horario_curso_id   = ?
-              AND ah.atribuicao_id     != ?
-            LIMIT 1
-            """;
+        SELECT d.nome AS nome_disciplina
+        FROM atribuicao_horario ah
+        INNER JOIN atribuicao_professor ap
+                ON ap.id_atribuicao_professor = ah.atribuicao_id
+        INNER JOIN disciplina d
+                ON d.id_disciplina = ap.disciplina_id
+        INNER JOIN horario_curso hc
+                ON hc.id_horario_curso = ah.horario_curso_id
+        WHERE ap.professor_id       = ?
+          AND ap.semestre_letivo_id = ?
+          AND ah.dia_semana         = ?
+          AND hc.numero_ordem       = ?
+          AND ah.atribuicao_id     != ?
+        LIMIT 1
+        """;
 
         try (Connection con = DatabaseConnection.getConnection();
              PreparedStatement ps = con.prepareStatement(sql)) {
@@ -229,7 +198,7 @@ public class AtribuicaoHorarioDAO {
             ps.setInt(1, professorId);
             ps.setInt(2, semestreLetivoId);
             ps.setInt(3, diaSemana);
-            ps.setInt(4, horarioCursoId);
+            ps.setInt(4, numeroOrdem);
             ps.setInt(5, excluirAtribuicaoId);
 
             try (ResultSet rs = ps.executeQuery()) {
