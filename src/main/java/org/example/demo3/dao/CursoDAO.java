@@ -234,4 +234,31 @@ public class CursoDAO {
         }
         return cursos;
     }
+
+
+    public List<AdmCursoExibicao> listarTodosCursosDTO() throws SQLException {
+        String sql = """
+        SELECT c.nome, c.turno, c.qtd_semestres, u.email
+        FROM curso c
+        LEFT JOIN usuario u ON u.id_usuario = c.coordenador_id
+        WHERE c.deletado_em IS NULL
+        ORDER BY c.id_curso ASC
+        """;
+
+        List<AdmCursoExibicao> lista = new ArrayList<>();
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+            while (rs.next()) {
+                lista.add(new AdmCursoExibicao(
+                        rs.getString("nome"),
+                        rs.getString("turno"),
+                        rs.getInt("qtd_semestres"),
+                        rs.getString("email")   // NULL vira null automaticamente
+                ));
+            }
+        }
+        return lista;
+    }
+
 }
