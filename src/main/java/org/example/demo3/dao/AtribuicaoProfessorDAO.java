@@ -231,4 +231,24 @@ public class AtribuicaoProfessorDAO {
         }
         return usuarios;
     }
+
+    public String buscarNomeProfessorPorDisciplina(int disciplinaId, int semestreLetivoId) throws SQLException {
+        String sql = """
+            SELECT u.nome
+            FROM atribuicao_professor ap
+            JOIN usuario u ON u.id_usuario = ap.professor_id
+            WHERE ap.disciplina_id = ? AND ap.semestre_letivo_id = ?
+            """;
+
+        try (Connection con = DatabaseConnection.getConnection();
+             PreparedStatement ps = con.prepareStatement(sql)) {
+
+            ps.setInt(1, disciplinaId);
+            ps.setInt(2, semestreLetivoId);
+
+            try (ResultSet rs = ps.executeQuery()) {
+                return rs.next() ? rs.getString("nome") : "-";
+            }
+        }
+    }
 }
