@@ -6,10 +6,7 @@ import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
-import javafx.scene.control.Button;
-import javafx.scene.control.ComboBox;
-import javafx.scene.control.Label;
-import javafx.scene.control.ToggleButton;
+import javafx.scene.control.*;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
@@ -88,6 +85,7 @@ public class MainShellController {
         configurarValoresPreProgramados();
         processarDadosAnos();
         estilizarMenuLateral();
+        estilizarToolBar();
     }
 
     private void configurarPreValoresAnos(){
@@ -536,4 +534,95 @@ public class MainShellController {
             }
         }
     }
+    private void estilizarToolBar() {
+
+        // ── Estilo base compartilhado ──────────────────────────────────────────
+        String estiloLabel =
+                "-fx-text-fill: #ecf0f1;"  +
+                        "-fx-font-size: 12px;"     +
+                        "-fx-font-weight: bold;";
+
+        String estiloComboBox =
+                "-fx-background-color: #3d566e;"  +
+                        "-fx-text-fill: #ecf0f1;"         +
+                        "-fx-border-color: #5d7a8a;"      +
+                        "-fx-border-radius: 4;"           +
+                        "-fx-background-radius: 4;"       +
+                        "-fx-cursor: hand;";
+
+        String estiloToggleBase =
+                "-fx-background-color: #3d566e;"  +
+                        "-fx-text-fill: #ecf0f1;"         +
+                        "-fx-border-color: #5d7a8a;"      +
+                        "-fx-border-radius: 4;"           +
+                        "-fx-background-radius: 4;"       +
+                        "-fx-cursor: hand;"               +
+                        "-fx-font-size: 12px;";
+
+        String estiloToggleSelecionado =
+                "-fx-background-color: #2980b9;"  +
+                        "-fx-text-fill: #ffffff;"         +
+                        "-fx-border-color: #1a6fa0;"      +
+                        "-fx-border-radius: 4;"           +
+                        "-fx-background-radius: 4;"       +
+                        "-fx-cursor: hand;"               +
+                        "-fx-font-size: 12px;";
+
+        // ── Todos os Labels da ToolBar (incluindo "Ano:" sem fx:id) ───────────
+        for (javafx.scene.Node node : menuLateral.getParent().getChildrenUnmodifiable()) {
+            if (node instanceof javafx.scene.layout.VBox vbox) {
+                for (javafx.scene.Node filho : vbox.getChildrenUnmodifiable()) {
+                    if (filho instanceof ToolBar toolbar) {
+                        for (javafx.scene.Node item : toolbar.getItems()) {
+                            if (item instanceof Label lbl) {
+                                lbl.setStyle(estiloLabel);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // ── ComboBoxes de filtro ───────────────────────────────────────────────
+        for (ComboBox<?> cb : new ComboBox[]{cbCurso, cbSemestreCurso, cbDisciplina}) {
+            if (cb != null) cb.setStyle(estiloComboBox);
+        }
+
+        // ── cbAno: texto interno também precisa ser branco ─────────────────────
+        if (cbAno != null) {
+            cbAno.setStyle(estiloComboBox);
+            cbAno.setButtonCell(new ListCell<String>() {
+                @Override
+                protected void updateItem(String item, boolean empty) {
+                    super.updateItem(item, empty);
+                    setText(empty || item == null ? null : item);
+                    setStyle("-fx-text-fill: #ecf0f1; -fx-background-color: transparent;");
+                }
+            });
+        }
+
+        // ── ToggleButtons de semestre ──────────────────────────────────────────
+        for (ToggleButton tb : new ToggleButton[]{tbSem1, tbSem2}) {
+            if (tb == null) continue;
+
+            tb.setStyle(tb.isSelected() ? estiloToggleSelecionado : estiloToggleBase);
+
+            tb.selectedProperty().addListener((obs, antigo, selecionado) ->
+                    tb.setStyle(selecionado ? estiloToggleSelecionado : estiloToggleBase)
+            );
+
+            tb.setOnMouseEntered(e -> {
+                if (!tb.isSelected())
+                    tb.setStyle(estiloToggleBase.replace(
+                            "-fx-background-color: #3d566e;",
+                            "-fx-background-color: #4a6a82;"
+                    ));
+            });
+
+            tb.setOnMouseExited(e ->
+                    tb.setStyle(tb.isSelected() ? estiloToggleSelecionado : estiloToggleBase)
+            );
+        }
+    }
+
 }
