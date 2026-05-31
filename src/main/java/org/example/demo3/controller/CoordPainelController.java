@@ -144,13 +144,17 @@ public class CoordPainelController {
     private final IntegerProperty cargaMinima          = new SimpleIntegerProperty(0);
     private final DoubleProperty  percentualConclusao  = new SimpleDoubleProperty(0.0);
 
-    // ════════════════════════════════════════════════════════════════════════
-    // INICIALIZAÇÃO
-    // ════════════════════════════════════════════════════════════════════════
+
+// INICIALIZAÇÃO
+// ════════════════════════════════════════════════════════════════════════
 
     @FXML
     public void initialize() {
         configurarIds();
+
+        // Aba 3 PRIMEIRO — para idSemestreLetivoAtual ser preenchido antes
+        // das abas que dependem dele (colDiscProf)       ← CORRIGIDO (ordem)
+        configurarAbaAtribuicoes();
 
         // Aba 1
         configurarTabelaDisciplinas();
@@ -161,9 +165,6 @@ public class CoordPainelController {
         // Aba 2
         configurarTabelaProfessores();
         recarregarTabelaProfessores();
-
-        // Aba 3
-        configurarAbaAtribuicoes();
 
         // Aba 4
         mapearComponentesFxmlOcultos();
@@ -328,8 +329,14 @@ public class CoordPainelController {
         spDiscCH.setValueFactory(new SpinnerValueFactory.IntegerSpinnerValueFactory(80, 999, 80));
     }
 
-    private void carregarDisciplinas() {
-        tabelaDisciplinas.getItems().setAll(disciplinaDAO.listarDisciplinas());
+    private void carregarDisciplinas() {                              // ← CORRIGIDO
+        try {
+            tabelaDisciplinas.getItems().setAll(
+                    disciplinaDAO.listarDisciplinasPorCurso(idCursoAtual)
+            );
+        } catch (SQLException e) {
+            System.err.println("Erro ao carregar disciplinas: " + e.getMessage());
+        }
         preencherComboBoxSemestres();
     }
 
@@ -410,25 +417,98 @@ public class CoordPainelController {
     @FXML
     private void handleAtribuirMesmo(ActionEvent event) {
         try {
-            boolean jaProfessor = usuarioTipoDAO.listarUsuariosTipo().stream()
-                    .anyMatch(ut -> ut.getUsuario_id().equals(logado.getId_usuario())
-                            && "PROF".equals(ut.getTipo()));
+            boolean jaProfessor = usuarioTipoDAO.usuarioPossuiTipoAtivo(logado.getId_usuario(), "PROF");
 
-            if (!jaProfessor) {
-                UsuarioTipo usuarioTipo = new UsuarioTipo();
-                usuarioTipo.setUsuario_id(logado.getId_usuario());
-                usuarioTipo.setTipo("PROF");
-                usuarioTipoDAO.inserirUsuarioTipo(usuarioTipo);
+            if (jaProfessor) {
+                // Verifica se já tem atribuição no semestre atual
+                if (idSemestreLetivoAtual != null) {
+                    List<AtribuicaoProfessor> atribuicoes = atribuicaoProfessorDAO
+                            .listarPorProfessorESemestre(logado.getId_usuario(), idSemestreLetivoAtual);
+                    if (!atribuicoes.isEmpty()) {
+                        exibirAlerta(Alert.AlertType.INFORMATION, "Aviso",
+                                "Você já está cadastrado como professor e possui atribuições neste semestre.");
+                        return;
+                    }
+                } else {
+                    exibirAlerta(Alert.AlertType.INFORMATION, "Aviso",
+                            "Você já está cadastrado como professor.");
+                    return;
+                }
             }
 
-            exibirAlerta(Alert.AlertType.INFORMATION, "Sucesso",
-                    jaProfessor ? "Você já está cadastrado como professor."
-                            : "Você foi adicionado como professor com sucesso.");
+            // Restaura o usuário caso esteja soft-deletado por fluxo anterior com bug
+            usuarioDAO.restaurarUsuario(logado.getId_usuario());
+
+            // Insere o tipo PROF com INSERT IGNORE — não explode se já existir
+            usuarioTipoDAO.inserirCoordenadorAosProfessores(logado.getId_usuario());
+
             recarregarTabelaProfessores();
             recarregarProfessoresUI();
+
+            // Popup obrigatório
+            Alert popup = new Alert(Alert.AlertType.CONFIRMATION);
+            popup.setTitle("Auto-atribuição como professor");
+            popup.setHeaderText(null);
+            popup.setContentText(
+                    "Você foi adicionado como professor.\n" +
+                            "Para concluir, é obrigatório atribuir uma disciplina e horário(s).\n\n" +
+                            "• Atribuir agora → vai para a aba de Atribuições\n" +
+                            "• Cancelar → desfaz e remove as atribuições");
+
+            ButtonType btnAtribuir = new ButtonType("Atribuir agora");
+            ButtonType btnCancelar = new ButtonType("Cancelar", ButtonBar.ButtonData.CANCEL_CLOSE);
+            popup.getButtonTypes().setAll(btnAtribuir, btnCancelar);
+
+            popup.showAndWait().ifPresent(resposta -> {
+                if (resposta == btnAtribuir) {
+                    try {
+                        // Suspende listener para não disparar carregarGrade() no meio
+                        cbAtribProf.setOnAction(null);
+
+                        cbAtribProf.getItems().setAll(usuarioDAO.listarTodosProfessores());
+
+                        cbAtribProf.getItems().stream()
+                                .filter(u -> u.getId_usuario().equals(logado.getId_usuario()))
+                                .findFirst()
+                                .ifPresent(cbAtribProf::setValue);
+
+                        // Reativa listener e dispara grade manualmente
+                        cbAtribProf.setOnAction(e -> carregarGrade());
+                        carregarGrade();
+
+                    } catch (SQLException e) {
+                        System.err.println("Erro ao recarregar combo: " + e.getMessage());
+                    }
+                    tabPanePrincipal.getSelectionModel().select(tabAtribuicoes);
+
+                } else {
+                    // Rollback: não mexe em usuario_tipo por causa da FK do curso
+                    // Apenas remove atribuições do semestre caso existam
+                    if (idSemestreLetivoAtual != null) {
+                        try {
+                            List<AtribuicaoProfessor> atribuicoes = atribuicaoProfessorDAO
+                                    .listarPorProfessorESemestre(
+                                            logado.getId_usuario(), idSemestreLetivoAtual);
+                            for (AtribuicaoProfessor ap : atribuicoes) {
+                                atribuicaoHorarioDAO.excluirPorAtribuicao(
+                                        ap.getId_atribuicao_professor());
+                                atribuicaoProfessorDAO.excluir(
+                                        ap.getId_atribuicao_professor());
+                            }
+                        } catch (SQLException ex) {
+                            ex.printStackTrace();
+                        }
+                    }
+                    recarregarTabelaProfessores();
+                    recarregarProfessoresUI();
+                    exibirAlerta(Alert.AlertType.INFORMATION, "Cancelado",
+                            "Auto-atribuição desfeita. Nenhum dado foi salvo.");
+                }
+            });
+
         } catch (Exception e) {
             exibirAlerta(Alert.AlertType.ERROR, "Erro",
-                    "Falha ao se atribuir como professor:\n" + e.getMessage());
+                    "Falha ao processar auto-atribuição:\n" + e.getMessage());
             e.printStackTrace();
         }
     }
@@ -521,25 +601,31 @@ public class CoordPainelController {
 
                 popup.showAndWait().ifPresent(resposta -> {
                     if (resposta == btnAtribuir) {
-                        handleLimparProf();
-                        recarregarTabelaProfessores();
                         try {
+                            // Suspende o listener para não disparar carregarGrade() no meio da atualização
+                            cbAtribProf.setOnAction(null);                                    // ← ADICIONADO
+
                             cbAtribProf.getItems().setAll(usuarioDAO.listarTodosProfessores());
+
+                            cbAtribProf.getItems().stream()
+                                    .filter(u -> u.getId_usuario().equals(logado.getId_usuario()))
+                                    .findFirst()
+                                    .ifPresent(cbAtribProf::setValue);
+
+                            // Reativa o listener e dispara a grade manualmente
+                            cbAtribProf.setOnAction(e -> carregarGrade());                    // ← ADICIONADO
+                            carregarGrade();                                                   // ← ADICIONADO
+
                         } catch (SQLException e) {
                             System.err.println("Erro ao recarregar combo: " + e.getMessage());
                         }
-                        cbAtribProf.getItems().stream()
-                                .filter(u -> u.getId_usuario() == novoId)
-                                .findFirst()
-                                .ifPresent(u -> cbAtribProf.setValue(u));
                         tabPanePrincipal.getSelectionModel().select(tabAtribuicoes);
-
                     } else {
-                        // Cancela: remove tipo e usuário do banco
-                        usuarioTipoDAO.excluirUsuarioTipo(novoId, "PROF");
-                        usuarioDAO.excluirUsuario(novoId);
+                        usuarioTipoDAO.excluirUsuarioTipo(logado.getId_usuario(), "PROF");
+                        recarregarTabelaProfessores();
+                        recarregarProfessoresUI();
                         exibirAlerta(Alert.AlertType.INFORMATION, "Cancelado",
-                                "Cadastro desfeito. Nenhum dado foi salvo.");
+                                "Auto-atribuição desfeita. Nenhum dado foi salvo.");
                     }
                 });
             }
@@ -559,9 +645,11 @@ public class CoordPainelController {
         configurarColunaAcoesProf();
     }
 
-    private void recarregarTabelaProfessores() {
+    private void recarregarTabelaProfessores() {                      // ← CORRIGIDO
         try {
-            tabelaProfessores.getItems().setAll(atribuicaoProfessorDAO.listarProfessoresComAtribuicao());
+            tabelaProfessores.getItems().setAll(
+                    usuarioDAO.listarTodosProfessores()
+            );
         } catch (SQLException e) {
             System.err.println("Erro ao recarregar tabela de professores: " + e.getMessage());
         }
@@ -571,27 +659,58 @@ public class CoordPainelController {
         Alert confirmacao = new Alert(Alert.AlertType.CONFIRMATION);
         confirmacao.setTitle("Confirmar exclusão");
         confirmacao.setHeaderText(null);
-        confirmacao.setContentText("Deseja excluir o professor \"" + professor.getNome() + "\"?");
+
+        boolean ehOProprioCoordenador = professor.getId_usuario().equals(logado.getId_usuario());
+
+        if (ehOProprioCoordenador) {
+            confirmacao.setContentText(
+                    "Deseja remover seu papel de professor?\n" +
+                            "Suas atribuições de disciplina e horários serão removidas.\n" +
+                            "Seu cadastro como coordenador não será afetado.");
+        } else {
+            confirmacao.setContentText(
+                    "Deseja excluir o professor \"" + professor.getNome() + "\"?");
+        }
 
         confirmacao.showAndWait().ifPresent(resposta -> {
             if (resposta != ButtonType.OK) return;
 
             try {
-                usuarioDAO.excluirUsuario(professor.getId_usuario()); // getter correto
+                if (ehOProprioCoordenador) {
+                    if (idSemestreLetivoAtual != null) {
+                        List<AtribuicaoProfessor> atribuicoes = atribuicaoProfessorDAO
+                                .listarPorProfessorESemestre(
+                                        logado.getId_usuario(), idSemestreLetivoAtual);
+                        for (AtribuicaoProfessor ap : atribuicoes) {
+                            atribuicaoHorarioDAO.excluirPorAtribuicao(ap.getId_atribuicao_professor());
+                            atribuicaoProfessorDAO.excluir(ap.getId_atribuicao_professor());
+                        }
+                    }
+                    usuarioTipoDAO.excluirUsuarioTipoIgnorandoFK(logado.getId_usuario(), "PROF");
+                } else {
+                    usuarioTipoDAO.excluirUsuarioTipo(professor.getId_usuario(), "PROF");
+                    usuarioDAO.excluirUsuario(professor.getId_usuario());
+                }
 
                 if (professorSelecionadoTabela != null
-                        && professorSelecionadoTabela.getId_usuario() == professor.getId_usuario()) {
+                        && professorSelecionadoTabela.getId_usuario().equals(professor.getId_usuario())) {
                     professorSelecionadoTabela = null;
                     handleLimparProf();
                 }
 
                 recarregarTabelaProfessores();
                 recarregarProfessoresUI();
-                exibirAlerta(Alert.AlertType.INFORMATION, "Sucesso", "Disciplina excluída com sucesso.");
+                recarregarDisciplinasUI();
+                carregarDisciplinas();
+                exibirAlerta(Alert.AlertType.INFORMATION, "Sucesso",
+                        ehOProprioCoordenador
+                                ? "Suas atribuições de professor foram removidas."
+                                : "Professor excluído com sucesso.");
 
             } catch (Exception e) {
-                exibirAlerta(Alert.AlertType.ERROR, "Erro", "Falha ao excluir a disciplina.");
+                exibirAlerta(Alert.AlertType.ERROR, "Erro", "Falha ao excluir professor.");
                 System.err.println(e.getMessage());
+                e.printStackTrace();
             }
         });
     }
@@ -701,31 +820,21 @@ public class CoordPainelController {
 
     // ── Helpers — Aba 3 ─────────────────────────────────────────────────────
 
-    private void recarregarDisciplinasUI() {
+    private void recarregarDisciplinasUI() {                          // ← CORRIGIDO
         try {
-            tabelaDisciplinas.getItems().setAll(
-                    disciplinaDAO.listarDisciplinas()
-            );
-
-            cbAtribDisc.getItems().setAll(
-                    disciplinaDAO.listarDisciplinasPorCurso(idCursoAtual)
-            );
-
+            List<Disciplina> disciplinas =
+                    disciplinaDAO.listarDisciplinasPorCurso(idCursoAtual);
+            tabelaDisciplinas.getItems().setAll(disciplinas);
+            cbAtribDisc.getItems().setAll(disciplinas);
         } catch (SQLException e) {
             e.printStackTrace();
         }
     }
-    private void recarregarProfessoresUI() {
+    private void recarregarProfessoresUI() {                          // ← CORRIGIDO
         try {
-
-            tabelaProfessores.getItems().setAll(
-                    atribuicaoProfessorDAO.listarProfessoresComAtribuicao()
-            );
-
-            cbAtribProf.getItems().setAll(
-                    usuarioDAO.listarTodosProfessores()
-            );
-
+            List<Usuario> profs = usuarioDAO.listarTodosProfessores();
+            tabelaProfessores.getItems().setAll(profs);
+            cbAtribProf.getItems().setAll(profs);
         } catch (SQLException e) {
             e.printStackTrace();
         }
@@ -816,20 +925,29 @@ public class CoordPainelController {
                 lblHorario.setStyle("-fx-font-size: 11px;");
                 gradeAtribuicao.add(lblHorario, 0, row + 1);
 
+                // ── dentro do loop de dias, onde pinta a borda vermelha ──────────────────
+
                 for (int dia = 1; dia <= 6; dia++) {
                     String chave = dia + "_" + hc.getId_horario_curso();
                     CheckBox cb = new CheckBox();
                     cb.setSelected(marcados.contains(chave));
                     mapaCheckBoxes.put(chave, cb);
 
-                    // Borda vermelha em horários ocupados por outro professor
+                    // Conflito: o professor selecionado já tem esse horário em outra disciplina
                     int atribuicaoIdExcluir = atribuicaoAtual != null
                             ? atribuicaoAtual.getId_atribuicao_professor() : -1;
-                    String nomeConflito = atribuicaoHorarioDAO.buscarConflito(
-                            idSemestreLetivoAtual, dia, hc.getId_horario_curso(), atribuicaoIdExcluir);
-                    if (nomeConflito != null) {
+
+                    String nomeConflitoDisc = atribuicaoHorarioDAO.buscarConflitoParaProfessor(
+                            prof.getId_usuario(),          // ← filtra pelo professor selecionado
+                            idSemestreLetivoAtual,
+                            dia,
+                            hc.getId_horario_curso(),
+                            atribuicaoIdExcluir);
+
+                    if (nomeConflitoDisc != null) {
                         cb.setStyle("-fx-border-color: #e74c3c; -fx-border-width: 2px; -fx-border-radius: 3px; -fx-padding: 1px;");
-                        cb.setTooltip(new Tooltip("Ocupado: " + nomeConflito));
+                        cb.setTooltip(new Tooltip("Professor já leciona: " + nomeConflitoDisc + " neste horário"));
+                        cb.setDisable(true); // ← desabilita, pois é conflito real do professor
                     }
 
                     final int diaFinal  = dia;
@@ -860,11 +978,17 @@ public class CoordPainelController {
             int atribuicaoIdExcluir = atribuicaoAtual != null
                     ? atribuicaoAtual.getId_atribuicao_professor() : -1;
 
-            String nomeConflito = atribuicaoHorarioDAO.buscarConflito(
-                    idSemestreLetivoAtual, diaSemana, horarioCursoId, atribuicaoIdExcluir);
+            // Verifica se o professor já tem esse horário em outra disciplina no mesmo semestre
+            String nomeDisc = atribuicaoHorarioDAO.buscarConflitoParaProfessor(
+                    prof.getId_usuario(),
+                    idSemestreLetivoAtual,
+                    diaSemana,
+                    horarioCursoId,
+                    atribuicaoIdExcluir);
 
-            if (nomeConflito != null) {
-                lblConflito.setText("⚠ Conflito com " + nomeConflito + " neste horário.");
+            if (nomeDisc != null) {
+                lblConflito.setText("⚠ " + prof.getNome() +
+                        " já está alocado em \"" + nomeDisc + "\" neste horário.");
                 lblConflito.setVisible(true);
                 lblConflito.setManaged(true);
                 cb.setSelected(false);
