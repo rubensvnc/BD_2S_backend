@@ -135,7 +135,7 @@ public class AtribuicaoProfessorDAO {
     }
 
     public boolean existeConflito(int professorId, int semestreLetivoId,
-                                   int diaSemana, int horarioCursoId) throws SQLException {
+                                  int diaSemana, int horarioCursoId) throws SQLException {
         String sql = """
                 SELECT 1
                 FROM atribuicao_horario ah
@@ -204,22 +204,27 @@ public class AtribuicaoProfessorDAO {
     }
 
     // AtribuicaoProfessorDAO
-    public List<Usuario> listarProfessoresComAtribuicao() throws SQLException {
+    public List<Usuario> listarProfessoresComAtribuicao(Integer id_coord) throws SQLException {
         List<Usuario> usuarios = new ArrayList<>();
         String sql = """
         SELECT DISTINCT u.id_usuario, u.nome, u.email, u.senha_hash
         FROM usuario u
         INNER JOIN usuario_tipo ut ON ut.usuario_id = u.id_usuario
         INNER JOIN atribuicao_professor ap ON ap.professor_id = u.id_usuario
+        INNER JOIN disciplina d ON ap.disciplina_id = d.id_disciplina
+        INNER JOIN curso c ON d.curso_id = c.id_curso
         WHERE ut.tipo = 'PROF'
+        AND c.coordenador_id = ?
         AND u.deletado_em IS NULL
         ORDER BY u.nome
         """;
 
         try (Connection con = DatabaseConnection.getConnection();
              PreparedStatement ps = con.prepareStatement(sql);
-             ResultSet rs = ps.executeQuery()) {
+        ) {
+            ps.setInt(1, id_coord);
 
+            ResultSet rs = ps.executeQuery();
             while (rs.next()) {
                 Usuario u = new Usuario();
                 u.setId_usuario(rs.getInt("id_usuario"));
