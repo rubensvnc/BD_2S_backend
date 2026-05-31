@@ -7,13 +7,18 @@ import javafx.scene.Scene;
 import javafx.scene.control.Alert;
 import javafx.scene.control.PasswordField;
 import javafx.scene.control.TextField;
+import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 import org.example.demo3.UsuarioAtual;
 import org.example.demo3.dao.UsuarioDAO;
+import org.example.demo3.dao.UsuarioTipoDAO;
+import org.example.demo3.entity.Usuario;
+import org.example.demo3.entity.UsuarioTipo;
 import org.mindrot.jbcrypt.BCrypt;
 
 import java.io.IOException;
 import java.sql.SQLException;
+import java.time.LocalDate;
 import java.util.Map;
 
 public class LoginController {
@@ -21,9 +26,29 @@ public class LoginController {
     // Ajustado para bater com o fx:id do FXML
     @FXML private TextField loginEmail;
     @FXML private PasswordField loginSenha;
+    @FXML private VBox loginPane;
+    @FXML private VBox primeiroAcessoPane;
+    @FXML private TextField admNome;
+    @FXML private TextField admEmail;
+    @FXML private TextField admSenha;
 
     private final UsuarioDAO usuarioDAO = new UsuarioDAO();
+    private final UsuarioTipoDAO utDao = new UsuarioTipoDAO();
 
+    @FXML
+    public void initialize() {
+        try {
+            if (!usuarioDAO.existeAdministrador()) {
+                // Se não houver ADM, esconde o login e mostra o cadastro
+                loginPane.setVisible(false);
+                loginPane.setManaged(false);
+                primeiroAcessoPane.setVisible(true);
+                primeiroAcessoPane.setManaged(true);
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
 
     @FXML
     void handleLogin() {
@@ -39,25 +64,10 @@ public class LoginController {
             Map<String, Object> usuario = usuarioDAO.buscarUsuarioPorEmail(email);
 
             if (usuario != null) {
-                String hashBanco = (String) usuario.get("senha_hash");
-                boolean senhaValida = false;
+                String senhaBanco = (String) usuario.get("senha_hash"); // Aqui agora guardará a senha pura
+                String senhaDigitada = loginSenha.getText();
 
-                // STRING DE CONTINGÊNCIA DO SEU SCRIPT SQL
-                String hashScriptPadrao = "$2a$10$8K9V/A3gM9uIQGst4IC8EexSdtD97C8fR9S1a9E1GzFzoVv6.pXvG";
-
-                // 1. CHECAGEM DIRETA: Se o hash no banco for o do script e a senha for '123456'
-                if (hashScriptPadrao.equals(hashBanco) && "123456".equals(senha)) {
-                    senhaValida = true;
-                } else {
-                    // 2. CASO CONTRÁRIO: Usa a validação real do BCrypt (para novos usuários cadastrados)
-                    try {
-                        senhaValida = BCrypt.checkpw(senha, hashBanco);
-                    } catch (Exception e) {
-                        senhaValida = false;
-                    }
-                }
-
-                if (senhaValida) {
+                if (senhaDigitada.equals(senhaBanco)) { // Comparação direta de String
                     UsuarioAtual logado = UsuarioAtual.getInstancia();
                     logado.setId_usuario((Integer) usuario.get("id_usuario"));
                     logado.setTipo((String) usuario.get("tipo"));
@@ -66,8 +76,6 @@ public class LoginController {
                 } else {
                     exibirAlerta("Erro de Autenticação", "Senha incorreta.");
                 }
-            } else {
-                exibirAlerta("Erro de Autenticação", "Usuário não encontrado.");
             }
 
         } catch (SQLException e) {
@@ -100,7 +108,50 @@ public class LoginController {
         alert.showAndWait();
     }
 
+    private void exibirAlertaSucesso(String titulo, String mensagem) {
+        Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
+        alert.setTitle(titulo);
+        alert.setHeaderText(null);
+        alert.setContentText(mensagem);
+        alert.showAndWait();
+    }
+
     @FXML
     void handleCadastrarPrimeiroAdm() {
+        Usuario novo = new Usuario();
+        UsuarioTipo ut = new UsuarioTipo();
+
+        novo.setNome(admNome.getText());
+        novo.setEmail(admEmail.getText());
+        novo.setSenha_hash(admSenha.getText());
+        novo.setCriado_em(LocalDate.now());
+
+        if(admNome.getText() != null && admEmail.getText() != null && admSenha.getText() != null){
+            primeiroAcessoPane.setVisible(false);
+            primeiroAcessoPane.setManaged(false);
+
+            UsuarioAtual logado = UsuarioAtual.getInstancia();
+            try {
+                usuarioDAO.inserirUsuario(novo);
+
+                Usuario u = usuarioDAO.buscarUsuarioPorEmailUnico(admEmail.getText());
+
+                ut.setTipo("ADM");
+                ut.setUsuario_id(u.getId_usuario());
+                utDao.inserirUsuarioTipo(ut);
+
+                logado.setId_usuario(u.getId_usuario());
+                logado.setTipo("ADM");
+                abrirMainShell();
+            } catch (SQLException e){
+                e.printStackTrace();
+            }
+
+
+            exibirAlertaSucesso("Sucesso", "Administrador cadastrado! Agora faça login.");
+        } else {
+            exibirAlerta("FALHA", "Preencha todos os campos");
+        }
+
     }
 }
