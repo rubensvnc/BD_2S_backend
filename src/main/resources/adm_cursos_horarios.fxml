@@ -84,10 +84,10 @@
                         <Label text="Qtd. Semestres *:" GridPane.columnIndex="0" GridPane.rowIndex="2" />
                         <Spinner fx:id="spQtdSemestres" initialValue="6" max="12" min="1" prefWidth="90" GridPane.columnIndex="1" GridPane.rowIndex="2" />
 
-                        <Label text="Coordenador:" GridPane.columnIndex="0" GridPane.rowIndex="3" />
+                        <Label text="Professor:" GridPane.columnIndex="0" GridPane.rowIndex="3" />
                         <VBox GridPane.columnIndex="1" GridPane.hgrow="ALWAYS" GridPane.rowIndex="3">
                             <CheckBox fx:id="checkUsarCadastroCoordenador" mnemonicParsing="false" onAction="#usarCadastroCoordenador" text="atribuir a Professor" />
-                            <ComboBox fx:id="cbCoordenadorCurso" maxWidth="Infinity" onAction="#handleSelecaoCoordenador" promptText="Selecione o coordenador" />
+                            <ComboBox fx:id="cbCoordenadorCurso" maxWidth="Infinity" onAction="#handleSelecaoCoordenador" promptText="Selecione o professor" />
                             <Label fx:id="errCoordenadorCurso" managed="false" styleClass="error-label" visible="false" />
                         </VBox>
 
