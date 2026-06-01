@@ -88,7 +88,7 @@ public class AdmCursosHorariosController {
         });
 
         // ── Corrige o texto do CheckBox para "Atribuir a Coordenador" ─────────
-        checkUsarCadastroCoordenador.setText("Atribuir a Coordenador");
+        checkUsarCadastroCoordenador.setText("Atribuir a Professor");
 
         if (this.ano != null && this.anoSemestre != null) {
             carregarCursos();
