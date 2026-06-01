@@ -363,7 +363,7 @@ public class AdmCursosHorariosController {
     public void handleSalvarCurso() {
         nomeCursoProcessando    = tfCursoNome.getText();
         qtdSemestresProcessando = spQtdSemestres.getValue();
-        turnoProcessando        = tbManha.isSelected() ? "manha" : "noite";
+        turnoProcessando        = tbManha.isSelected() ? "Manhã" : "Noite";
 
         try {
             CursoDAO cDao = new CursoDAO();
@@ -397,7 +397,7 @@ public class AdmCursosHorariosController {
         painelFormCurso.setExpanded(true);
 
         tfCursoNome.setText(c.getNome());
-        if ("manha".equals(c.getTurno())) {
+        if ("Manhã".equals(c.getTurno())) {
             tbManha.setSelected(true);
             tbNoite.setSelected(false);
         } else {
@@ -465,7 +465,7 @@ public class AdmCursosHorariosController {
         CursoDAO cDao   = new CursoDAO();
         UsuarioDAO uDao = new UsuarioDAO();
 
-        String turno      = tbManha.isSelected() ? "manha" : "noite";
+        String turno      = tbManha.isSelected() ? "Manhã" : "Noite";
         String emailCoord = checkUsarCadastroCoordenador.isSelected()
                 ? cbCoordenadorCurso.getValue()
                 : null;
@@ -816,7 +816,7 @@ public class AdmCursosHorariosController {
             return;
         }
 
-        String turnoSelecionado = tbManha.isSelected() ? "manha" : "noite";
+        String turnoSelecionado = tbManha.isSelected() ? "Manhã" : "Noite";
 
         // ── Validação 2: template não existe no banco para esse turno ────────
         TemplateHorarioTurnoDAO thtDao = new TemplateHorarioTurnoDAO();
@@ -832,7 +832,7 @@ public class AdmCursosHorariosController {
         }
 
         if (templateEncontrado == null || templateEncontrado.isEmpty()) {
-            String turnoLabel = "manha".equals(turnoSelecionado) ? "Manhã" : "Noite";
+            String turnoLabel = "Manhã".equals(turnoSelecionado) ? "Manhã" : "Noite";
             exibirAlerta("Template não encontrado",
                     "Não existe nenhum template cadastrado para o turno \"" + turnoLabel + "\".\n"
                             + "Cadastre os horários manualmente ou propague um template existente.",
@@ -885,7 +885,7 @@ public class AdmCursosHorariosController {
             return;
         }
 
-        String turnoLabel = "manha".equals(turnoProcessando) ? "Manhã" : "Noite";
+        String turnoLabel = "Manhã".equals(turnoProcessando) ? "Manhã" : "Noite";
         Alert confirmacao = new Alert(Alert.AlertType.CONFIRMATION,
                 "Isso irá substituir o template do turno \"" + turnoLabel
                         + "\" pelos horários atuais. Confirmar?",
@@ -934,6 +934,10 @@ public class AdmCursosHorariosController {
     @FXML
     public void handleSalvarHorarios() {
         HorarioCursoDAO hcDao = new HorarioCursoDAO();
+        if (ano == null) {
+            exibirAlerta("Erro ao salvar", "Selecione o ano na aba superior antes de salvar os horários.", Alert.AlertType.ERROR);
+            return;
+        }
         try {
             if (idSemestreLetivoProcessando == null) {
                 SemestreLetivoDAO slDao = new SemestreLetivoDAO();
