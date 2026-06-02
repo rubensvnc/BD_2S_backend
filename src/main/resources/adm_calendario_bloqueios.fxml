@@ -107,7 +107,7 @@
                         <!-- Seleção de mês e grade de dias -->
                         <HBox alignment="CENTER_LEFT" spacing="10">
                             <Label text="Mês:" />
-                            <ComboBox fx:id="cbMes" promptText="Selecionar mês" />
+                            <ComboBox fx:id="cbMes" onAction="#handleCancelamentoSelecaoMes" promptText="Selecionar mês" />
                         </HBox>
 
                         <ScrollPane fitToWidth="true" prefHeight="200">
