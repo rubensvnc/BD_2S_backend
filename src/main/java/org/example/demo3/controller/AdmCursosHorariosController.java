@@ -27,9 +27,9 @@ public class AdmCursosHorariosController {
     @FXML private ToggleButton tbManha;
     @FXML private ToggleButton tbNoite;
     @FXML private Spinner<Integer> spQtdSemestres;
-    @FXML private ComboBox<String> cbCoordenadorCurso;
+    @FXML private ComboBox<String> cbProfessorCurso;
     @FXML private TitledPane painelFormCurso;
-    @FXML private CheckBox checkUsarCadastroCoordenador;
+    @FXML private CheckBox checkUsarProfessor;
     @FXML private TableView<AdmCursoExibicao> tabelaCursos;
     @FXML private TableColumn<AdmCursoExibicao, String> colCursoNome;
     @FXML private TableColumn<AdmCursoExibicao, String> colCursoTurno;
@@ -64,12 +64,13 @@ public class AdmCursosHorariosController {
     private String turnoProcessando;
     private Integer qtdSemestresProcessando;
 
-    /**
-     * Mapa nome-exibido → id_usuario do coordenador.
-     * Exibe "Nome (email)" no ComboBox para facilitar identificação.
-     */
-    private Map<String, Integer> mapaCoordExibicaoParaId = new HashMap<>();
-    private Integer idCoordSelecionado;
+    private Integer idProfSelecionado;
+
+    // DAOS:
+    private UsuarioDAO uDao = new UsuarioDAO();
+    private UsuarioTipoDAO utDao = new UsuarioTipoDAO();
+    private CursoDAO cDao = new CursoDAO();
+    private HorarioCursoDAO hcDao = new HorarioCursoDAO();
 
     @FXML
     public void initialize() {
@@ -87,9 +88,6 @@ public class AdmCursosHorariosController {
             if (novo != null) { this.anoSemestre = novo; carregarCursos(); }
         });
 
-        // ── Corrige o texto do CheckBox para "Atribuir a Coordenador" ─────────
-        checkUsarCadastroCoordenador.setText("Atribuir a Professor");
-
         if (this.ano != null && this.anoSemestre != null) {
             carregarCursos();
         }
@@ -105,7 +103,7 @@ public class AdmCursosHorariosController {
 
         btnSalvarCurso.setOnAction(event -> handleSalvarCurso());
 
-        cbCoordenadorCurso.setDisable(true);
+        cbProfessorCurso.setDisable(true);
 
         colCursoNome.setCellValueFactory(new PropertyValueFactory<>("nome"));
         colCursoTurno.setCellValueFactory(new PropertyValueFactory<>("turno"));
@@ -185,7 +183,7 @@ public class AdmCursosHorariosController {
     private void carregarHorarios() {
         if (idCursoProcessando != null && idSemestreLetivoProcessando != null) {
             try {
-                HorarioCursoDAO hcDao = new HorarioCursoDAO();
+
                 List<HorarioCurso> listaHc = hcDao.listarHorariosPorCurso(
                         idCursoProcessando, idSemestreLetivoProcessando);
 
@@ -213,41 +211,17 @@ public class AdmCursosHorariosController {
         }
     }
 
-    /**
-     * Carrega no ComboBox apenas coordenadores que ainda NÃO estão
-     * vinculados a nenhum curso (coordenador_id IS NULL nos cursos).
-     * Exibe "Nome (email)" para facilitar identificação.
-     */
-    private void carregarCoordenadoresSemCurso() {
-        try {
-            UsuarioDAO uDao = new UsuarioDAO();
-            CursoDAO cDao  = new CursoDAO();
+    public void carregarProfessores(){
+        UsuarioDAO uDao = new UsuarioDAO();
+        ObservableList opcoesProfs = FXCollections.observableArrayList();
 
-            // IDs de coordenadores já vinculados a algum curso
-            List<Curso> todosCursos = cDao.listarCursos();
-            List<Integer> idsOcupados = new ArrayList<>();
-            for (Curso c : todosCursos) {
-                if (c.getCoordenador_id() != 0) {
-                    idsOcupados.add(c.getCoordenador_id());
-                }
+        try{
+            List<Usuario> professores = uDao.listarProfSemestreLetivo(ano, anoSemestre);
+            for (Usuario prof: professores){
+                opcoesProfs.add(prof.getEmail());
             }
 
-            // Todos os coordenadores ativos
-            List<Usuario> todosCoords = uDao.listarTodosCoordenadores();
-
-            mapaCoordExibicaoParaId.clear();
-            ObservableList<String> opcoes = FXCollections.observableArrayList();
-
-            for (Usuario coord : todosCoords) {
-                if (!idsOcupados.contains(coord.getId_usuario())) {
-                    String exibicao = coord.getNome() + " (" + coord.getEmail() + ")";
-                    opcoes.add(exibicao);
-                    mapaCoordExibicaoParaId.put(exibicao, coord.getId_usuario());
-                }
-            }
-
-            cbCoordenadorCurso.setItems(opcoes);
-
+            cbProfessorCurso.setItems(opcoesProfs);
         } catch (SQLException e) {
             e.printStackTrace();
         }
@@ -294,8 +268,8 @@ public class AdmCursosHorariosController {
 
                 cDAO.deletarCursoProcessando(idCursoProcessando);
 
-                if (checkUsarCadastroCoordenador.isSelected() && idCoordSelecionado != null) {
-                    utDao.excluirUsuarioTipo(idCoordSelecionado, "COORD");
+                if (checkUsarProfessor.isSelected() && idProfSelecionado != null) {
+                    utDao.excluirUsuarioTipo(idProfSelecionado, "COORD");
                 }
 
                 btnSalvarCurso.setDisable(false);
@@ -317,26 +291,31 @@ public class AdmCursosHorariosController {
      * Carrega apenas coordenadores sem curso vinculado.
      */
     @FXML
-    public void usarCadastroCoordenador() {
-        if (checkUsarCadastroCoordenador.isSelected()) {
-            cbCoordenadorCurso.setDisable(false);
-            carregarCoordenadoresSemCurso();
+    public void usarProfessor() {
+        if (checkUsarProfessor.isSelected()) {
+            cbProfessorCurso.setDisable(false);
+            carregarProfessores();
         } else {
-            cbCoordenadorCurso.setDisable(true);
-            idCoordSelecionado = null;
+            cbProfessorCurso.setDisable(true);
+            idProfSelecionado = null;
         }
     }
 
     @FXML
-    public void handleSelecaoCoordenador() {
-        if (checkUsarCadastroCoordenador.isSelected()) {
-            String selecionado = cbCoordenadorCurso.getValue();
-            if (selecionado != null) {
-                idCoordSelecionado = mapaCoordExibicaoParaId.get(selecionado);
+    public void handleSelecaoProfessor() {
+        try{
+            if (checkUsarProfessor.isSelected()) {
+                String selecionado = cbProfessorCurso.getValue();
+                if (selecionado != null) {
+                    idProfSelecionado = uDao.buscarUsuarioPorEmailUnico(selecionado).getId_usuario();
+                }
+            } else {
+                idProfSelecionado = null;
             }
-        } else {
-            idCoordSelecionado = null;
+        } catch (SQLException e){
+            e.printStackTrace();
         }
+
     }
 
     @FXML
@@ -346,11 +325,15 @@ public class AdmCursosHorariosController {
         turnoProcessando         = tbManha.isSelected() ? "manha" : "noite";
 
         try {
-            CursoDAO cDao = new CursoDAO();
+            if (checkUsarProfessor.isSelected() && idProfSelecionado != null) {
+                if (!utDao.usuarioPossuiTipoAtivo(idProfSelecionado, "COORD")) {
+                    utDao.inserirUsuarioTipo(new UsuarioTipo(idProfSelecionado, "COORD"));
+                }
+            }
 
-            if (checkUsarCadastroCoordenador.isSelected() && idCoordSelecionado != null) {
+            if (checkUsarProfessor.isSelected() && idProfSelecionado != null) {
                 this.idCursoProcessando = cDao.inserirCursoRetornaId(
-                        idCoordSelecionado, nomeCursoProcessando,
+                        idProfSelecionado, nomeCursoProcessando,
                         turnoProcessando, qtdSemestresProcessando);
             } else {
                 this.idCursoProcessando = cDao.inserirCursoRetornaId(
@@ -383,15 +366,14 @@ public class AdmCursosHorariosController {
         spQtdSemestres.getValueFactory().setValue(c.getQtd_semestres());
 
         if (c.getEmail() != null) {
-            checkUsarCadastroCoordenador.setSelected(true);
-            cbCoordenadorCurso.setDisable(false);
-            // Ao editar, mostra o email atual mesmo sem estar no mapa de "livres"
-            cbCoordenadorCurso.setItems(FXCollections.observableArrayList(c.getEmail()));
-            cbCoordenadorCurso.setValue(c.getEmail());
+            checkUsarProfessor.setSelected(true);
+            cbProfessorCurso.setDisable(false);
+            cbProfessorCurso.setItems(FXCollections.observableArrayList(c.getEmail()));
+            cbProfessorCurso.setValue(c.getEmail());
         } else {
-            checkUsarCadastroCoordenador.setSelected(false);
-            cbCoordenadorCurso.setDisable(true);
-            cbCoordenadorCurso.setValue(null);
+            checkUsarProfessor.setSelected(false);
+            cbProfessorCurso.setDisable(true);
+            cbProfessorCurso.setValue(null);
         }
 
         lblTituloHorarios.setText("Horários — Curso selecionado: " + c.getNome());
@@ -444,8 +426,8 @@ public class AdmCursosHorariosController {
         UsuarioDAO uDao = new UsuarioDAO();
 
         String  turno     = tbManha.isSelected() ? "manha" : "noite";
-        String  emailCoord = checkUsarCadastroCoordenador.isSelected()
-                ? cbCoordenadorCurso.getValue()
+        String  emailCoord = checkUsarProfessor.isSelected()
+                ? cbProfessorCurso.getValue()
                 : null;
 
         AdmCursoExibicao dadosAlterados = new AdmCursoExibicao(
@@ -630,16 +612,16 @@ public class AdmCursosHorariosController {
 
     @FXML
     public void handleSalvarHorarios() {
-        HorarioCursoDAO hcDao = new HorarioCursoDAO();
         try {
             if (idSemestreLetivoProcessando == null) {
                 SemestreLetivoDAO slDao = new SemestreLetivoDAO();
                 idSemestreLetivoProcessando = slDao.getIdSemestreLetivo(
                         logado.getAno(), logado.getAnoSemestre());
             }
-            hcDao.inserirTemplateHorarioCurso(
-                    new ArrayList<>(tabelaHorarios.getItems()),
+            List<TemplateHorarioTurno> horariosLista = tabelaHorarios.getItems();
+            hcDao.inserirTemplateHorarioCurso(horariosLista,
                     idCursoProcessando, idSemestreLetivoProcessando);
+
             alterarEstadoEdicaoDadosCurso(false);
             btnSalvarCurso.setDisable(false);
             lblProcessoSalvarCurso.setVisible(false);
@@ -660,8 +642,8 @@ public class AdmCursosHorariosController {
         tbManha.setDisable(estado);
         tbNoite.setDisable(estado);
         spQtdSemestres.setDisable(estado);
-        checkUsarCadastroCoordenador.setDisable(estado);
-        cbCoordenadorCurso.setDisable(!checkUsarCadastroCoordenador.isSelected() || estado);
+        checkUsarProfessor.setDisable(estado);
+        cbProfessorCurso.setDisable(!checkUsarProfessor.isSelected() || estado);
     }
 
     public void reiniciarValoresDadosCurso() {
@@ -669,10 +651,10 @@ public class AdmCursosHorariosController {
         tbManha.setSelected(true);
         tbNoite.setSelected(false);
         spQtdSemestres.getValueFactory().setValue(1);
-        checkUsarCadastroCoordenador.setSelected(false);
-        cbCoordenadorCurso.setDisable(true);
-        cbCoordenadorCurso.setItems(null);
-        idCoordSelecionado = null;
+        checkUsarProfessor.setSelected(false);
+        cbProfessorCurso.setDisable(true);
+        cbProfessorCurso.setItems(null);
+        idProfSelecionado = null;
     }
 
     private void exibirAlerta(String titulo, String mensagem, Alert.AlertType tipo) {
