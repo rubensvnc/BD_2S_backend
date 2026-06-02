@@ -34,3 +34,29 @@
 .combo-box .arrow {
     -fx-background-color: white;
 }
+
+/* 1. Estiliza o fundo da lista suspensa (o popup) */
+.combo-box-base .context-menu {
+    -fx-background-color: #34495e;
+    -fx-border-color: #7f8c8d;
+    -fx-border-width: 1px;
+}
+
+/* 2. Estiliza cada item (célula) dentro da lista */
+.combo-box .list-view .list-cell {
+    -fx-background-color: #34495e; /* Fundo igual ao botão */
+    -fx-text-fill: #bdc3c7;         /* Texto cinza claro (mesmo do seu toggle-button) */
+    -fx-padding: 5 10 5 10;
+}
+
+/* 3. Efeito de Hover: Quando o mouse passa por cima das opções */
+.combo-box .list-view .list-cell:hover {
+    -fx-background-color: #4e6a85; /* Cor de destaque que você já usa */
+    -fx-text-fill: white;
+}
+
+/* 4. Estiliza o item que está selecionado dentro da lista aberta */
+.combo-box .list-view .list-cell:filled:selected {
+    -fx-background-color: #3498db; /* Azul vibrante para destacar a seleção */
+    -fx-text-fill: white;
+}
