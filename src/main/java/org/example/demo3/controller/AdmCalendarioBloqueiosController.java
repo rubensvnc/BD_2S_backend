@@ -12,8 +12,10 @@ import javafx.util.converter.LocalDateStringConverter;
 import org.example.demo3.DatabaseConnection;
 import org.example.demo3.UsuarioAtual;
 import org.example.demo3.dao.CancelamentoAdmDAO;
+import org.example.demo3.dao.SemestreLetivoDAO;
 import org.example.demo3.dao.SprintDAO;
 import org.example.demo3.entity.CancelamentoAdm;
+import org.example.demo3.entity.SemestreLetivo;
 import org.example.demo3.entity.Sprint;
 
 import java.sql.Connection;
@@ -23,6 +25,8 @@ import java.sql.SQLException;
 import java.time.LocalDate;
 import java.time.Month;
 import java.time.format.TextStyle;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Locale;
 
 public class AdmCalendarioBloqueiosController {
@@ -48,26 +52,34 @@ public class AdmCalendarioBloqueiosController {
 
     private final SprintDAO sprintDAO = new SprintDAO();
     private final CancelamentoAdmDAO cancelamentoDAO = new CancelamentoAdmDAO();
+    private final SemestreLetivoDAO slDao = new SemestreLetivoDAO();
     private final UsuarioAtual logado = UsuarioAtual.getInstancia();
 
     private final ObservableList<Sprint> listaSprintsFX = FXCollections.observableArrayList();
     private final ObservableList<CancelamentoAdm> listaCancelamentosFX = FXCollections.observableArrayList();
     private LocalDate dataSelecionadaNoCalendario;
 
-    private int idSemestreAtual = 1;
+    private List<String> listaMeses;
+    private SemestreLetivo slAtual;
+    private String mesSelecionado;
+
+    private int idSemestreAtual;
     private int ID_ADM_LOGADO = logado.getId_usuario();
 
     @FXML
     public void initialize() {
         ID_ADM_LOGADO = logado.getId_usuario();
         configurarTabelaSprints();
-        configurarAbaBloqueios();
 
         int anoFiltro = (logado.getAno() != null) ? logado.getAno() : LocalDate.now().getYear();
         int numeroSemestre = (logado.getAnoSemestre() != null) ? logado.getAnoSemestre() : 1;
 
         carregarDadosPorAnoESemestre(anoFiltro, numeroSemestre);
+
+        carregarMesesCancelamento(anoFiltro, numeroSemestre);
     }
+
+    // --- METODOS DA ABA CALENDARIO DO SEMESTRE ---
 
     public void carregarDadosPorAnoESemestre(int anoFiltro, int numeroSemestre) {
         listaSprintsFX.clear();
@@ -93,7 +105,6 @@ public class AdmCalendarioBloqueiosController {
             listaSprintsFX.addAll(sprintsBanco);
         }
         tabelaSprints.setItems(listaSprintsFX);
-        carregarListaCancelamentos();
     }
 
     private int buscarIdSemestreDoBanco(int ano, int numeroSemestre) {
@@ -268,128 +279,109 @@ public class AdmCalendarioBloqueiosController {
         }
     }
 
-    private void configurarAbaBloqueios() {
-        for (Month month : Month.values()) {
-            cbMes.getItems().add(month.getDisplayName(TextStyle.FULL, new Locale("pt", "BR")));
+    // --- METODOS DA ABA BLOQUEIOS E CANCELAMENTOS ---
+
+    public List<String> listarNomesDosMeses(LocalDate inicio, LocalDate fim) {
+        listaMeses = new ArrayList<>();
+
+        LocalDate atual = inicio.withDayOfMonth(1);
+
+        while (!atual.isAfter(fim.withDayOfMonth(1))) {
+            String nomeMes = atual.getMonth()
+                    .getDisplayName(TextStyle.FULL, new Locale("pt", "BR"));
+
+            nomeMes = nomeMes.substring(0, 1).toUpperCase() + nomeMes.substring(1);
+            listaMeses.add(nomeMes);
+            atual = atual.plusMonths(1);
         }
-        cbMes.setOnAction(e -> atualizarGridDias(cbMes.getSelectionModel().getSelectedIndex() + 1));
 
-        cbTurno.setItems(FXCollections.observableArrayList("Dia inteiro", "Manhã", "Noite"));
-        cbTurno.getSelectionModel().selectFirst();
-
-        listCancelamentos.setCellFactory(param -> new ListCell<>() {
-            @Override
-            protected void updateItem(CancelamentoAdm item, boolean empty) {
-                super.updateItem(item, empty);
-                if (empty || item == null) {
-                    setText(null);
-                } else {
-                    String abrangencia = item.getDia_inteiro() ? "Dia Inteiro" : item.getTurno();
-                    setText(String.format("%s - %s [%s] Motivo: %s",
-                            item.getId_cancelamento_adm(), item.getData(), abrangencia, item.getMotivo()));
-                }
-            }
-        });
-
-        listCancelamentos.getSelectionModel().selectedItemProperty().addListener((obs, oldVal, newVal) -> {
-            btnDeletar.setDisable(newVal == null);
-        });
+        return listaMeses;
     }
 
-    private void atualizarGridDias(int mesId) {
-        gridDias.getChildren().clear();
-        if (mesId < 1 || mesId > 12) return;
-
-        int anoAtual = (logado.getAno() != null) ? logado.getAno() : LocalDate.now().getYear();
-        LocalDate primeiroDiaDoMes = LocalDate.of(anoAtual, mesId, 1);
-        int diasNoMes = primeiroDiaDoMes.lengthOfMonth();
-
-        int coluna = 0;
-        int linha = 0;
-
-        for (int dia = 1; dia <= diasNoMes; dia++) {
-            final int diaAtual = dia;
-            Button btnDia = new Button(String.valueOf(dia));
-            btnDia.setPrefSize(40, 40);
-
-            btnDia.setOnAction(e -> {
-                dataSelecionadaNoCalendario = LocalDate.of(anoAtual, mesId, diaAtual);
-                boxConfigCancelamento.setVisible(true);
-                boxConfigCancelamento.setManaged(true);
-                tfMotivoCancelamento.setPromptText("Motivo para o dia " + dataSelecionadaNoCalendario);
-            });
-
-            gridDias.add(btnDia, coluna, dia);
-            coluna++;
-            if (coluna > 6) {
-                coluna = 0;
-                linha++;
-            }
-        }
-    }
-
-    private void carregarListaCancelamentos() {
+    public void carregarMesesCancelamento(int ano, int anoSemestre){
         try {
-            listaCancelamentosFX.clear();
-            var doBanco = cancelamentoDAO.listarCancelamentos(this.idSemestreAtual);
-            listaCancelamentosFX.addAll(doBanco);
-            listCancelamentos.setItems(listaCancelamentosFX);
-        } catch (SQLException e) {
-            System.err.println("Erro ao carregar lista de cancelamentos visuais: " + e.getMessage());
+            idSemestreAtual = slDao.getIdSemestreLetivo(ano, anoSemestre);
+            slAtual = slDao.listarSLPorId(idSemestreAtual);
+
+            LocalDate dataInicio = slAtual.getData_inicio();
+            LocalDate dataFim = slAtual.getData_fim();
+            ObservableList opcoesMeses = FXCollections.observableArrayList
+                    (listarNomesDosMeses(dataInicio, dataFim));
+            cbMes.setItems(opcoesMeses);
+        } catch (SQLException e){
+            e.printStackTrace();
+        }
+    }
+
+    public static Month converterNomeParaMonth(String nome) {
+        for (Month m : Month.values()) {
+            String nomePt = m.getDisplayName(TextStyle.FULL, new Locale("pt", "BR"));
+            if (nomePt.equalsIgnoreCase(nome)) {
+                return m;
+            }
+        }
+        throw new IllegalArgumentException("Mês inválido: " + nome);
+    }
+
+    @FXML
+    public void handleCancelamentoSelecaoMes(){
+        if (cbMes.getValue() == null) return;
+        gridDias.getChildren().clear();
+
+        Month mesEnum = converterNomeParaMonth(cbMes.getValue());
+        int anoRef = slAtual.getData_inicio().getYear();
+
+        LocalDate dataInicioReal = slAtual.getData_inicio();
+        LocalDate atual;
+
+        if (mesEnum == dataInicioReal.getMonth()) {
+            atual = dataInicioReal;
+        } else {
+            atual = LocalDate.of(anoRef, mesEnum, 1);
+        }
+
+        LocalDate dataFinalReal = slAtual.getData_fim();
+        LocalDate ultimoDiaDoMes = atual.withDayOfMonth(atual.lengthOfMonth());
+
+        LocalDate dataLimiteLoop;
+        if (dataFinalReal.getMonth() == mesEnum) {
+            dataLimiteLoop = dataFinalReal;
+        } else {
+            dataLimiteLoop = ultimoDiaDoMes;
+        }
+
+        int pos_linha = 0;
+        int pos_coluna = 0;
+
+        // 4. Loop Robusto: Enquanto a data atual não passar da data limite
+        while (!atual.isAfter(dataLimiteLoop)) {
+            if (pos_coluna > 5) {
+                pos_linha += 1;
+                pos_coluna = 0;
+            }
+
+            String numeroData = String.valueOf(atual.getDayOfMonth());
+            Button teste = new Button(numeroData);
+            teste.setId("btn-" + mesEnum.name() + "-" + numeroData);
+
+            gridDias.add(teste, pos_coluna, pos_linha);
+
+            pos_coluna++;
+            atual = atual.plusDays(1); // Incrementa o objeto LocalDate inteiro
         }
     }
 
     @FXML
     public void handleCancelarDatas() {
-        if (dataSelecionadaNoCalendario == null) {
-            exibirFeedback(lblFeedbackCancelamento, "Selecione um dia no grid.", true);
-            return;
-        }
 
-        String motivo = tfMotivoCancelamento.getText().trim();
-        if (motivo.isEmpty()) {
-            exibirFeedback(lblFeedbackCancelamento, "O campo Motivo é obrigatório.", true);
-            return;
-        }
-
-        String turnoSelecionado = cbTurno.getValue();
-        boolean ehDiaInteiro = "Dia inteiro".equalsIgnoreCase(turnoSelecionado);
-
-        CancelamentoAdm novoCancelamento = new CancelamentoAdm();
-        novoCancelamento.setAdm_id(ID_ADM_LOGADO);
-        novoCancelamento.setSemestre_letivo_id(this.idSemestreAtual);
-        novoCancelamento.setData(dataSelecionadaNoCalendario);
-        novoCancelamento.setTurno(ehDiaInteiro ? null : turnoSelecionado);
-        novoCancelamento.setDia_inteiro(ehDiaInteiro);
-        novoCancelamento.setMotivo(motivo);
-
-        try {
-            cancelamentoDAO.salvar(novoCancelamento);
-
-            tfMotivoCancelamento.clear();
-            boxConfigCancelamento.setVisible(false);
-            boxConfigCancelamento.setManaged(false);
-
-            carregarListaCancelamentos();
-            exibirFeedback(lblFeedbackCancelamento, "Cancelamento salvo com sucesso!", false);
-        } catch (SQLException e) {
-            exibirFeedback(lblFeedbackCancelamento, "Erro ao salvar no banco.", true);
-        }
     }
 
     @FXML
     public void handleDeletarCancelamento() {
-        CancelamentoAdm selecionado = listCancelamentos.getSelectionModel().getSelectedItem();
-        if (selecionado != null) {
-            try {
-                cancelamentoDAO.excluir(selecionado.getId_cancelamento_adm());
-                carregarListaCancelamentos();
-                exibirFeedback(lblFeedbackCancelamento, "Cancelamento excluído com sucesso.", false);
-            } catch (SQLException e) {
-                exibirFeedback(lblFeedbackCancelamento, "Erro ao excluir do banco de dados.", true);
-            }
-        }
+
     }
+
+    // --- METODOS UTILITARIOS GENERICOS ---
 
     private void exibirFeedback(Label label, String mensagem, boolean isErro) {
         label.setText(mensagem);
