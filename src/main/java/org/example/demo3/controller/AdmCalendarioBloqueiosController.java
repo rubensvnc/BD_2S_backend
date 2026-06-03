@@ -55,6 +55,7 @@ public class AdmCalendarioBloqueiosController {
     @FXML private Button btnDeletar;
     @FXML private FlowPane flowHorarios;
     @FXML private VBox painelHorarios;
+    @FXML private CheckBox checkFeriado;
 
     private final SprintDAO sprintDAO = new SprintDAO();
     private final CancelamentoAdmDAO cancelamentoDAO = new CancelamentoAdmDAO();
@@ -71,7 +72,7 @@ public class AdmCalendarioBloqueiosController {
     private SemestreLetivo slAtual;
     private String mesSelecionado;
     private List<LocalDate> listaDiaBotaoPressionado = new ArrayList<>();
-    private List<TemplateHorarioTurno> horariosSelecionados = new ArrayList<>();
+    private List<TemplateHorarioTurno> listaHorariosSelecionados = new ArrayList<>();
 
     private int idSemestreAtual;
     private int ID_ADM_LOGADO;
@@ -337,9 +338,24 @@ public class AdmCalendarioBloqueiosController {
         throw new IllegalArgumentException("Mês inválido: " + nome);
     }
 
-    public void configurarCancelamento(){
+    public void configurarComboboxCbTurno(){
         ObservableList<String> opcoesTurno = FXCollections.observableArrayList("Dia inteiro", "manha", "noite");
         cbTurno.setItems(opcoesTurno);
+    }
+
+    @FXML
+    public void handleFeriados(){
+        if (checkFeriado.isSelected()){
+            cbTurno.setValue("Dia inteiro");
+            cbTurno.setDisable(true);
+            painelHorarios.setManaged(false);
+            painelHorarios.setVisible(false);
+            listaHorariosSelecionados.clear();
+        } else {
+            cbTurno.setDisable(false);
+            painelHorarios.setManaged(false);
+            painelHorarios.setVisible(false);
+        }
     }
 
     @FXML
@@ -360,11 +376,11 @@ public class AdmCalendarioBloqueiosController {
 
                     horario.setText(hora_inicio + " - "+ hora_fim);
                     flowHorarios.getChildren().add(horario);
+                    listaHorariosSelecionados.add(tht);
                 }
             } catch (SQLException e){
                 e.printStackTrace();
             }
-
         }
     }
 
@@ -430,7 +446,7 @@ public class AdmCalendarioBloqueiosController {
                 } else {
                     boxConfigCancelamento.setManaged(true);
                     boxConfigCancelamento.setVisible(true);
-                    configurarCancelamento();
+                    configurarComboboxCbTurno();
                 }
             });
 
@@ -445,7 +461,8 @@ public class AdmCalendarioBloqueiosController {
 
     @FXML
     public void handleCancelarDatas() {
-        //
+        String motivo = tfMotivoCancelamento.getText();
+
     }
 
     @FXML
