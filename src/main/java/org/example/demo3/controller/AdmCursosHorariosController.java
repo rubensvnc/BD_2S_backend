@@ -320,6 +320,11 @@ public class AdmCursosHorariosController {
         boolean noiteSelected = tbNoite.isSelected();
         boolean ambos         = manhaSelected && noiteSelected;
 
+        if (!manhaSelected && !noiteSelected) {
+            exibirAlerta("Erro", "Selecione um turno antes de prosseguir.", Alert.AlertType.WARNING);
+            return;
+        }
+
         if (ambos) {
             Alert confirmacao = new Alert(Alert.AlertType.CONFIRMATION,
                     "Você selecionou ambos os turnos. Serão criados dois cursos idênticos: " +
@@ -346,9 +351,6 @@ public class AdmCursosHorariosController {
             } else {
                 turnoProcessando = manhaSelected ? "manha" : "noite";
 
-                TemplateHorarioTurnoDAO thtDao = new TemplateHorarioTurnoDAO();
-                List<TemplateHorarioTurno> template = thtDao.listarPorTurno(turnoProcessando);
-
                 if (checkUsarProfessor.isSelected() && idProfSelecionado != null) {
                     this.idCursoProcessando = cDao.inserirCursoRetornaId(
                             idProfSelecionado, nomeCursoProcessando,
@@ -364,19 +366,12 @@ public class AdmCursosHorariosController {
                 lblProcessoSalvarCurso.setVisible(true);
                 lblProcessoSalvarCurso.setManaged(true);
 
-                if (template.isEmpty()) {
-                    exibirAlerta("Grade não encontrada",
-                            "Não há grade cadastrada para o turno " + turnoProcessando +
-                                    ". Adicione os horários manualmente antes de salvar.",
-                            Alert.AlertType.WARNING);
-                } else {
-                    SemestreLetivoDAO slDao = new SemestreLetivoDAO();
-                    idSemestreLetivoProcessando = slDao.getIdSemestreLetivo(
-                            logado.getAno(), logado.getAnoSemestre());
-                    linhasHorarios = FXCollections.observableArrayList(template);
-                    tabelaHorarios.setItems(linhasHorarios);
-                }
+                // Tabela fica vazia — ADM adiciona manualmente ou aplica template
+                linhasHorarios.clear();
+                tabelaHorarios.setItems(linhasHorarios);
+
             }
+
 
         } catch (SQLException e) {
             e.printStackTrace();
@@ -540,8 +535,8 @@ public class AdmCursosHorariosController {
                 }
             }
 
-            // Remove da lista visual em ambos os casos
             linhasHorarios.remove(tht);
+            atualizarVisibilidadeBtnDeletarTodos();
         }
     }
 
@@ -552,16 +547,22 @@ public class AdmCursosHorariosController {
         alerta.showAndWait();
 
         if (alerta.getResult() == ButtonType.YES) {
-            try {
-                HorarioCursoDAO hcDao = new HorarioCursoDAO();
-                hcDao.removerHorariosCursoSL(idCursoProcessando, idSemestreLetivoProcessando);
-                carregarHorarios();
-            } catch (SQLException e) {
-                e.printStackTrace();
-                exibirAlerta("Erro ao deletar",
-                        "Não foi possível deletar os horários devido a dependências.",
-                        Alert.AlertType.ERROR);
+            if (idCursoProcessando != null && idSemestreLetivoProcessando != null) {
+                try {
+                    HorarioCursoDAO hcDao = new HorarioCursoDAO();
+                    hcDao.removerHorariosCursoSL(idCursoProcessando, idSemestreLetivoProcessando);
+                    carregarHorarios();
+                } catch (SQLException e) {
+                    e.printStackTrace();
+                    exibirAlerta("Erro ao deletar",
+                            "Não foi possível deletar os horários devido a dependências.",
+                            Alert.AlertType.ERROR);
+                    return;
+                }
             }
+
+            linhasHorarios.clear();
+            atualizarVisibilidadeBtnDeletarTodos();
         }
     }
 
@@ -633,6 +634,8 @@ public class AdmCursosHorariosController {
             linhasHorarios = FXCollections.observableArrayList(thtProcessando);
             tabelaHorarios.setItems(linhasHorarios);
 
+            atualizarVisibilidadeBtnDeletarTodos();
+
         } catch (SQLException e) {
             e.printStackTrace();
         }
@@ -700,6 +703,7 @@ public class AdmCursosHorariosController {
         }
         linhasHorarios.add(nova);
         tabelaHorarios.setItems(linhasHorarios);
+        atualizarVisibilidadeBtnDeletarTodos();
     }
 
     @FXML
@@ -774,26 +778,35 @@ public class AdmCursosHorariosController {
         TemplateHorarioTurnoDAO thtDao = new TemplateHorarioTurnoDAO();
         SemestreLetivoDAO slDao        = new SemestreLetivoDAO();
 
+        // Nome distinto por turno: "Engenharia - Manhã" e "Engenharia - Noite"
+        String sufixo  = "manha".equals(turno) ? " - Manhã" : " - Noite";
+        String nomeFinal = nomeCursoProcessando + sufixo;
+
         int idCurso;
         if (checkUsarProfessor.isSelected() && idProfSelecionado != null) {
             idCurso = cDao.inserirCursoRetornaId(
-                    idProfSelecionado, nomeCursoProcessando,
-                    turno, qtdSemestresProcessando);
+                    idProfSelecionado, nomeFinal, turno, qtdSemestresProcessando);
         } else {
             idCurso = cDao.inserirCursoRetornaId(
-                    nomeCursoProcessando, turno, qtdSemestresProcessando);
+                    nomeFinal, turno, qtdSemestresProcessando);
         }
 
-        List<TemplateHorarioTurno> template = thtDao.listarPorTurno(turno);
         int idSL = slDao.getIdSemestreLetivo(logado.getAno(), logado.getAnoSemestre());
+        List<TemplateHorarioTurno> template = thtDao.listarPorTurno(turno);
 
         if (template.isEmpty()) {
             exibirAlerta("Grade não encontrada — " + turno,
-                    "O curso do turno " + turno + " foi criado, mas não há grade cadastrada " +
+                    "O curso \"" + nomeFinal + "\" foi criado, mas não há grade cadastrada " +
                             "para esse turno. Selecione-o na tabela e adicione os horários manualmente.",
                     Alert.AlertType.WARNING);
         } else {
             hcDao.inserirTemplateHorarioCurso(template, idCurso, idSL);
         }
+    }
+
+    private void atualizarVisibilidadeBtnDeletarTodos() {
+        boolean visivel = linhasHorarios.size() > 1;
+        btnDeletarHorarios.setVisible(visivel);
+        btnDeletarHorarios.setManaged(visivel);
     }
 }
