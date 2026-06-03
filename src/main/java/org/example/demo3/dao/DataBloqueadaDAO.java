@@ -80,7 +80,7 @@ public class DataBloqueadaDAO {
     }
 
     public List<LocalDate> listarDatasBloqueadasPorSemestre (Integer sl){
-        String sql = "SELECT data FROM data_bloqueada WHERE semestre_letivo_id = ?";
+        String sql = "SELECT db.data FROM data_bloqueada db WHERE semestre_letivo_id = ? ORDER BY db.data;";
 
         List<LocalDate> datas = new ArrayList<>();
         try (Connection conn = DatabaseConnection.getConnection();
