@@ -30,6 +30,28 @@ public class DataBloqueadaDAO {
         }
     }
 
+    public void salvarEmLote(List<DataBloqueada> listaDatas) throws SQLException{
+        String sql = "INSERT INTO data_bloqueada (semestre_letivo_id, data, motivo, adm_id, recorrente) " +
+                "VALUES (?, ?, ?, ?, ?)";
+
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            for (DataBloqueada db: listaDatas){
+                stmt.setInt(1, db.getSemestreLetivoId());
+                stmt.setDate(2, Date.valueOf(db.getData()));
+                stmt.setString(3, db.getMotivo());
+                stmt.setInt(4, db.getAdmId());
+                stmt.setBoolean(5, db.isRecorrente());
+
+                stmt.executeUpdate();
+            }
+
+        } catch (SQLException e) {
+            System.err.println("Erro ao salvar data bloqueada em cadeia: " + e.getMessage());
+            throw e;
+        }
+    }
+
     public List<DataBloqueada> listarTodos() throws SQLException {
         String sql = "SELECT * FROM data_bloqueada ORDER BY data ASC";
         List<DataBloqueada> lista = new ArrayList<>();
