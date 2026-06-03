@@ -261,4 +261,34 @@ public class CursoDAO {
         return lista;
     }
 
+    //MÉTODO PARA CONFERIR SE O CURSO TEM DEPENDÊNCIAS (DISCIPLINAS E/OU COORDENADORES), ESTÁ SENDO UTILIZADO NA TELA DE GERENCIAMENTO DE CURSOS
+    public boolean possuiDependenciasCurso(int cursoId) throws SQLException {
+        String sql = """
+        SELECT EXISTS (
+            SELECT 1 FROM disciplina WHERE curso_id = ? AND deletado_em IS NULL
+        ) AS tem_disciplina,
+        EXISTS (
+            SELECT 1 FROM curso WHERE id_curso = ? AND coordenador_id IS NOT NULL
+        ) AS tem_coordenador,
+        EXISTS (
+            SELECT 1 FROM horario_curso WHERE curso_id = ?
+        ) AS tem_horario
+        """;
+
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, cursoId);
+            ps.setInt(2, cursoId);
+            ps.setInt(3, cursoId);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getBoolean("tem_disciplina")
+                            || rs.getBoolean("tem_coordenador")
+                            || rs.getBoolean("tem_horario");
+                }
+            }
+        }
+        return false;
+    }
+
 }
