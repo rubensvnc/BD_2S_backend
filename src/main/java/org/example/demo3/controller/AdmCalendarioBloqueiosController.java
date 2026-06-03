@@ -1,11 +1,13 @@
 package org.example.demo3.controller;
 
 import javafx.collections.FXCollections;
+import javafx.collections.ObservableArray;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.control.cell.TextFieldTableCell;
+import javafx.scene.layout.FlowPane;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.VBox;
 import javafx.util.converter.LocalDateStringConverter;
@@ -14,9 +16,11 @@ import org.example.demo3.UsuarioAtual;
 import org.example.demo3.dao.CancelamentoAdmDAO;
 import org.example.demo3.dao.SemestreLetivoDAO;
 import org.example.demo3.dao.SprintDAO;
+import org.example.demo3.dao.TemplateHorarioTurnoDAO;
 import org.example.demo3.entity.CancelamentoAdm;
 import org.example.demo3.entity.SemestreLetivo;
 import org.example.demo3.entity.Sprint;
+import org.example.demo3.entity.TemplateHorarioTurno;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -49,10 +53,14 @@ public class AdmCalendarioBloqueiosController {
     @FXML private Label lblFeedbackCancelamento;
     @FXML private ListView<CancelamentoAdm> listCancelamentos;
     @FXML private Button btnDeletar;
+    @FXML private FlowPane flowHorarios;
+    @FXML private VBox painelHorarios;
 
     private final SprintDAO sprintDAO = new SprintDAO();
     private final CancelamentoAdmDAO cancelamentoDAO = new CancelamentoAdmDAO();
     private final SemestreLetivoDAO slDao = new SemestreLetivoDAO();
+    private final TemplateHorarioTurnoDAO thtDao = new TemplateHorarioTurnoDAO();
+
     private final UsuarioAtual logado = UsuarioAtual.getInstancia();
 
     private final ObservableList<Sprint> listaSprintsFX = FXCollections.observableArrayList();
@@ -62,9 +70,11 @@ public class AdmCalendarioBloqueiosController {
     private List<String> listaMeses;
     private SemestreLetivo slAtual;
     private String mesSelecionado;
+    private List<LocalDate> listaDiaBotaoPressionado = new ArrayList<>();
+    private List<TemplateHorarioTurno> horariosSelecionados = new ArrayList<>();
 
     private int idSemestreAtual;
-    private int ID_ADM_LOGADO = logado.getId_usuario();
+    private int ID_ADM_LOGADO;
 
     @FXML
     public void initialize() {
@@ -323,6 +333,8 @@ public class AdmCalendarioBloqueiosController {
         throw new IllegalArgumentException("Mês inválido: " + nome);
     }
 
+
+
     @FXML
     public void handleCancelamentoSelecaoMes(){
         if (cbMes.getValue() == null) return;
@@ -362,18 +374,44 @@ public class AdmCalendarioBloqueiosController {
 
             String numeroData = String.valueOf(atual.getDayOfMonth());
             Button teste = new Button(numeroData);
+
+            if (listaDiaBotaoPressionado.contains(atual)) {
+                teste.setStyle("-fx-background-color: #FFFF00;");
+            } else {
+                teste.setStyle("");
+            }
+
+            LocalDate dataDesteBotao = LocalDate.of(anoRef, mesEnum, Integer.parseInt(teste.getText()));
+
+            teste.setOnAction(e -> {
+                if (listaDiaBotaoPressionado.contains(dataDesteBotao)) {
+                    teste.setStyle("");
+                    listaDiaBotaoPressionado.remove(dataDesteBotao);
+                } else {
+                    teste.setStyle("-fx-background-color: #FFFF00;");
+                    listaDiaBotaoPressionado.add(dataDesteBotao);
+                }
+                if (listaDiaBotaoPressionado.isEmpty()){
+                    boxConfigCancelamento.setManaged(false);
+                    boxConfigCancelamento.setVisible(false);
+                } else {
+                    boxConfigCancelamento.setManaged(true);
+                    boxConfigCancelamento.setVisible(true);
+                }
+            });
+
             teste.setId("btn-" + mesEnum.name() + "-" + numeroData);
 
             gridDias.add(teste, pos_coluna, pos_linha);
 
             pos_coluna++;
-            atual = atual.plusDays(1); // Incrementa o objeto LocalDate inteiro
+            atual = atual.plusDays(1);
         }
     }
 
     @FXML
     public void handleCancelarDatas() {
-
+        //
     }
 
     @FXML
