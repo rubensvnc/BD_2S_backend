@@ -69,6 +69,7 @@ public class AdmCalendarioBloqueiosController {
     private List<LocalDate> listaDiaBotaoPressionado = new ArrayList<>();
     private List<TemplateHorarioTurno> listaHorariosSelecionados = new ArrayList<>();
     private Map<LocalDate, String> mapaEstadoBotaoDia = new LinkedHashMap<>();
+    private String corBotaoSelecionada;
 
     private int idSemestreAtual;
     private int ID_ADM_LOGADO;
@@ -355,6 +356,51 @@ public class AdmCalendarioBloqueiosController {
         }
     }
 
+    public void atualizarEstadoBotaoDia(Button btnDia, LocalDate dataDesteBotao){
+        if (mapaEstadoBotaoDia.containsKey(dataDesteBotao)){
+            switch (mapaEstadoBotaoDia.get(dataDesteBotao)){
+                case "-fx-border-color: transparent; -fx-background-color: #FFFF00;" -> {
+                    btnDia.setStyle("-fx-border-color: transparent; -fx-background-color: #D3D3D3;");
+                    mapaEstadoBotaoDia.remove(dataDesteBotao);
+                    listaDiaBotaoPressionado.remove(dataDesteBotao);
+                }
+                case "-fx-border-color: transparent; -fx-background-color: #FF0000;" -> {
+                    btnDia.setStyle("-fx-border-color: #FF0000; -fx-background-color: -fx-control-inner-background;");
+                    mapaEstadoBotaoDia.put(dataDesteBotao, btnDia.getStyle());
+                    listaDiaBotaoPressionado.add(dataDesteBotao);
+                }
+                case "-fx-border-color: #FF0000; -fx-background-color: -fx-control-inner-background;" -> {
+                    btnDia.setStyle("-fx-border-color: transparent; -fx-background-color: #FF0000;");
+                    mapaEstadoBotaoDia.put(dataDesteBotao, btnDia.getStyle());
+                    listaDiaBotaoPressionado.remove(dataDesteBotao);
+                }
+                case "-fx-border-color: transparent; -fx-background-color: #FFA500;" -> {
+                    btnDia.setStyle("-fx-border-color: #FFA500; -fx-background-color: -fx-control-inner-background;");
+                    mapaEstadoBotaoDia.put(dataDesteBotao, btnDia.getStyle());
+                    listaDiaBotaoPressionado.add(dataDesteBotao);
+                }
+                case "-fx-border-color: #FFA500; -fx-background-color: -fx-control-inner-background;" -> {
+                    btnDia.setStyle("-fx-border-color: transparent; -fx-background-color: #FFA500;");
+                    mapaEstadoBotaoDia.put(dataDesteBotao, btnDia.getStyle());
+                    listaDiaBotaoPressionado.remove(dataDesteBotao);
+                }
+            }
+        } else{
+            btnDia.setStyle("-fx-border-color: transparent; -fx-background-color: #FFFF00;");
+            mapaEstadoBotaoDia.put(dataDesteBotao, btnDia.getStyle());
+            listaDiaBotaoPressionado.add(dataDesteBotao);
+        }
+
+        if (listaDiaBotaoPressionado.isEmpty()){
+            boxConfigCancelamento.setManaged(false);
+            boxConfigCancelamento.setVisible(false);
+        } else {
+            boxConfigCancelamento.setManaged(true);
+            boxConfigCancelamento.setVisible(true);
+            configurarComboboxCbTurno();
+        }
+    }
+
     @FXML
     public void handleDesfazerSelecao(){}
 
@@ -439,54 +485,35 @@ public class AdmCalendarioBloqueiosController {
             String numeroData = String.valueOf(atual.getDayOfMonth());
             Button btnDia = new Button(numeroData);
 
+            String estiloInicial = mapaEstadoBotaoDia.getOrDefault(atual, "-fx-border-color: transparent; -fx-background-color: #D3D3D3;");
+            btnDia.setStyle(estiloInicial);
+
             LocalDate dataDesteBotao = LocalDate.of(anoRef, mesEnum, Integer.parseInt(btnDia.getText()));
 
             btnDia.setOnAction(e -> {
-                if (mapaEstadoBotaoDia.containsKey(dataDesteBotao)){
-                    switch (mapaEstadoBotaoDia.get(dataDesteBotao)){
-                        case "-fx-border-color: transparent; -fx-background-color: #FFFF00;" -> {
-                            btnDia.setStyle("");
-                            mapaEstadoBotaoDia.remove(dataDesteBotao);
-                            listaDiaBotaoPressionado.remove(dataDesteBotao);
-                        }
-                        case "-fx-border-color: transparent; -fx-background-color: #FF0000;" -> {
-                            btnDia.setStyle("-fx-border-color: #FF0000; -fx-background-color: -fx-control-inner-background;");
-                            mapaEstadoBotaoDia.put(dataDesteBotao, btnDia.getStyle());
-                            listaDiaBotaoPressionado.add(dataDesteBotao);
-                        }
-                        case "-fx-border-color: #FF0000; -fx-background-color: -fx-control-inner-background;" -> {
-                            btnDia.setStyle("-fx-border-color: transparent; -fx-background-color: #FF0000;");
-                            mapaEstadoBotaoDia.put(dataDesteBotao, btnDia.getStyle());
-                            listaDiaBotaoPressionado.remove(dataDesteBotao);
-                        }
-                        case "-fx-border-color: transparent; -fx-background-color: #FFA500;" -> {
-                            btnDia.setStyle("-fx-border-color: #FFA500; -fx-background-color: -fx-control-inner-background;");
-                            mapaEstadoBotaoDia.put(dataDesteBotao, btnDia.getStyle());
-                            listaDiaBotaoPressionado.add(dataDesteBotao);
-                        }
-                        case "-fx-border-color: #FFA500; -fx-background-color: -fx-control-inner-background;" -> {
-                            btnDia.setStyle("-fx-border-color: transparent; -fx-background-color: #FFA500;");
-                            mapaEstadoBotaoDia.put(dataDesteBotao, btnDia.getStyle());
-                            listaDiaBotaoPressionado.remove(dataDesteBotao);
-                        }
-                    }
-                } else{
-                    btnDia.setStyle("-fx-border-color: transparent; -fx-background-color: #FFFF00;");
-                    mapaEstadoBotaoDia.put(dataDesteBotao, btnDia.getStyle());
-                    listaDiaBotaoPressionado.add(dataDesteBotao);
-                }
+                String estiloAtual = btnDia.getStyle();
 
-                if (listaDiaBotaoPressionado.isEmpty()){
-                    boxConfigCancelamento.setManaged(false);
-                    boxConfigCancelamento.setVisible(false);
+                if (corBotaoSelecionada == null){
+                    if (estiloAtual.contains("#")) {
+                        int inicio = estiloAtual.indexOf("#") + 1;
+                        int fim = estiloAtual.indexOf(";", inicio);
+                        corBotaoSelecionada = estiloAtual.substring(inicio, fim);
+                    }
+                    atualizarEstadoBotaoDia(btnDia, dataDesteBotao);
                 } else {
-                    boxConfigCancelamento.setManaged(true);
-                    boxConfigCancelamento.setVisible(true);
-                    configurarComboboxCbTurno();
+                    boolean ehMesmaCor = estiloAtual.contains(corBotaoSelecionada);
+                    boolean ehDesmarcarAmarelo = corBotaoSelecionada.equals("D3D3D3") && estiloAtual.contains("FFFF00");
+                    if (ehMesmaCor || ehDesmarcarAmarelo) {
+                        atualizarEstadoBotaoDia(btnDia, dataDesteBotao);
+                    }
+
+                    if (listaDiaBotaoPressionado.isEmpty()) {
+                        corBotaoSelecionada = null;
+                    }
                 }
             });
 
-            btnDia.setStyle(mapaEstadoBotaoDia.getOrDefault(atual, ""));
+            btnDia.setStyle(mapaEstadoBotaoDia.getOrDefault(atual, estiloInicial));
 
             btnDia.setId("btn-" + mesEnum.name() + "-" + numeroData);
 
