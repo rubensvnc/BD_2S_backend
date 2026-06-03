@@ -22,6 +22,9 @@
 <?import javafx.scene.layout.RowConstraints?>
 <?import javafx.scene.layout.VBox?>
 
+<?import javafx.scene.control.ToggleButton?>
+<?import atlantafx.base.controls.ToggleSwitch?>
+<?import javafx.scene.control.CheckBox?>
 <BorderPane xmlns="http://javafx.com/javafx/26" xmlns:fx="http://javafx.com/fxml/1" fx:controller="org.example.demo3.controller.AdmCalendarioBloqueiosController">
 
     <top>
@@ -118,6 +121,8 @@
                         <VBox fx:id="boxConfigCancelamento" managed="false" spacing="8" visible="false">
                             <Separator />
                             <Label style="-fx-font-weight: bold; -fx-font-size: 13px;" text="Configurar Cancelamento" />
+
+                            <CheckBox fx:id="checkFeriado" onAction="#handleFeriados" text="É feriado?" />
 
                             <HBox alignment="CENTER_LEFT" spacing="10">
                                 <Label text="Turno:" />
