@@ -78,6 +78,10 @@ public class AdmCalendarioBloqueiosController {
 
     @FXML
     public void initialize() {
+        //REMOVER ESSA VARIAVEIS DEPOIS:
+        logado.setId_usuario(1);
+        logado.setTipo("ADM");
+
         ID_ADM_LOGADO = logado.getId_usuario();
         configurarTabelaSprints();
 
@@ -333,7 +337,36 @@ public class AdmCalendarioBloqueiosController {
         throw new IllegalArgumentException("Mês inválido: " + nome);
     }
 
+    public void configurarCancelamento(){
+        ObservableList<String> opcoesTurno = FXCollections.observableArrayList("Dia inteiro", "manha", "noite");
+        cbTurno.setItems(opcoesTurno);
+    }
 
+    @FXML
+    public void handleSelecaoTurno(){
+        if (cbTurno.getValue() == null) return;
+        flowHorarios.getChildren().clear();
+
+        painelHorarios.setManaged(true);
+        painelHorarios.setVisible(true);
+
+        if (!cbTurno.getValue().equals("Dia inteiro")){
+            try{
+                List<TemplateHorarioTurno> listaHorarios = thtDao.listarPorTurno(cbTurno.getValue());
+                for (TemplateHorarioTurno tht: listaHorarios){
+                    CheckBox horario = new CheckBox();
+                    String hora_inicio = String.valueOf(tht.getHora_inicio());
+                    String hora_fim = String.valueOf(tht.getHora_fim());
+
+                    horario.setText(hora_inicio + " - "+ hora_fim);
+                    flowHorarios.getChildren().add(horario);
+                }
+            } catch (SQLException e){
+                e.printStackTrace();
+            }
+
+        }
+    }
 
     @FXML
     public void handleCancelamentoSelecaoMes(){
@@ -397,6 +430,7 @@ public class AdmCalendarioBloqueiosController {
                 } else {
                     boxConfigCancelamento.setManaged(true);
                     boxConfigCancelamento.setVisible(true);
+                    configurarCancelamento();
                 }
             });
 
