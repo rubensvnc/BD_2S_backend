@@ -23,6 +23,7 @@ import java.util.Map;
 
 public class AdmCursosHorariosController {
 
+    //ITENS DO FXML
     @FXML private TextField tfCursoNome;
     @FXML private ToggleButton tbManha;
     @FXML private ToggleButton tbNoite;
@@ -48,8 +49,7 @@ public class AdmCursosHorariosController {
     @FXML private TableColumn<TemplateHorarioTurno, Void> colHAcao;
     @FXML private Button btnDeletarHorarios;
 
-    // Label do CheckBox — alterado via lookup no initialize
-    // (sem fx:id no FXML, por isso usamos referência direta ao CheckBox)
+    //ATRIBUTOS E ENTIDADES
 
     private UsuarioAtual logado = UsuarioAtual.getInstancia();
     private Integer ano;
@@ -506,6 +506,16 @@ public class AdmCursosHorariosController {
             try {
                 CursoDAO cDao = new CursoDAO();
                 int idCurso   = cDao.listarIdCurso(linhaCurso.getNome());
+
+                if (cDao.possuiDependenciasCurso(idCurso)) {
+                    exibirAlerta("Exclusão bloqueada",
+                            "O curso \"" + linhaCurso.getNome() + "\" possui horários, disciplinas ou " +
+                                    "coordenador vinculados e não pode ser excluído. " +
+                                    "Remova as dependências antes de excluir o curso.",
+                            Alert.AlertType.WARNING);
+                    return;
+                }
+
                 cDao.deletarCursoProcessando(idCurso);
                 carregarCursos();
             } catch (SQLException e) {
