@@ -356,6 +356,9 @@ public class AdmCalendarioBloqueiosController {
     }
 
     @FXML
+    public void handleDesfazerSelecao(){}
+
+    @FXML
     public void handleFeriados(){
         if (checkFeriado.isSelected()){
             cbTurno.setValue("Dia inteiro");
