@@ -425,7 +425,6 @@ public class AdmCalendarioBloqueiosController {
         int pos_linha = 0;
         int pos_coluna = 0;
 
-        // 4. Loop Robusto: Enquanto a data atual não passar da data limite
         while (!atual.isAfter(dataLimiteLoop)) {
             if (pos_coluna > 5) {
                 pos_linha += 1;
@@ -435,22 +434,43 @@ public class AdmCalendarioBloqueiosController {
             String numeroData = String.valueOf(atual.getDayOfMonth());
             Button teste = new Button(numeroData);
 
-            if (listaDiaBotaoPressionado.contains(atual)) {
-                teste.setStyle("-fx-background-color: #FFFF00;");
-            } else {
-                teste.setStyle("");
-            }
-
             LocalDate dataDesteBotao = LocalDate.of(anoRef, mesEnum, Integer.parseInt(teste.getText()));
 
             teste.setOnAction(e -> {
-                if (listaDiaBotaoPressionado.contains(dataDesteBotao)) {
-                    teste.setStyle("");
-                    listaDiaBotaoPressionado.remove(dataDesteBotao);
-                } else {
-                    teste.setStyle("-fx-background-color: #FFFF00;");
+                if (mapaEstadoBotaoDia.containsKey(dataDesteBotao)){
+                    switch (mapaEstadoBotaoDia.get(dataDesteBotao)){
+                        case "-fx-border-color: transparent; -fx-background-color: #FFFF00;" -> {
+                            teste.setStyle("");
+                            mapaEstadoBotaoDia.remove(dataDesteBotao);
+                            listaDiaBotaoPressionado.remove(dataDesteBotao);
+                        }
+                        case "-fx-border-color: transparent; -fx-background-color: #FF0000;" -> {
+                            teste.setStyle("-fx-border-color: #FF0000; -fx-background-color: -fx-control-inner-background;");
+                            mapaEstadoBotaoDia.put(dataDesteBotao, teste.getStyle());
+                            listaDiaBotaoPressionado.add(dataDesteBotao);
+                        }
+                        case "-fx-border-color: #FF0000; -fx-background-color: -fx-control-inner-background;" -> {
+                            teste.setStyle("-fx-border-color: transparent; -fx-background-color: #FF0000;");
+                            mapaEstadoBotaoDia.put(dataDesteBotao, teste.getStyle());
+                            listaDiaBotaoPressionado.remove(dataDesteBotao);
+                        }
+                        case "-fx-border-color: transparent; -fx-background-color: #FFA500;" -> {
+                            teste.setStyle("-fx-border-color: #FFA500; -fx-background-color: -fx-control-inner-background;");
+                            mapaEstadoBotaoDia.put(dataDesteBotao, teste.getStyle());
+                            listaDiaBotaoPressionado.add(dataDesteBotao);
+                        }
+                        case "-fx-border-color: #FFA500; -fx-background-color: -fx-control-inner-background;" -> {
+                            teste.setStyle("-fx-border-color: transparent; -fx-background-color: #FFA500;");
+                            mapaEstadoBotaoDia.put(dataDesteBotao, teste.getStyle());
+                            listaDiaBotaoPressionado.remove(dataDesteBotao);
+                        }
+                    }
+                } else{
+                    teste.setStyle("-fx-border-color: transparent; -fx-background-color: #FFFF00;");
+                    mapaEstadoBotaoDia.put(dataDesteBotao, teste.getStyle());
                     listaDiaBotaoPressionado.add(dataDesteBotao);
                 }
+
                 if (listaDiaBotaoPressionado.isEmpty()){
                     boxConfigCancelamento.setManaged(false);
                     boxConfigCancelamento.setVisible(false);
@@ -460,6 +480,8 @@ public class AdmCalendarioBloqueiosController {
                     configurarComboboxCbTurno();
                 }
             });
+
+            teste.setStyle(mapaEstadoBotaoDia.getOrDefault(atual, ""));
 
             teste.setId("btn-" + mesEnum.name() + "-" + numeroData);
 
