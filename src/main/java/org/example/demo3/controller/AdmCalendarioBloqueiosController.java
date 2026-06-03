@@ -337,7 +337,7 @@ public class AdmCalendarioBloqueiosController {
         cbTurno.setItems(opcoesTurno);
     }
 
-    public void recupearCancelamentos(){
+    public void recuperarCancelamentos(){
         List<LocalDate> datasBloqueadasRecuperadas = databDao.listarDatasBloqueadasPorSemestre(idSemestreAtual);
         List<CancelamentoAdm> datasCanceladasRecuperadas = cancelamentoDAO.listarPorSemestre(idSemestreAtual);
 
@@ -398,7 +398,7 @@ public class AdmCalendarioBloqueiosController {
     public void handleCancelamentoSelecaoMes(){
         if (cbMes.getValue() == null) return;
         gridDias.getChildren().clear();
-        if (mapaEstadoBotaoDia.isEmpty()) recupearCancelamentos();
+        if (mapaEstadoBotaoDia.isEmpty()) recuperarCancelamentos();
 
         Month mesEnum = converterNomeParaMonth(cbMes.getValue());
         int anoRef = slAtual.getData_inicio().getYear();
