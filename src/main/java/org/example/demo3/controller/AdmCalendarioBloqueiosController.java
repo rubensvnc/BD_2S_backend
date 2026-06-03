@@ -48,6 +48,8 @@ public class AdmCalendarioBloqueiosController {
     @FXML private FlowPane flowHorarios;
     @FXML private VBox painelHorarios;
     @FXML private CheckBox checkFeriado;
+    @FXML private Button btnCancelar;
+    @FXML private Button btnDesfazer;
 
     private final SprintDAO sprintDAO = new SprintDAO();
     private final CancelamentoAdmDAO cancelamentoDAO = new CancelamentoAdmDAO();
@@ -432,42 +434,42 @@ public class AdmCalendarioBloqueiosController {
             }
 
             String numeroData = String.valueOf(atual.getDayOfMonth());
-            Button teste = new Button(numeroData);
+            Button btnDia = new Button(numeroData);
 
-            LocalDate dataDesteBotao = LocalDate.of(anoRef, mesEnum, Integer.parseInt(teste.getText()));
+            LocalDate dataDesteBotao = LocalDate.of(anoRef, mesEnum, Integer.parseInt(btnDia.getText()));
 
-            teste.setOnAction(e -> {
+            btnDia.setOnAction(e -> {
                 if (mapaEstadoBotaoDia.containsKey(dataDesteBotao)){
                     switch (mapaEstadoBotaoDia.get(dataDesteBotao)){
                         case "-fx-border-color: transparent; -fx-background-color: #FFFF00;" -> {
-                            teste.setStyle("");
+                            btnDia.setStyle("");
                             mapaEstadoBotaoDia.remove(dataDesteBotao);
                             listaDiaBotaoPressionado.remove(dataDesteBotao);
                         }
                         case "-fx-border-color: transparent; -fx-background-color: #FF0000;" -> {
-                            teste.setStyle("-fx-border-color: #FF0000; -fx-background-color: -fx-control-inner-background;");
-                            mapaEstadoBotaoDia.put(dataDesteBotao, teste.getStyle());
+                            btnDia.setStyle("-fx-border-color: #FF0000; -fx-background-color: -fx-control-inner-background;");
+                            mapaEstadoBotaoDia.put(dataDesteBotao, btnDia.getStyle());
                             listaDiaBotaoPressionado.add(dataDesteBotao);
                         }
                         case "-fx-border-color: #FF0000; -fx-background-color: -fx-control-inner-background;" -> {
-                            teste.setStyle("-fx-border-color: transparent; -fx-background-color: #FF0000;");
-                            mapaEstadoBotaoDia.put(dataDesteBotao, teste.getStyle());
+                            btnDia.setStyle("-fx-border-color: transparent; -fx-background-color: #FF0000;");
+                            mapaEstadoBotaoDia.put(dataDesteBotao, btnDia.getStyle());
                             listaDiaBotaoPressionado.remove(dataDesteBotao);
                         }
                         case "-fx-border-color: transparent; -fx-background-color: #FFA500;" -> {
-                            teste.setStyle("-fx-border-color: #FFA500; -fx-background-color: -fx-control-inner-background;");
-                            mapaEstadoBotaoDia.put(dataDesteBotao, teste.getStyle());
+                            btnDia.setStyle("-fx-border-color: #FFA500; -fx-background-color: -fx-control-inner-background;");
+                            mapaEstadoBotaoDia.put(dataDesteBotao, btnDia.getStyle());
                             listaDiaBotaoPressionado.add(dataDesteBotao);
                         }
                         case "-fx-border-color: #FFA500; -fx-background-color: -fx-control-inner-background;" -> {
-                            teste.setStyle("-fx-border-color: transparent; -fx-background-color: #FFA500;");
-                            mapaEstadoBotaoDia.put(dataDesteBotao, teste.getStyle());
+                            btnDia.setStyle("-fx-border-color: transparent; -fx-background-color: #FFA500;");
+                            mapaEstadoBotaoDia.put(dataDesteBotao, btnDia.getStyle());
                             listaDiaBotaoPressionado.remove(dataDesteBotao);
                         }
                     }
                 } else{
-                    teste.setStyle("-fx-border-color: transparent; -fx-background-color: #FFFF00;");
-                    mapaEstadoBotaoDia.put(dataDesteBotao, teste.getStyle());
+                    btnDia.setStyle("-fx-border-color: transparent; -fx-background-color: #FFFF00;");
+                    mapaEstadoBotaoDia.put(dataDesteBotao, btnDia.getStyle());
                     listaDiaBotaoPressionado.add(dataDesteBotao);
                 }
 
@@ -481,11 +483,11 @@ public class AdmCalendarioBloqueiosController {
                 }
             });
 
-            teste.setStyle(mapaEstadoBotaoDia.getOrDefault(atual, ""));
+            btnDia.setStyle(mapaEstadoBotaoDia.getOrDefault(atual, ""));
 
-            teste.setId("btn-" + mesEnum.name() + "-" + numeroData);
+            btnDia.setId("btn-" + mesEnum.name() + "-" + numeroData);
 
-            gridDias.add(teste, pos_coluna, pos_linha);
+            gridDias.add(btnDia, pos_coluna, pos_linha);
 
             pos_coluna++;
             atual = atual.plusDays(1);
