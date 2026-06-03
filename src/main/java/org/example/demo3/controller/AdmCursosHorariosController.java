@@ -7,8 +7,10 @@ import javafx.scene.control.*;
 import javafx.scene.control.cell.ComboBoxTableCell;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.control.cell.TextFieldTableCell;
+import javafx.scene.input.KeyEvent;
 import javafx.scene.input.MouseEvent;
 import javafx.util.Callback;
+import jdk.jfr.EventType;
 import org.example.demo3.UsuarioAtual;
 import org.example.demo3.dao.*;
 import org.example.demo3.dto.AdmCursoExibicao;
@@ -74,6 +76,7 @@ public class AdmCursosHorariosController {
 
     @FXML
     public void initialize() {
+        tabelaHorarios.setDisable(true);
 
         logado.usuarioAdm();
 
@@ -288,6 +291,7 @@ public class AdmCursosHorariosController {
         tabelaCursos.getSelectionModel().clearSelection();
         linhasHorarios.clear();
         btnDeletarHorarios.setVisible(false);
+        painelFormCurso.setExpanded(false);
     }
 
     @FXML
@@ -358,6 +362,11 @@ public class AdmCursosHorariosController {
             } else {
                 turnoProcessando = manhaSelected ? "manha" : "noite";
 
+                if (nomeCursoProcessando == null || nomeCursoProcessando.isBlank()) {
+                    exibirAlerta("Campo obrigatório", "O nome do curso não pode estar vazio.", Alert.AlertType.WARNING);
+                    return;
+                }
+
                 if (checkUsarProfessor.isSelected() && idProfSelecionado != null) {
                     this.idCursoProcessando = cDao.inserirCursoRetornaId(
                             idProfSelecionado, nomeCursoProcessando,
@@ -372,11 +381,10 @@ public class AdmCursosHorariosController {
                 btnSalvarCurso.setDisable(true);
                 lblProcessoSalvarCurso.setVisible(true);
                 lblProcessoSalvarCurso.setManaged(true);
-
-                // Tabela fica vazia — ADM adiciona manualmente ou aplica template
                 linhasHorarios.clear();
                 tabelaHorarios.setItems(linhasHorarios);
-
+                tabelaHorarios.setDisable(false);
+                painelFormCurso.setExpanded(false);
             }
 
 
@@ -492,6 +500,14 @@ public class AdmCursosHorariosController {
     }
 
     public void handleEditarHorario() {
+        if (tabelaHorarios.getItems() == null || tabelaHorarios.getItems().isEmpty()) {
+            exibirAlerta("Grade obrigatória",
+                    "Não é possível concluir o cadastro sem adicionar a grade de horários. " +
+                            "Adicione ao menos um horário ou cancele o cadastro.",
+                    Alert.AlertType.WARNING);
+            return;
+        }
+
         HorarioCursoDAO hcDao = new HorarioCursoDAO();
         try {
             hcDao.removerHorariosCursoSL(idCursoProcessando, idSemestreLetivoProcessando);
@@ -504,6 +520,10 @@ public class AdmCursosHorariosController {
                     "Estes horários não podem ser alterados ou removidos porque existem dependências vinculadas.",
                     Alert.AlertType.WARNING);
         }
+        reiniciarValoresDadosCurso();
+        painelFormCurso.setExpanded(false);
+        tabelaHorarios.setDisable(true);
+        tabelaCursos.setDisable(false);
     }
 
     public void handleDeletarCurso(AdmCursoExibicao linhaCurso) {
@@ -756,8 +776,10 @@ public class AdmCursosHorariosController {
             e.printStackTrace();
             exibirAlerta("Erro ao salvar", "Não foi possível salvar os horários.", Alert.AlertType.ERROR);
         }
+        tabelaHorarios.setDisable(true);
         tabelaCursos.setDisable(false);
         tabelaCursos.getSelectionModel().clearSelection();
+        painelFormCurso.setExpanded(false);
     }
 
     // =========================================================================
@@ -831,4 +853,5 @@ public class AdmCursosHorariosController {
         btnDeletarHorarios.setVisible(visivel);
         btnDeletarHorarios.setManaged(visivel);
     }
+
 }
