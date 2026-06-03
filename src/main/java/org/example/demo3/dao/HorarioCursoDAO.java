@@ -108,33 +108,26 @@ public class HorarioCursoDAO {
         }
     }
 
+
     public void inserirTemplateHorarioCurso(List<TemplateHorarioTurno> thtLista,
-                                            Integer cursoId, Integer slId) throws SQLException{
+                                            Integer cursoId, Integer slId) throws SQLException {
+        String sql = """
+        INSERT INTO horario_curso (curso_id, semestre_letivo_id, tipo, numero_ordem, hora_inicio, hora_fim)
+        VALUES (?, ?, ?, ?, ?, ?)
+        """;
 
-        try (Connection connection = DatabaseConnection.getConnection()) {for (TemplateHorarioTurno tht: thtLista) {
-
-
-            String sql = """
-                        INSERT INTO horario_curso (
-                    curso_id, semestre_letivo_id, tipo, numero_ordem, hora_inicio, hora_fim)
-                                    VALUES (?, ?, ?, ?, ?, ?);
-    
-                       """;
-try (PreparedStatement ps = connection.prepareStatement(sql)) {
-
-                ps.setInt(1, cursoId);
-                ps.setInt(2, slId);
-                ps.setString(3, tht.getTipo());
-                ps.setInt(4, tht.getNumero_ordem());
-                ps.setObject(5, tht.getHora_inicio());
-                ps.setObject(6, tht.getHora_fim());
-                ps.executeUpdate();
+        try (Connection connection = DatabaseConnection.getConnection()) {
+            for (TemplateHorarioTurno tht : thtLista) {
+                try (PreparedStatement ps = connection.prepareStatement(sql)) {
+                    ps.setInt(1, cursoId);
+                    ps.setInt(2, slId);
+                    ps.setString(3, tht.getTipo());
+                    ps.setInt(4, tht.getNumero_ordem());
+                    ps.setObject(5, tht.getHora_inicio());
+                    ps.setObject(6, tht.getHora_fim());
+                    ps.executeUpdate();
+                }
             }
-        }
-
-        } catch (SQLException e){
-            e.printStackTrace();
-
         }
     }
 
