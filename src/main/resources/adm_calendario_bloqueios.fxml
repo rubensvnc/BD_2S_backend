@@ -121,7 +121,7 @@
 
                             <HBox alignment="CENTER_LEFT" spacing="10">
                                 <Label text="Turno:" />
-                                <ComboBox fx:id="cbTurno" promptText="Dia inteiro" />
+                                <ComboBox fx:id="cbTurno" promptText="Dia inteiro" onAction="#handleSelecaoTurno"/>
                             </HBox>
 
                             <VBox fx:id="painelHorarios" managed="false" spacing="4" visible="false">
