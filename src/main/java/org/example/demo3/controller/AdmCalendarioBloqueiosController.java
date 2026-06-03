@@ -13,14 +13,8 @@ import javafx.scene.layout.VBox;
 import javafx.util.converter.LocalDateStringConverter;
 import org.example.demo3.DatabaseConnection;
 import org.example.demo3.UsuarioAtual;
-import org.example.demo3.dao.CancelamentoAdmDAO;
-import org.example.demo3.dao.SemestreLetivoDAO;
-import org.example.demo3.dao.SprintDAO;
-import org.example.demo3.dao.TemplateHorarioTurnoDAO;
-import org.example.demo3.entity.CancelamentoAdm;
-import org.example.demo3.entity.SemestreLetivo;
-import org.example.demo3.entity.Sprint;
-import org.example.demo3.entity.TemplateHorarioTurno;
+import org.example.demo3.dao.*;
+import org.example.demo3.entity.*;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -59,6 +53,7 @@ public class AdmCalendarioBloqueiosController {
 
     private final SprintDAO sprintDAO = new SprintDAO();
     private final CancelamentoAdmDAO cancelamentoDAO = new CancelamentoAdmDAO();
+    private final DataBloqueadaDAO databDao = new DataBloqueadaDAO();
     private final SemestreLetivoDAO slDao = new SemestreLetivoDAO();
     private final TemplateHorarioTurnoDAO thtDao = new TemplateHorarioTurnoDAO();
 
@@ -462,6 +457,23 @@ public class AdmCalendarioBloqueiosController {
     @FXML
     public void handleCancelarDatas() {
         String motivo = tfMotivoCancelamento.getText();
+        List<DataBloqueada> listaDatasBloqueadas = new ArrayList<>();
+        try{
+            if (checkFeriado.isSelected()){
+                for (LocalDate data: listaDiaBotaoPressionado){
+                    DataBloqueada datab = new DataBloqueada();
+                    datab.setData(data);
+                    datab.setAdmId(logado.getId_usuario());
+                    datab.setMotivo(motivo);
+                    datab.setRecorrente(true);
+                    datab.setSemestreLetivoId(idSemestreAtual);
+                    listaDatasBloqueadas.add(datab);
+                }
+                databDao.salvarEmLote(listaDatasBloqueadas);
+            }
+        } catch (SQLException e){
+            e.printStackTrace();
+        }
 
     }
 
