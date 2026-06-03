@@ -95,6 +95,7 @@ public class AdmCursosHorariosController {
         tabelaCursos.getSelectionModel().selectedItemProperty().addListener(
                 (observable, linhaAntiga, linhaSelecionadaCurso) -> {
                     if (linhaSelecionadaCurso != null) {
+                        tabelaCursos.setDisable(true);
                         thtProcessando.clear();
                         linhasHorarios.clear();
                         preencherDadosEdicaoCurso(linhaSelecionadaCurso);
@@ -228,6 +229,7 @@ public class AdmCursosHorariosController {
 
     @FXML
     public void handleNovoCurso() {
+        tabelaCursos.setDisable(true);
         reiniciarValoresDadosCurso();
         tabelaHorarios.setItems(null);
         painelFormCurso.setExpanded(true);
@@ -281,6 +283,11 @@ public class AdmCursosHorariosController {
             }
         }
         alterarEstadoEdicaoDadosCurso(false);
+        reiniciarValoresDadosCurso();
+        tabelaCursos.setDisable(false);
+        tabelaCursos.getSelectionModel().clearSelection();
+        linhasHorarios.clear();
+        btnDeletarHorarios.setVisible(false);
     }
 
     @FXML
@@ -376,11 +383,13 @@ public class AdmCursosHorariosController {
         } catch (SQLException e) {
             e.printStackTrace();
         }
+        reiniciarValoresDadosCurso();
+        tabelaCursos.setDisable(false);
+        tabelaCursos.getSelectionModel().clearSelection();
     }
 
     public void preencherDadosEdicaoCurso(AdmCursoExibicao c) {
         painelFormCurso.setExpanded(true);
-
         tfCursoNome.setText(c.getNome());
         if ("manha".equals(c.getTurno())) {
             tbManha.setSelected(true);
@@ -446,6 +455,7 @@ public class AdmCursosHorariosController {
         } catch (SQLException e) {
             e.printStackTrace();
         }
+
     }
 
     public void handleEditarCurso(AdmCursoExibicao linhaAnterior) {
@@ -746,6 +756,8 @@ public class AdmCursosHorariosController {
             e.printStackTrace();
             exibirAlerta("Erro ao salvar", "Não foi possível salvar os horários.", Alert.AlertType.ERROR);
         }
+        tabelaCursos.setDisable(false);
+        tabelaCursos.getSelectionModel().clearSelection();
     }
 
     // =========================================================================
