@@ -23,9 +23,7 @@ import java.sql.SQLException;
 import java.time.LocalDate;
 import java.time.Month;
 import java.time.format.TextStyle;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Locale;
+import java.util.*;
 
 public class AdmCalendarioBloqueiosController {
 
@@ -68,6 +66,7 @@ public class AdmCalendarioBloqueiosController {
     private String mesSelecionado;
     private List<LocalDate> listaDiaBotaoPressionado = new ArrayList<>();
     private List<TemplateHorarioTurno> listaHorariosSelecionados = new ArrayList<>();
+    private Map<LocalDate, String> mapaEstadoBotaoDia = new LinkedHashMap<>();
 
     private int idSemestreAtual;
     private int ID_ADM_LOGADO;
@@ -338,6 +337,22 @@ public class AdmCalendarioBloqueiosController {
         cbTurno.setItems(opcoesTurno);
     }
 
+    public void recupearCancelamentos(){
+        List<LocalDate> datasBloqueadasRecuperadas = databDao.listarDatasBloqueadasPorSemestre(idSemestreAtual);
+        List<CancelamentoAdm> datasCanceladasRecuperadas = cancelamentoDAO.listarPorSemestre(idSemestreAtual);
+
+        for (LocalDate data: datasBloqueadasRecuperadas){
+            mapaEstadoBotaoDia.put(data, "-fx-border-color: transparent; -fx-background-color: #FFA500;");
+        }
+
+        for (CancelamentoAdm cadm: datasCanceladasRecuperadas){
+            LocalDate data = cadm.getData();
+            if (!mapaEstadoBotaoDia.containsKey(data)){
+                mapaEstadoBotaoDia.put(data, "-fx-border-color: transparent; -fx-background-color: #FF0000;");
+            }
+        }
+    }
+
     @FXML
     public void handleFeriados(){
         if (checkFeriado.isSelected()){
@@ -383,6 +398,7 @@ public class AdmCalendarioBloqueiosController {
     public void handleCancelamentoSelecaoMes(){
         if (cbMes.getValue() == null) return;
         gridDias.getChildren().clear();
+        if (mapaEstadoBotaoDia.isEmpty()) recupearCancelamentos();
 
         Month mesEnum = converterNomeParaMonth(cbMes.getValue());
         int anoRef = slAtual.getData_inicio().getYear();
