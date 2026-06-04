@@ -13,80 +13,85 @@
 <?import javafx.scene.layout.StackPane?>
 <?import javafx.scene.layout.VBox?>
 
-<BorderPane prefHeight="768" prefWidth="1366" xmlns="http://javafx.com/javafx/25" xmlns:fx="http://javafx.com/fxml/1" fx:controller="org.example.demo3.controller.MainShellController" stylesheets="@style.css">
+<BorderPane prefHeight="768" prefWidth="1366" stylesheets="@style.css" xmlns="http://javafx.com/javafx/25" xmlns:fx="http://javafx.com/fxml/1" fx:controller="org.example.demo3.controller.MainShellController">
 
     <top>
         <VBox>
-            <ToolBar style="-fx-background-color: #2c3e50; -fx-padding: 6 12;">
+            <ToolBar>
 
-                <Label style="-fx-text-fill: #ffffff;" text="Ano:" />
-                <ComboBox fx:id="cbAno" onAction="#handleTrocaAno" prefWidth="80" />
+                <Label styleClass="nav-brand" text="SwiftPlan" />
 
-                <Separator opacity="0.0" orientation="VERTICAL" />
+                <Separator opacity="0.25" orientation="VERTICAL" />
 
-                <Label style="-fx-text-fill: #ffffff;" text="Semestre:" />
-                <ToggleButton fx:id="tbSem1" onAction="#handleSemestreToggle" text="1º"/>
-                <ToggleButton fx:id="tbSem2" onAction="#handleSemestreToggle" text="2º"/>
+                <Label text="Ano:" />
+                <ComboBox fx:id="cbAno" onAction="#handleTrocaAno" prefHeight="35.0" prefWidth="102.0" />
 
                 <Separator opacity="0.0" orientation="VERTICAL" />
 
-                <Label fx:id="lblCurso" style="-fx-text-fill: #ffffff;" text="Curso:" />
+                <Label text="Semestre:" />
+                <ToggleButton fx:id="tbSem1" onAction="#handleSemestreToggle" text="1º" />
+                <ToggleButton fx:id="tbSem2" onAction="#handleSemestreToggle" text="2º" />
+
+                <Separator opacity="0.0" orientation="VERTICAL" />
+
+                <Label fx:id="lblCurso" text="Curso:" />
                 <ComboBox fx:id="cbCurso" onAction="#handleTrocaCurso" prefWidth="200" />
 
                 <Separator opacity="0.0" orientation="VERTICAL" />
 
-                <Label fx:id="lblSemestreCurso" style="-fx-text-fill: #ffffff;" text="Sem. do Curso:" />
+                <Label fx:id="lblSemestreCurso" text="Sem. do Curso:" />
                 <ComboBox fx:id="cbSemestreCurso" onAction="#handleTrocaSemestreCurso" prefWidth="80" />
 
                 <Separator opacity="0.0" orientation="VERTICAL" />
 
-                <Label fx:id="lblDisciplina" style="-fx-text-fill: #ffffff;" text="Disciplina:" />
+                <Label fx:id="lblDisciplina" text="Disciplina:" />
                 <ComboBox fx:id="cbDisciplina" onAction="#handleTrocaDisciplina" prefWidth="120" />
 
                 <Separator opacity="0.0" orientation="VERTICAL" />
 
-
                 <Region HBox.hgrow="ALWAYS" />
 
-                <Label fx:id="lblNomeUsuario" style="-fx-text-fill: #ecf0f1; -fx-font-weight: bold;" />
-                <Label fx:id="lblPerfilUsuario" style="-fx-text-fill: #ffffff; -fx-font-size: 11px;" />
+                <VBox alignment="CENTER_RIGHT" spacing="1">
+                    <Label fx:id="lblNomeUsuario" styleClass="user-name" />
+                    <Label fx:id="lblPerfilUsuario" styleClass="user-role" />
+                </VBox>
+
                 <Separator opacity="0.0" orientation="VERTICAL" />
-                <Button onAction="#handleLogout" style="-fx-background-color: transparent; -fx-text-fill: #ecf0f1; -fx-border-color: #7f8c8d; -fx-border-radius: 3;" text="Sair" />
+                <Button onAction="#handleLogout" text="Sair" />
             </ToolBar>
 
-            <Label fx:id="bannerReadOnly" managed="false" maxWidth="Infinity" style="-fx-background-color: #f39c12; -fx-text-fill: #2c3e50;                           -fx-padding: 5 12; -fx-font-weight: bold; -fx-font-size: 12px;" text="⚠   Você está visualizando um período passado — modo somente leitura" textAlignment="CENTER" visible="false" />
+            <Label fx:id="bannerReadOnly" managed="false" maxWidth="Infinity" styleClass="banner-readonly" text="⚠   Você está visualizando um período passado — modo somente leitura" textAlignment="CENTER" visible="false" />
         </VBox>
     </top>
 
     <left>
-        <VBox fx:id="menuLateral" prefWidth="210" spacing="2" style="-fx-background-color: #34495e;">
+        <VBox fx:id="menuLateral" prefWidth="210" spacing="2" styleClass="sidebar">
             <padding><Insets bottom="14" left="8" right="8" top="14" /></padding>
 
             <VBox fx:id="secaoAdm" managed="false" spacing="2" visible="false">
-                <Label style="-fx-text-fill: #ffffff; -fx-font-weight: bold; -fx-font-size: 10px; -fx-padding: 6 0 2 4;" text="ADMINISTRADOR" />
-                <Button maxWidth="Infinity" onAction="#navCalendario" styleClass="menu-item" style="-fx-text-fill: white; -fx-background-color: transparent; -fx-alignment: center-left;" text="📅  Calendário Acadêmico" />
-                <Button maxWidth="Infinity" onAction="#navCursosHorarios" styleClass="menu-item" style="-fx-text-fill: white; -fx-background-color: transparent; -fx-alignment: center-left;" text="🏫  Cursos e Horários" />
-                <Button maxWidth="Infinity" onAction="#navCoordenaodresAdms" styleClass="menu-item" style="-fx-text-fill: white; -fx-background-color: transparent; -fx-alignment: center-left;" text="👥  Coordenadores / ADMs" />
-                <Button maxWidth="Infinity" onAction="#navCalendario" styleClass="menu-item" style="-fx-text-fill: white; -fx-background-color: transparent; -fx-alignment: center-left;" text="🚫  Bloqueios e Cancelamentos" />
+                <Label styleClass="sidebar-group-label" text="ADMINISTRADOR" />
+                <Button maxWidth="Infinity" onAction="#navCalendario" styleClass="menu-item" text="📅  Calendário Acadêmico" />
+                <Button maxWidth="Infinity" onAction="#navCursosHorarios" styleClass="menu-item" text="🏫  Cursos e Horários" />
+                <Button maxWidth="Infinity" onAction="#navCoordenaodresAdms" styleClass="menu-item" text="👥  Coordenadores / ADMs" />
+                <Button maxWidth="Infinity" onAction="#navCalendario" styleClass="menu-item" text="🚫  Bloqueios e Cancelamentos" />
             </VBox>
 
             <VBox fx:id="secaoCoordenador" managed="false" spacing="2" visible="false">
-                <Label style="-fx-text-fill: #ffffff; -fx-font-weight: bold; -fx-font-size: 10px; -fx-padding: 6 0 2 4;" text="COORDENADOR" />
-                <Button maxWidth="Infinity" onAction="#navCoordPainel" styleClass="menu-item" style="-fx-text-fill: white; -fx-background-color: transparent; -fx-alignment: center-left;" text="📚  Disciplinas e Professores" />
+                <Label styleClass="sidebar-group-label" text="COORDENADOR" />
+                <Button maxWidth="Infinity" onAction="#navCoordPainel" styleClass="menu-item" text="📚  Disciplinas e Professores" />
             </VBox>
 
             <VBox fx:id="secaoProfessor" managed="false" spacing="2" visible="false">
-                <Label style="-fx-text-fill: #ffffff; -fx-font-weight: bold; -fx-font-size: 10px; -fx-padding: 6 0 2 4;" text="PROFESSOR" />
-                <Button maxWidth="Infinity" onAction="#navTemas" styleClass="menu-item" style="-fx-text-fill: white; -fx-background-color: transparent; -fx-alignment: center-left;" text="📝  Temas" />
-                <Button maxWidth="Infinity" onAction="#navPlanejamento" styleClass="menu-item" style="-fx-text-fill: white; -fx-background-color: transparent; -fx-alignment: center-left;" text="📋  Planejamento e Estatísticas" />
+                <Label styleClass="sidebar-group-label" text="PROFESSOR" />
+                <Button maxWidth="Infinity" onAction="#navTemas" styleClass="menu-item" text="📝  Temas" />
+                <Button maxWidth="Infinity" onAction="#navPlanejamento" styleClass="menu-item" text="📋  Planejamento e Estatísticas" />
             </VBox>
-
         </VBox>
     </left>
 
     <center>
-        <StackPane fx:id="areaConteudo" style="-fx-background-color: #ecf0f1;">
-            <Label style="-fx-text-fill: #95a5a6; -fx-font-size: 14px;" text="Selecione uma seção no menu lateral." />
+        <StackPane fx:id="areaConteudo" styleClass="content-area">
+            <Label style="-fx-font-size: 14px;" styleClass="text-muted" text="Selecione uma seção no menu lateral." />
         </StackPane>
     </center>
 
