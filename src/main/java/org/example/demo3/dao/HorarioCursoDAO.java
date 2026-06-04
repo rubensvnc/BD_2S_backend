@@ -6,6 +6,8 @@ import org.example.demo3.entity.HorarioCurso;
 import org.example.demo3.entity.TemplateHorarioTurno;
 
 import java.sql.*;
+import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -108,6 +110,27 @@ public class HorarioCursoDAO {
         }
     }
 
+    public List<Integer> recuperarIdsHoraInicioFim(LocalTime hi, LocalTime hf) throws SQLException{
+
+        String sql = """
+            SELECT DISTINCT id_horario_curso FROM horario_curso 
+            WHERE hora_inicio = ? and hora_fim = ?;
+        """;
+
+        List<Integer> listaIds = new ArrayList<>();
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setObject(1, hi);
+            ps.setObject(2, hf);
+
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    listaIds.add(rs.getInt("id_horario_curso"));
+                }
+            }
+        }
+        return listaIds;
+    }
 
     public void inserirTemplateHorarioCurso(List<TemplateHorarioTurno> thtLista,
                                             Integer cursoId, Integer slId) throws SQLException {
