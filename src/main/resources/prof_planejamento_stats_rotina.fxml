@@ -20,14 +20,20 @@
 <?import javafx.scene.layout.StackPane?>
 <?import javafx.scene.layout.VBox?>
 
-<BorderPane prefHeight="650.0" prefWidth="1100.0" xmlns="http://javafx.com/javafx/26" xmlns:fx="http://javafx.com/fxml/1" fx:controller="org.example.demo3.controller.ProfPlanejamentoController">
+<BorderPane prefHeight="650.0" prefWidth="1100.0"
+            xmlns="http://javafx.com/javafx/26"
+            xmlns:fx="http://javafx.com/fxml/1"
+            fx:controller="org.example.demo3.controller.ProfPlanejamentoController"
+            stylesheets="@style.css">
+
     <top>
-        <HBox alignment="CENTER_LEFT" style="-fx-padding: 10 15; -fx-background-color: #f5f6fa; -fx-border-color: #dcdde1; -fx-border-width: 0 0 1 0;">
-            <children>
-                <Label style="-fx-font-size: 16px; -fx-font-weight: bold; -fx-text-fill: #2c3e50;" text="Planejamento e Estatísticas" />
-                <Region HBox.hgrow="ALWAYS" />
-                <Button onAction="#handleGerarPlanejamento" style="-fx-background-color: #2980b9; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 6 14; -fx-background-radius: 4;" text="⚙ Gerar / Atualizar Planejamento" />
-            </children>
+        <HBox alignment="CENTER_LEFT"
+              style="-fx-padding: 10 15; -fx-background-color: white;
+                     -fx-border-color: #f0dada; -fx-border-width: 0 0 0.5px 0;">
+            <Label styleClass="page-title" text="Planejamento e Estatísticas"/>
+            <Region HBox.hgrow="ALWAYS"/>
+            <Button onAction="#handleGerarPlanejamento" styleClass="btn-primary"
+                    text="⚙ Gerar / Atualizar Planejamento"/>
         </HBox>
     </top>
 
@@ -37,82 +43,116 @@
                 <Tab text="📄 Planejamento e Estatísticas">
                     <content>
                         <HBox spacing="15.0">
-                            <children>
-                                <VBox spacing="10.0" HBox.hgrow="ALWAYS">
-                                    <children>
-                                        <Label fx:id="lblAvisoCargaInsuficiente" managed="false" style="-fx-text-fill: red; -fx-font-weight: bold;" text="Aulas insuficientes para preencher a carga horária! Adicione mais temas." visible="false" />
-                                        <TitledPane animated="false" text="🔊 Cancelamentos efetuados pela Secretaria" textFill="#c0392b" />
-                                        <StackPane VBox.vgrow="ALWAYS">
-                                            <children>
-                                                <TreeView fx:id="treePlanejamento" prefWidth="600.0" showRoot="false" />
-                                                <ProgressIndicator fx:id="progressGeracao" managed="false" maxHeight="50.0" maxWidth="50.0" visible="false" />
-                                            </children>
-                                        </StackPane>
-                                        <HBox fx:id="barraAcoesLote" alignment="CENTER_LEFT" managed="false" spacing="12.0" style="-fx-background-color: #f1f2f6; -fx-padding: 8; -fx-background-radius: 5;" visible="false">
-                                            <children>
-                                                <Label fx:id="lblQtdSelecionados" style="-fx-font-weight: bold; -fx-text-fill: #2f3542;" text="0 itens selecionados" />
-                                                <Button onAction="#handleMarcarMinistrada" style="-fx-background-color: #2ed573; -fx-text-fill: white; -fx-font-weight: bold;" text="✓ Confirmar Ministradas" />
-                                                <Button onAction="#handleCancelarSelecionados" style="-fx-background-color: #ff4757; -fx-text-fill: white; -fx-font-weight: bold;" text="✕ Cancelar Aulas" />
-                                            </children>
-                                        </HBox>
-                                    </children>
-                                </VBox>
-                                <VBox minWidth="380.0" prefWidth="380.0" spacing="15.0" style="-fx-background-color: white; -fx-padding: 15; -fx-border-color: #dcdde1; -fx-border-radius: 4;">
-                                    <children>
-                                        <Label style="-fx-font-size: 14px; -fx-font-weight: bold; -fx-text-fill: #2c3e50;" text="Estatísticas da Disciplina" />
-                                        <Separator />
-                                        <VBox spacing="5.0">
-                                            <children>
-                                                <HBox>
-                                                    <children>
-                                                        <Label style="-fx-font-weight: bold;" text="Conclusão da CH: " />
-                                                        <Region HBox.hgrow="ALWAYS" />
-                                                        <Label fx:id="lblPercentual" style="-fx-font-weight: bold;" text="0,0%" />
-                                                    </children>
-                                                </HBox>
-                                                <ProgressBar fx:id="progressConclusao" maxWidth="Infinity" progress="0.0" style="-fx-accent: #27ae60;" />
-                                            </children>
-                                        </VBox>
-                                        <GridPane hgap="10.0" vgap="8.0">
-                                            <children>
-                                                <Label style="-fx-font-weight: bold;" text="Total de Temas:" GridPane.rowIndex="0" />
-                                                <Label fx:id="lblTotalTemas" text="—" GridPane.columnIndex="1" GridPane.rowIndex="0" />
-                                                <Label style="-fx-font-weight: bold;" text="Aulas Geradas:" GridPane.rowIndex="1" />
-                                                <Label fx:id="lblAulasGeradas" text="—" GridPane.columnIndex="1" GridPane.rowIndex="1" />
-                                                <Label style="-fx-font-weight: bold;" text="Aulas Ministradas:" GridPane.rowIndex="2" />
-                                                <Label fx:id="lblAulasMinistradas" text="—" GridPane.columnIndex="1" GridPane.rowIndex="2" />
-                                                <Label style="-fx-font-weight: bold;" text="Não Ministradas:" GridPane.rowIndex="3" />
-                                                <Label fx:id="lblAulasPendentes" text="—" GridPane.columnIndex="1" GridPane.rowIndex="3" />
-                                                <Label style="-fx-font-weight: bold;" text="Canceladas:" GridPane.rowIndex="4" />
-                                                <Label fx:id="lblAulasCanceladas" text="—" GridPane.columnIndex="1" GridPane.rowIndex="4" />
-                                                <Label style="-fx-font-weight: bold;" text="Carga H. Mínima:" GridPane.rowIndex="5" />
-                                                <Label fx:id="lblCargaHorariaMinima" text="—" GridPane.columnIndex="1" GridPane.rowIndex="5" />
-                                            </children>
-                                            <columnConstraints>
-                                                <javafx.scene.layout.ColumnConstraints minWidth="150.0" />
-                                                <javafx.scene.layout.ColumnConstraints hgrow="ALWAYS" />
-                                            </columnConstraints>
-                                            <rowConstraints>
-                                                <RowConstraints />
-                                                <RowConstraints />
-                                                <RowConstraints />
-                                                <RowConstraints />
-                                                <RowConstraints />
-                                                <RowConstraints />
-                                            </rowConstraints>
-                                        </GridPane>
-                                        <PieChart fx:id="chartStatusAulas" labelsVisible="false" legendSide="BOTTOM" prefHeight="220.0" />
-                                    </children>
-                                </VBox>
-                            </children>
                             <padding>
-                                <Insets bottom="10.0" left="10.0" right="10.0" top="10.0" />
+                                <Insets bottom="10.0" left="10.0" right="10.0" top="10.0"/>
                             </padding>
+
+                            <!-- Coluna TreeView + ações em lote -->
+                            <VBox spacing="10.0" HBox.hgrow="ALWAYS">
+                                <Label fx:id="lblAvisoCargaInsuficiente" managed="false"
+                                       styleClass="error-label"
+                                       style="-fx-font-weight: bold;"
+                                       text="Aulas insuficientes para preencher a carga horária! Adicione mais temas."
+                                       visible="false"/>
+
+                                <TitledPane animated="false"
+                                            text="🔊 Cancelamentos efetuados pela Secretaria"
+                                            textFill="#a93030"/>
+
+                                <StackPane VBox.vgrow="ALWAYS">
+                                    <TreeView fx:id="treePlanejamento" prefWidth="600.0" showRoot="false"/>
+                                    <ProgressIndicator fx:id="progressGeracao" managed="false"
+                                                       maxHeight="50.0" maxWidth="50.0" visible="false"/>
+                                </StackPane>
+
+                                <HBox fx:id="barraAcoesLote" alignment="CENTER_LEFT" managed="false"
+                                      spacing="12.0" visible="false"
+                                      style="-fx-background-color: #fcf5f5;
+                                             -fx-padding: 10;
+                                             -fx-background-radius: 7;
+                                             -fx-border-color: #f0dada;
+                                             -fx-border-radius: 7;
+                                             -fx-border-width: 0.5px;">
+                                    <Label fx:id="lblQtdSelecionados"
+                                           style="-fx-font-weight: bold;"
+                                           text="0 itens selecionados"/>
+                                    <Button onAction="#handleMarcarMinistrada"
+                                            styleClass="btn-success"
+                                            text="✓ Confirmar Ministradas"/>
+                                    <Button onAction="#handleCancelarSelecionados"
+                                            styleClass="btn-danger-solid"
+                                            text="✕ Cancelar Aulas"/>
+                                </HBox>
+                            </VBox>
+
+                            <!-- Painel de estatísticas -->
+                            <VBox minWidth="380.0" prefWidth="380.0" spacing="15.0"
+                                  style="-fx-background-color: white;
+                                         -fx-padding: 18;
+                                         -fx-border-color: #f0dada;
+                                         -fx-border-radius: 10;
+                                         -fx-border-width: 0.5px;
+                                         -fx-background-radius: 10;">
+                                <Label styleClass="section-title"
+                                       text="Estatísticas da Disciplina"
+                                       style="-fx-font-size: 13px;"/>
+                                <Separator/>
+
+                                <VBox spacing="5.0">
+                                    <HBox>
+                                        <Label style="-fx-font-weight: bold;" text="Conclusão da CH: "/>
+                                        <Region HBox.hgrow="ALWAYS"/>
+                                        <Label fx:id="lblPercentual"
+                                               style="-fx-font-weight: bold; -fx-text-fill: #cc5454;"
+                                               text="0,0%"/>
+                                    </HBox>
+                                    <ProgressBar fx:id="progressConclusao" maxWidth="Infinity" progress="0.0"/>
+                                </VBox>
+
+                                <GridPane hgap="10.0" vgap="8.0">
+                                    <Label style="-fx-font-weight: bold;" text="Total de Temas:"
+                                           GridPane.rowIndex="0"/>
+                                    <Label fx:id="lblTotalTemas" text="—"
+                                           GridPane.columnIndex="1" GridPane.rowIndex="0"/>
+                                    <Label style="-fx-font-weight: bold;" text="Aulas Geradas:"
+                                           GridPane.rowIndex="1"/>
+                                    <Label fx:id="lblAulasGeradas" text="—"
+                                           GridPane.columnIndex="1" GridPane.rowIndex="1"/>
+                                    <Label style="-fx-font-weight: bold;" text="Aulas Ministradas:"
+                                           GridPane.rowIndex="2"/>
+                                    <Label fx:id="lblAulasMinistradas" text="—"
+                                           GridPane.columnIndex="1" GridPane.rowIndex="2"/>
+                                    <Label style="-fx-font-weight: bold;" text="Não Ministradas:"
+                                           GridPane.rowIndex="3"/>
+                                    <Label fx:id="lblAulasPendentes" text="—"
+                                           GridPane.columnIndex="1" GridPane.rowIndex="3"/>
+                                    <Label style="-fx-font-weight: bold;" text="Canceladas:"
+                                           GridPane.rowIndex="4"/>
+                                    <Label fx:id="lblAulasCanceladas" text="—"
+                                           GridPane.columnIndex="1" GridPane.rowIndex="4"/>
+                                    <Label style="-fx-font-weight: bold;" text="Carga H. Mínima:"
+                                           GridPane.rowIndex="5"/>
+                                    <Label fx:id="lblCargaHorariaMinima" text="—"
+                                           GridPane.columnIndex="1" GridPane.rowIndex="5"/>
+                                    <columnConstraints>
+                                        <javafx.scene.layout.ColumnConstraints minWidth="150.0"/>
+                                        <javafx.scene.layout.ColumnConstraints hgrow="ALWAYS"/>
+                                    </columnConstraints>
+                                    <rowConstraints>
+                                        <RowConstraints/><RowConstraints/><RowConstraints/>
+                                        <RowConstraints/><RowConstraints/><RowConstraints/>
+                                    </rowConstraints>
+                                </GridPane>
+
+                                <PieChart fx:id="chartStatusAulas" labelsVisible="false"
+                                          legendSide="BOTTOM" prefHeight="220.0"/>
+                            </VBox>
                         </HBox>
                     </content>
                 </Tab>
-                <Tab text="📅 Minha Rotina" />
+                <Tab text="📅 Minha Rotina"/>
             </tabs>
         </TabPane>
     </center>
+
 </BorderPane>
