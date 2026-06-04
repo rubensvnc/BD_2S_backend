@@ -20,129 +20,144 @@
 <?import javafx.scene.layout.RowConstraints?>
 <?import javafx.scene.layout.VBox?>
 
-<BorderPane xmlns="http://javafx.com/javafx/26" xmlns:fx="http://javafx.com/fxml/1" fx:controller="org.example.demo3.controller.AdmCursosHorariosController">
+<BorderPane xmlns="http://javafx.com/javafx/26"
+            xmlns:fx="http://javafx.com/fxml/1"
+            fx:controller="org.example.demo3.controller.AdmCursosHorariosController"
+            stylesheets="@style.css">
 
     <top>
-        <Label style="-fx-font-size: 16px; -fx-font-weight: bold; -fx-padding: 12 16;" text="Cursos e Horários" />
+        <Label styleClass="page-title" text="Cursos e Horários"
+               style="-fx-padding: 12 16;"/>
     </top>
 
-    <!-- SplitPane horizontal:
-         Esquerda  → TableView de cursos + botão Novo
-         Direita   → Formulário do curso (TitledPane recolhível) +
-                     Editor de horários do curso selecionado
-         Cobre: 6.4 (Cursos) e 6.5 (Horários)  -->
     <center>
         <SplitPane dividerPositions="0.42813307493540054">
 
-            <!-- ═══════════════════════════════
-                 PAINEL ESQUERDO — Lista de Cursos
-            ════════════════════════════════ -->
+            <!-- ── PAINEL ESQUERDO: Lista de Cursos ── -->
             <VBox spacing="10">
-                <padding><Insets bottom="12" left="14" right="8" top="12" /></padding>
+                <padding><Insets bottom="12" left="14" right="8" top="12"/></padding>
 
                 <HBox alignment="CENTER_LEFT" spacing="8">
-                    <Label style="-fx-font-weight: bold; -fx-font-size: 13px;" text="Cursos Cadastrados" HBox.hgrow="ALWAYS" />
-                    <Button onAction="#handleNovoCurso" style="-fx-background-color: #27ae60; -fx-text-fill: white;" text="+ Novo Curso" />
+                    <Label style="-fx-font-weight: bold; -fx-font-size: 13px;"
+                           text="Cursos Cadastrados" HBox.hgrow="ALWAYS"/>
+                    <Button onAction="#handleNovoCurso" styleClass="btn-primary" text="+ Novo Curso"/>
                 </HBox>
 
-                <!-- Ao clicar em uma linha o painel direito é atualizado automaticamente -->
                 <TableView fx:id="tabelaCursos" onMouseClicked="#handleSelecionarCurso" VBox.vgrow="ALWAYS">
                     <columns>
-                        <TableColumn fx:id="colCursoNome" prefWidth="170" text="Nome" />
-                        <TableColumn fx:id="colCursoTurno" prefWidth="65" text="Turno" />
-                        <TableColumn fx:id="colCursoSemestres" prefWidth="50" text="Sems." />
-                        <TableColumn fx:id="colCursoCoordenador" prefWidth="150" text="Coordenador" />
-                        <TableColumn fx:id="colCursoAcoes" prefWidth="75" text="Ações" />
+                        <TableColumn fx:id="colCursoNome"        prefWidth="170" text="Nome"/>
+                        <TableColumn fx:id="colCursoTurno"       prefWidth="65"  text="Turno"/>
+                        <TableColumn fx:id="colCursoSemestres"   prefWidth="50"  text="Sems."/>
+                        <TableColumn fx:id="colCursoCoordenador" prefWidth="150" text="Coordenador"/>
+                        <TableColumn fx:id="colCursoAcoes"       prefWidth="75"  text="Ações"/>
                     </columns>
-                    <placeholder><Label text="Nenhum curso cadastrado." /></placeholder>
+                    <placeholder><Label text="Nenhum curso cadastrado."/></placeholder>
                 </TableView>
             </VBox>
 
-            <!-- ═══════════════════════════════
-                 PAINEL DIREITO — Formulário + Horários
-            ════════════════════════════════ -->
+            <!-- ── PAINEL DIREITO: Formulário + Horários ── -->
             <VBox spacing="12">
-                <padding><Insets bottom="12" left="8" right="14" top="12" /></padding>
+                <padding><Insets bottom="12" left="8" right="14" top="12"/></padding>
 
-                <!-- Formulário do curso (recolhível; expande ao clicar em "+ Novo" ou ao editar) -->
-                <TitledPane fx:id="painelFormCurso" collapsible="true" expanded="false" text="Dados do Curso">
+                <!-- Formulário do curso -->
+                <TitledPane fx:id="painelFormCurso" collapsible="true" expanded="false"
+                            text="Dados do Curso">
                     <GridPane hgap="14" vgap="10">
-                        <padding><Insets bottom="10" left="10" right="10" top="10" /></padding>
+                        <padding><Insets bottom="10" left="10" right="10" top="10"/></padding>
 
-                        <Label text="Nome *:" GridPane.columnIndex="0" GridPane.rowIndex="0" />
+                        <Label text="Nome *:" GridPane.columnIndex="0" GridPane.rowIndex="0"/>
                         <VBox GridPane.columnIndex="1" GridPane.hgrow="ALWAYS" GridPane.rowIndex="0">
-                            <TextField fx:id="tfCursoNome" promptText="Nome único do curso" />
-                            <Label fx:id="errCursoNome" managed="false" styleClass="error-label" visible="false" />
+                            <TextField fx:id="tfCursoNome" promptText="Nome único do curso"/>
+                            <Label fx:id="errCursoNome" managed="false" styleClass="error-label" visible="false"/>
                         </VBox>
 
-                        <Label text="Turno *:" GridPane.columnIndex="0" GridPane.rowIndex="1" />
+                        <Label text="Turno *:" GridPane.columnIndex="0" GridPane.rowIndex="1"/>
                         <HBox spacing="6" GridPane.columnIndex="1" GridPane.rowIndex="1">
-                            <ToggleButton fx:id="tbManha" onAction="#handleTurnoChange" text="Manhã" />
-                            <ToggleButton fx:id="tbNoite" onAction="#handleTurnoChange" text="Noite" />
+                            <ToggleButton fx:id="tbManha" onAction="#handleTurnoChange" text="Manhã"/>
+                            <ToggleButton fx:id="tbNoite" onAction="#handleTurnoChange" text="Noite"/>
                         </HBox>
 
-                        <Label text="Qtd. Semestres *:" GridPane.columnIndex="0" GridPane.rowIndex="2" />
-                        <Spinner fx:id="spQtdSemestres" initialValue="6" max="12" min="1" prefWidth="90" GridPane.columnIndex="1" GridPane.rowIndex="2" />
+                        <Label text="Qtd. Semestres *:" GridPane.columnIndex="0" GridPane.rowIndex="2"/>
+                        <Spinner fx:id="spQtdSemestres" initialValue="6" max="12" min="1" prefWidth="90"
+                                 GridPane.columnIndex="1" GridPane.rowIndex="2"/>
 
-                        <Label text="Professor:" GridPane.columnIndex="0" GridPane.rowIndex="3" />
+                        <Label text="Professor:" GridPane.columnIndex="0" GridPane.rowIndex="3"/>
                         <VBox GridPane.columnIndex="1" GridPane.hgrow="ALWAYS" GridPane.rowIndex="3">
-                            <CheckBox fx:id="checkUsarProfessor" mnemonicParsing="false" onAction="#usarProfessor" text="atribuir a Professor" />
-                            <ComboBox fx:id="cbProfessorCurso" maxWidth="Infinity" onAction="#handleSelecaoProfessor" promptText="Selecione o professor" />
-                            <Label fx:id="errProfessorCurso" managed="false" styleClass="error-label" visible="false" />
+                            <CheckBox fx:id="checkUsarProfessor" mnemonicParsing="false"
+                                      onAction="#usarProfessor" text="atribuir a Professor"/>
+                            <ComboBox fx:id="cbProfessorCurso" maxWidth="Infinity"
+                                      onAction="#handleSelecaoProfessor"
+                                      promptText="Selecione o professor"/>
+                            <Label fx:id="errProfessorCurso" managed="false"
+                                   styleClass="error-label" visible="false"/>
                         </VBox>
 
-                        <HBox alignment="CENTER_RIGHT" spacing="8" GridPane.columnIndex="0" GridPane.columnSpan="2" GridPane.rowIndex="4">
-                            <Button onAction="#handleCancelarCurso" text="Cancelar" />
-                            <Button fx:id="btnSalvarCurso" onAction="#handleSalvarCurso" style="-fx-background-color: #2980b9; -fx-text-fill: white;" text="Salvar Curso" />
+                        <HBox alignment="CENTER_RIGHT" spacing="8"
+                              GridPane.columnIndex="0" GridPane.columnSpan="2" GridPane.rowIndex="4">
+                            <Button onAction="#handleCancelarCurso" text="Cancelar"
+                                    styleClass="btn-ghost"/>
+                            <Button fx:id="btnSalvarCurso" onAction="#handleSalvarCurso"
+                                    styleClass="btn-primary" text="Salvar Curso"/>
                         </HBox>
-                        <Label fx:id="lblProcessoSalvarCurso" managed="false" text="Para poder editar quaisquer valores, pressione 'Cancelar' ou pressione 'Salvar Horários'." textFill="RED" visible="false" GridPane.columnIndex="0" GridPane.columnSpan="2" GridPane.rowIndex="5" />
+
+                        <Label fx:id="lblProcessoSalvarCurso" managed="false"
+                               text="Para poder editar quaisquer valores, pressione 'Cancelar' ou pressione 'Salvar Horários'."
+                               styleClass="error-label" visible="false"
+                               GridPane.columnIndex="0" GridPane.columnSpan="2" GridPane.rowIndex="5"/>
+
                         <columnConstraints>
-                            <ColumnConstraints />
-                            <ColumnConstraints hgrow="ALWAYS" />
+                            <ColumnConstraints/>
+                            <ColumnConstraints hgrow="ALWAYS"/>
                         </columnConstraints>
                         <rowConstraints>
-                            <RowConstraints />
-                            <RowConstraints />
-                            <RowConstraints />
-                            <RowConstraints />
-                            <RowConstraints />
-                            <RowConstraints />
-                            <RowConstraints />
-                            <RowConstraints />
+                            <RowConstraints/><RowConstraints/><RowConstraints/>
+                            <RowConstraints/><RowConstraints/><RowConstraints/>
+                            <RowConstraints/><RowConstraints/>
                         </rowConstraints>
                     </GridPane>
                 </TitledPane>
 
-                <!-- Editor de horários do curso selecionado -->
+                <!-- Editor de horários -->
                 <VBox spacing="8" VBox.vgrow="ALWAYS">
                     <HBox alignment="CENTER_LEFT" spacing="8">
-                        <Label fx:id="lblTituloHorarios" style="-fx-font-weight: bold; -fx-font-size: 13px;" text="Horários — selecione um curso à esquerda" HBox.hgrow="ALWAYS" />
-                        <Button onAction="#handleAplicarTemplate" text="Aplicar Template do Turno" />
-                        <Button onAction="#handlePropagarTurno" style="-fx-background-color: #8e44ad; -fx-text-fill: white;" text="Propagar ao Turno" />
+                        <Label fx:id="lblTituloHorarios"
+                               style="-fx-font-weight: bold; -fx-font-size: 13px;"
+                               text="Horários — selecione um curso à esquerda"
+                               HBox.hgrow="ALWAYS"/>
+                        <Button onAction="#handleAplicarTemplate" styleClass="btn-ghost"
+                                text="Aplicar Template do Turno"/>
+                        <Button onAction="#handlePropagarTurno" styleClass="btn-accent"
+                                text="Propagar ao Turno"/>
                     </HBox>
 
-                    <Label fx:id="lblHerancaAviso" managed="false" style="-fx-text-fill: #7f8c8d; -fx-font-size: 11px;" text="Horários herdados do semestre letivo anterior. Ajuste se necessário." visible="false" />
+                    <Label fx:id="lblHerancaAviso" managed="false" styleClass="text-muted"
+                           text="Horários herdados do semestre letivo anterior. Ajuste se necessário."
+                           visible="false"/>
 
-                    <!-- TableView editável: TextFieldTableCell nas colunas de horário -->
                     <TableView fx:id="tabelaHorarios" editable="true" VBox.vgrow="ALWAYS">
                         <columns>
-                            <TableColumn fx:id="colHTipo" prefWidth="100" text="Tipo" />
-                            <TableColumn fx:id="colHNumero" prefWidth="40" text="Nº" />
-                            <TableColumn fx:id="colHInicio" prefWidth="100" text="Início" />
-                            <TableColumn fx:id="colHFim" prefWidth="100" text="Fim" />
-                            <TableColumn fx:id="colHAcao" prefWidth="40" text="Ação" />
+                            <TableColumn fx:id="colHTipo"   prefWidth="100" text="Tipo"/>
+                            <TableColumn fx:id="colHNumero" prefWidth="40"  text="Nº"/>
+                            <TableColumn fx:id="colHInicio" prefWidth="100" text="Início"/>
+                            <TableColumn fx:id="colHFim"    prefWidth="100" text="Fim"/>
+                            <TableColumn fx:id="colHAcao"   prefWidth="40"  text="Ação"/>
                         </columns>
                         <placeholder>
-                            <Label text="Selecione um curso ou clique em '+ Adicionar Linha'." />
+                            <Label text="Selecione um curso ou clique em '+ Adicionar Linha'."/>
                         </placeholder>
                     </TableView>
 
                     <HBox alignment="CENTER_LEFT" spacing="8">
-                        <Button onAction="#handleAdicionarLinhaHorario" text="+ Adicionar Linha" />
-                        <Button fx:id="btnDeletarHorarios" onAction="#deletarTodosHorarios" style="-fx-background-color: #c0392b; -fx-text-fill: white;" text="Deletar Horarios" managed="false" visible="false"/>
-                        <Region HBox.hgrow="ALWAYS" />
-                        <Label fx:id="lblFeedbackHorario" managed="false" styleClass="feedback-label" visible="false" />
-                        <Button fx:id="btnSalvarHorario" onAction="#handleSalvarHorarios" style="-fx-background-color: #27ae60; -fx-text-fill: white;" text="💾 Salvar Horários" />
+                        <Button onAction="#handleAdicionarLinhaHorario" styleClass="btn-ghost"
+                                text="+ Adicionar Linha"/>
+                        <Button fx:id="btnDeletarHorarios" onAction="#deletarTodosHorarios"
+                                styleClass="btn-danger-solid" text="Deletar Horarios"
+                                managed="false" visible="false"/>
+                        <Region HBox.hgrow="ALWAYS"/>
+                        <Label fx:id="lblFeedbackHorario" managed="false"
+                               styleClass="feedback-label" visible="false"/>
+                        <Button fx:id="btnSalvarHorario" onAction="#handleSalvarHorarios"
+                                styleClass="btn-primary" text="💾 Salvar Horários"/>
                     </HBox>
                 </VBox>
             </VBox>
