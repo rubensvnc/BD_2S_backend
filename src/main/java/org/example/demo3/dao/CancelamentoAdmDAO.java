@@ -2,11 +2,9 @@ package org.example.demo3.dao;
 
 import org.example.demo3.DatabaseConnection;
 import org.example.demo3.entity.CancelamentoAdm;
+import org.example.demo3.entity.DataBloqueada;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
+import java.sql.*;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -111,6 +109,32 @@ public class CancelamentoAdmDAO {
             throw e;
         } finally {
             DatabaseConnection.closeConnection();
+        }
+    }
+
+    public void salvarEmLote(List<CancelamentoAdm> cancelamentoAdms) throws SQLException {
+        String sql = """
+            INSERT INTO cancelamento_adm (adm_id, semestre_letivo_id, data, turno, dia_inteiro, motivo, criado_em) 
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+            """;
+
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            for (CancelamentoAdm cadm: cancelamentoAdms){
+                stmt.setInt(1, cadm.getAdm_id());
+                stmt.setInt(2, cadm.getSemestre_letivo_id());
+                stmt.setObject(3, cadm.getData());
+                stmt.setString(4, cadm.getTurno());
+                stmt.setBoolean(5, cadm.getDia_inteiro());
+                stmt.setString(6, cadm.getMotivo());
+                stmt.setObject(7, cadm.getCriado_em());
+
+                stmt.executeUpdate();
+            }
+
+        } catch (SQLException e) {
+            System.err.println("Erro ao salvar cancelamento Adm em cadeia: " + e.getMessage());
+            throw e;
         }
     }
 
