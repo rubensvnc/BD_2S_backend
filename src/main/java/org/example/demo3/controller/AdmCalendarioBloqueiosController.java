@@ -21,6 +21,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.LocalDate;
+import java.time.LocalTime;
 import java.time.Month;
 import java.time.format.TextStyle;
 import java.util.*;
@@ -57,6 +58,7 @@ public class AdmCalendarioBloqueiosController {
     private final DataBloqueadaDAO databDao = new DataBloqueadaDAO();
     private final SemestreLetivoDAO slDao = new SemestreLetivoDAO();
     private final TemplateHorarioTurnoDAO thtDao = new TemplateHorarioTurnoDAO();
+    private final HorarioCursoDAO hcDao = new HorarioCursoDAO();
 
     private final UsuarioAtual logado = UsuarioAtual.getInstancia();
 
@@ -455,9 +457,38 @@ public class AdmCalendarioBloqueiosController {
             cancelamentoDAO.salvarEmLote(listaCancelamentoAdm);
             mapaEstadoBotaoDia.clear();
             listaDiaBotaoPressionado.clear();
+
+            if (!listaHorariosSelecionados.isEmpty()) {
+                List<CancelamentoAdmHorario> listaCadmHorario = new ArrayList<>();
+
+                for (CancelamentoAdm cadm: listaCancelamentoAdm) {
+                    Integer cadm_id = cancelamentoDAO.recuperarIdCancelamento(cadm);
+                    for (TemplateHorarioTurno tht : listaHorariosSelecionados) {
+                        List<Integer> horarioCursoIds = recuperarIdsCursoHorario(
+                                tht.getHora_inicio(), tht.getHora_fim());
+                        for (Integer id : horarioCursoIds) {
+                            CancelamentoAdmHorario cadmH = new CancelamentoAdmHorario();
+                            cadmH.setCancelamento_adm_id(cadm_id);
+                            cadmH.setHorario_curso_id(id);
+                            listaCadmHorario.add(cadmH);
+                        }
+                    }
+                }
+
+                cancelamentoHDAO.salvarEmLote(listaCadmHorario);
+            }
         } catch (SQLException e){
             e.printStackTrace();
         }
+    }
+
+    public List<Integer> recuperarIdsCursoHorario(LocalTime hc, LocalTime hf){
+        try{
+            return hcDao.recuperarIdsHoraInicioFim(hc, hf);
+        } catch (SQLException e){
+            e.printStackTrace();
+        }
+        return null;
     }
 
     @FXML
