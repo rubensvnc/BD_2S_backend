@@ -4,11 +4,9 @@ package org.example.demo3.dao;
 import org.example.demo3.DatabaseConnection;
 import org.example.demo3.entity.CancelamentoAdm;
 import org.example.demo3.entity.CancelamentoAdmHorario;
+import org.example.demo3.entity.DataBloqueada;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
+import java.sql.*;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
@@ -42,5 +40,25 @@ public class CancelamentoAdmHorarioDAO {
             DatabaseConnection.closeConnection();
         }
         return lista;
+    }
+
+    public void salvarEmLote(List<CancelamentoAdmHorario> listaCadmH) throws SQLException{
+        String sql = "INSERT INTO cancelamento_adm_horario " +
+                "(cancelamento_adm_id, horario_curso_id) " +
+                "VALUES (?, ?)";
+
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            for (CancelamentoAdmHorario cadmH: listaCadmH){
+                stmt.setInt(1, cadmH.getCancelamento_adm_id());
+                stmt.setInt(2, cadmH.getHorario_curso_id());
+
+                stmt.executeUpdate();
+            }
+
+        } catch (SQLException e) {
+            System.err.println("Erro ao salvar cancelamento_adm_horario em cadeia: " + e.getMessage());
+            throw e;
+        }
     }
 }
