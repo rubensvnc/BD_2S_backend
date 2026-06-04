@@ -84,6 +84,49 @@ public class CancelamentoAdmDAO {
         return cancelamentos;
     }
 
+    public Integer recuperarIdCancelamento(CancelamentoAdm cadm) {
+        String sql = """
+            SELECT id_cancelamento_adm 
+            FROM cancelamento_adm 
+            WHERE adm_id = ? 
+              AND semestre_letivo_id = ? 
+              AND data = ? 
+              AND (turno = ? OR (turno IS NULL AND ? IS NULL)) 
+              AND dia_inteiro = ? 
+              AND motivo = ? 
+              AND criado_em = ? 
+              AND deletado_em IS NULL;
+        """;
+
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            ps.setInt(1, cadm.getAdm_id());
+            ps.setInt(2, cadm.getSemestre_letivo_id());
+            ps.setObject(3, cadm.getData());
+
+            if (cadm.getTurno() == null || cadm.getTurno().equalsIgnoreCase("Dia inteiro")) {
+                ps.setNull(4, java.sql.Types.VARCHAR);
+                ps.setNull(5, java.sql.Types.VARCHAR);
+            } else {
+                ps.setString(4, cadm.getTurno());
+                ps.setString(5, cadm.getTurno());
+            }
+
+            ps.setBoolean(6, cadm.getDia_inteiro());
+            ps.setString(7, cadm.getMotivo());
+            ps.setObject(8, cadm.getCriado_em());
+
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getInt("id_cancelamento_adm");
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return null; // Retorna null se não encontrar o registro exato
+    }
     public void salvar(CancelamentoAdm c) throws SQLException {
         String sql = """
             INSERT INTO cancelamento_adm (adm_id, semestre_letivo_id, data, turno, dia_inteiro, motivo, criado_em) 
