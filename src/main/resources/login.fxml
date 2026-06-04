@@ -7,15 +7,16 @@
 <StackPane xmlns="http://javafx.com/javafx/21"
            xmlns:fx="http://javafx.com/fxml/1"
            fx:controller="org.example.demo3.controller.LoginController"
+           stylesheets="@style.css"
            prefWidth="480" prefHeight="420">
 
     <!-- PAINEL DE LOGIN (padrão) -->
     <VBox fx:id="loginPane" alignment="CENTER" spacing="16" maxWidth="360">
         <padding><Insets top="40" right="40" bottom="40" left="40"/></padding>
 
-        <Label text="SwiftPlan" style="-fx-font-size: 28px; -fx-font-weight: bold;"/>
+        <Label text="SwiftPlan" styleClass="nav-brand" style="-fx-font-size: 28px;"/>
         <Label text="Sistema de Gestão e Planejamento Acadêmico"
-               style="-fx-font-size: 12px; -fx-text-fill: #7f8c8d;" wrapText="true"/>
+               styleClass="text-muted" wrapText="true" style="-fx-font-size: 12px;"/>
 
         <VBox spacing="4">
             <Label text="E-mail"/>
@@ -33,19 +34,17 @@
 
         <Button fx:id="btnLogin" text="Entrar" onAction="#handleLogin"
                 maxWidth="Infinity" defaultButton="true"
-                style="-fx-background-color: #2c3e50; -fx-text-fill: white;"/>
+                styleClass="btn-primary"/>
     </VBox>
 
-    <!-- PAINEL DE PRIMEIRO ACESSO
-         Exibido automaticamente quando não há ADM no banco.
-         O controller alterna a visibilidade entre os dois painéis. -->
+    <!-- PAINEL DE PRIMEIRO ACESSO -->
     <VBox fx:id="primeiroAcessoPane" alignment="CENTER" spacing="16" maxWidth="360"
           visible="false" managed="false">
         <padding><Insets top="40" right="40" bottom="40" left="40"/></padding>
 
         <Label text="Primeiro Acesso" style="-fx-font-size: 22px; -fx-font-weight: bold;"/>
         <Label text="Nenhum administrador encontrado. Cadastre o primeiro ADM para continuar."
-               wrapText="true" style="-fx-font-size: 12px; -fx-text-fill: #7f8c8d;"/>
+               wrapText="true" styleClass="text-muted"/>
 
         <VBox spacing="4">
             <Label text="Nome *"/>
@@ -67,7 +66,7 @@
 
         <Button text="Cadastrar Administrador" onAction="#handleCadastrarPrimeiroAdm"
                 maxWidth="Infinity" defaultButton="true"
-                style="-fx-background-color: #27ae60; -fx-text-fill: white;"/>
+                styleClass="btn-primary"/>
 
         <Label fx:id="feedbackPrimeiroAcesso" visible="false" managed="false" styleClass="feedback-label"/>
     </VBox>
