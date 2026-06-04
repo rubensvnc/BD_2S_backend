@@ -53,6 +53,7 @@ public class AdmCalendarioBloqueiosController {
 
     private final SprintDAO sprintDAO = new SprintDAO();
     private final CancelamentoAdmDAO cancelamentoDAO = new CancelamentoAdmDAO();
+    private final CancelamentoAdmHorarioDAO cancelamentoHDAO = new CancelamentoAdmHorarioDAO();
     private final DataBloqueadaDAO databDao = new DataBloqueadaDAO();
     private final SemestreLetivoDAO slDao = new SemestreLetivoDAO();
     private final TemplateHorarioTurnoDAO thtDao = new TemplateHorarioTurnoDAO();
@@ -338,6 +339,12 @@ public class AdmCalendarioBloqueiosController {
     public void configurarComboboxCbTurno(){
         ObservableList<String> opcoesTurno = FXCollections.observableArrayList("Dia inteiro", "manha", "noite");
         cbTurno.setItems(opcoesTurno);
+        cbTurno.setValue("Dia inteiro");
+
+        if (corBotaoSelecionada.equals("FFA500")){
+            checkFeriado.setSelected(true);
+            cbTurno.setDisable(true);
+        }
     }
 
     public void recuperarCancelamentos(){
@@ -401,8 +408,62 @@ public class AdmCalendarioBloqueiosController {
         }
     }
 
+    public void handleCancelarFeriados(String motivo){
+        List<DataBloqueada> listaDatasBloqueadas = new ArrayList<>();
+        try{
+            for (LocalDate data: listaDiaBotaoPressionado){
+                DataBloqueada datab = new DataBloqueada();
+                datab.setData(data);
+                datab.setAdmId(logado.getId_usuario());
+                datab.setMotivo(motivo);
+                datab.setRecorrente(true);
+                datab.setSemestreLetivoId(idSemestreAtual);
+                listaDatasBloqueadas.add(datab);
+            }
+
+            databDao.salvarEmLote(listaDatasBloqueadas);
+            mapaEstadoBotaoDia.clear();
+            listaDiaBotaoPressionado.clear();
+
+        } catch (SQLException e){
+            e.printStackTrace();
+        }
+    }
+
+    public void handleCancelarAdm(String motivo){
+        List<CancelamentoAdm> listaCancelamentoAdm = new ArrayList<>();
+        try{
+            for (LocalDate data: listaDiaBotaoPressionado){
+                CancelamentoAdm cadm = new CancelamentoAdm();
+                cadm.setAdm_id(logado.getId_usuario());
+                cadm.setSemestre_letivo_id(idSemestreAtual);
+                cadm.setData(data);
+                if (!cbTurno.getValue().equals("Dia inteiro")){
+                    cadm.setTurno(cbTurno.getValue());
+                    cadm.setDia_inteiro(false);
+                } else{
+                    cadm.setDia_inteiro(true);
+                    cadm.setTurno(null);
+                }
+                cadm.setMotivo(motivo);
+                cadm.setCriado_em(LocalDate.now());
+
+                System.out.println(cadm.getTurno());
+                listaCancelamentoAdm.add(cadm);
+            }
+
+            cancelamentoDAO.salvarEmLote(listaCancelamentoAdm);
+            mapaEstadoBotaoDia.clear();
+            listaDiaBotaoPressionado.clear();
+        } catch (SQLException e){
+            e.printStackTrace();
+        }
+    }
+
     @FXML
-    public void handleDesfazerSelecao(){}
+    public void handleDesfazerSelecao(){
+
+    }
 
     @FXML
     public void handleFeriados(){
@@ -432,12 +493,20 @@ public class AdmCalendarioBloqueiosController {
                 List<TemplateHorarioTurno> listaHorarios = thtDao.listarPorTurno(cbTurno.getValue());
                 for (TemplateHorarioTurno tht: listaHorarios){
                     CheckBox horario = new CheckBox();
+
                     String hora_inicio = String.valueOf(tht.getHora_inicio());
                     String hora_fim = String.valueOf(tht.getHora_fim());
 
                     horario.setText(hora_inicio + " - "+ hora_fim);
                     flowHorarios.getChildren().add(horario);
-                    listaHorariosSelecionados.add(tht);
+
+                    horario.setOnAction(e -> {
+                        if (horario.isSelected()) {
+                            listaHorariosSelecionados.add(tht);
+                        } else if (!horario.isSelected() && listaHorarios.contains(tht)){
+                            listaHorarios.remove(tht);
+                        }
+                    });
                 }
             } catch (SQLException e){
                 e.printStackTrace();
@@ -527,22 +596,10 @@ public class AdmCalendarioBloqueiosController {
     @FXML
     public void handleCancelarDatas() {
         String motivo = tfMotivoCancelamento.getText();
-        List<DataBloqueada> listaDatasBloqueadas = new ArrayList<>();
-        try{
-            if (checkFeriado.isSelected()){
-                for (LocalDate data: listaDiaBotaoPressionado){
-                    DataBloqueada datab = new DataBloqueada();
-                    datab.setData(data);
-                    datab.setAdmId(logado.getId_usuario());
-                    datab.setMotivo(motivo);
-                    datab.setRecorrente(true);
-                    datab.setSemestreLetivoId(idSemestreAtual);
-                    listaDatasBloqueadas.add(datab);
-                }
-                databDao.salvarEmLote(listaDatasBloqueadas);
-            }
-        } catch (SQLException e){
-            e.printStackTrace();
+        if (checkFeriado.isSelected()){
+            handleCancelarFeriados(motivo);
+        } else {
+            handleCancelarAdm(motivo);
         }
 
     }
