@@ -127,6 +127,76 @@ public class CancelamentoAdmDAO {
         }
         return null; // Retorna null se não encontrar o registro exato
     }
+
+    public void atualizarEmLote(List<CancelamentoAdm> listaDatas) throws SQLException {
+        String sql = "UPDATE cancelamento_adm SET adm_id = ?, motivo = ? " +
+                "WHERE data = ? AND semestre_letivo_id = ?";
+
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            conn.setAutoCommit(false);
+
+            for (CancelamentoAdm cadm : listaDatas) {
+                stmt.setInt(1, cadm.getAdm_id());
+                stmt.setString(2, cadm.getMotivo());
+                stmt.setObject(3, cadm.getData());
+                stmt.setInt(4, cadm.getSemestre_letivo_id());
+
+                stmt.addBatch();
+            }
+
+            stmt.executeBatch();
+            conn.commit();
+
+        } catch (SQLException e) {
+            System.err.println("Erro ao atualizar lote de cancelamentos dia_inteiro bloqueadas: " + e.getMessage());
+            throw e;
+        }
+    }
+
+    public String recuperarMotivoData(LocalDate data, Integer slId) throws SQLException{
+        String sql = "SELECT motivo FROM cancelamento_adm " +
+                "WHERE data = ? AND semestre_letivo_id = ?";
+
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            stmt.setObject(1, data);
+            stmt.setInt(2, slId);
+            ResultSet rs = stmt.executeQuery();
+            if (rs.next()) {
+                return rs.getString("motivo");
+            }
+        } catch (SQLException e) {
+            System.err.println("Erro ao listar datas bloqueadas: " + e.getMessage());
+            throw e;
+        }
+        return null;
+    }
+
+    public List<LocalDate> listarDatasDiaInteiroMotivoComumSL(Integer slId, String motivo) throws SQLException{
+        String sql = "SELECT data FROM cancelamento_adm " +
+                "WHERE semestre_letivo_id = ? " +
+                "AND motivo = ? AND dia_inteiro = 1 ORDER BY data ASC";
+        List<LocalDate> listaDatas = new ArrayList<>();
+
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            stmt.setInt(1, slId);
+            stmt.setString(2, motivo);
+            ResultSet rs = stmt.executeQuery();
+            while (rs.next()) {
+                listaDatas.add(rs.getObject("data", LocalDate.class));
+            }
+        } catch (SQLException e) {
+            System.err.println("Erro ao listar datas bloqueadas: " + e.getMessage());
+            throw e;
+        }
+        return listaDatas;
+    }
+
     public void salvar(CancelamentoAdm c) throws SQLException {
         String sql = """
             INSERT INTO cancelamento_adm (adm_id, semestre_letivo_id, data, turno, dia_inteiro, motivo, criado_em) 
