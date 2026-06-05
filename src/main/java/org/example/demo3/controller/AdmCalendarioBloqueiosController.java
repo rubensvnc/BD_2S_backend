@@ -37,7 +37,8 @@ public class AdmCalendarioBloqueiosController {
     @FXML private TableColumn<Sprint, LocalDate> colSprintInicio;
     @FXML private TableColumn<Sprint, LocalDate> colSprintReview;
     @FXML private Label lblFeedbackCalendario;
-
+    @FXML private TabPane tabPane;
+    @FXML private Tab tabBloqueios;
     @FXML private ComboBox<String> cbMes;
     @FXML private GridPane gridDias;
     @FXML private VBox boxConfigCancelamento;
@@ -191,6 +192,11 @@ public class AdmCalendarioBloqueiosController {
             }
         });
     }
+
+    public void abrirAbaBloqueios() {
+        tabPane.getSelectionModel().select(tabBloqueios);
+    }
+
 
     @FXML
     public void handleSalvarCalendario() {
