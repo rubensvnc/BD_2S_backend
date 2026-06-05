@@ -52,6 +52,74 @@ public class DataBloqueadaDAO {
         }
     }
 
+    public void atualizarEmLote(List<DataBloqueada> listaDatas) throws SQLException {
+        String sql = "UPDATE data_bloqueada SET adm_id = ?, motivo = ? " +
+                "WHERE data = ? AND semestre_letivo_id = ?";
+
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            conn.setAutoCommit(false);
+
+            for (DataBloqueada db : listaDatas) {
+                stmt.setInt(1, db.getAdmId());
+                stmt.setString(2, db.getMotivo());
+                stmt.setObject(3, db.getData());
+                stmt.setInt(4, db.getSemestreLetivoId());
+
+                stmt.addBatch();
+            }
+
+            stmt.executeBatch();
+            conn.commit();
+
+        } catch (SQLException e) {
+            System.err.println("Erro ao atualizar lote de datas bloqueadas: " + e.getMessage());
+            throw e;
+        }
+    }
+
+    public String recuperarMotivoData(LocalDate data) throws SQLException{
+        String sql = "SELECT motivo FROM data_bloqueada " +
+                "WHERE data = ?";
+
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            stmt.setObject(1, data);
+            ResultSet rs = stmt.executeQuery();
+            if (rs.next()) {
+                return rs.getString("motivo");
+            }
+        } catch (SQLException e) {
+            System.err.println("Erro ao listar datas bloqueadas: " + e.getMessage());
+            throw e;
+        }
+        return null;
+    }
+
+    public List<LocalDate> listarDatasMotivoComumSL(Integer slId, String motivo) throws SQLException{
+        String sql = "SELECT data FROM data_bloqueada " +
+                "WHERE semestre_letivo_id = ? " +
+                "AND motivo = ? ORDER BY data ASC";
+        List<LocalDate> listaDatas = new ArrayList<>();
+
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            stmt.setInt(1, slId);
+            stmt.setString(2, motivo);
+            ResultSet rs = stmt.executeQuery();
+            while (rs.next()) {
+                listaDatas.add(rs.getObject("data", LocalDate.class));
+            }
+        } catch (SQLException e) {
+            System.err.println("Erro ao listar datas bloqueadas: " + e.getMessage());
+            throw e;
+        }
+        return listaDatas;
+    }
+
     public List<DataBloqueada> listarTodos() throws SQLException {
         String sql = "SELECT * FROM data_bloqueada ORDER BY data ASC";
         List<DataBloqueada> lista = new ArrayList<>();
