@@ -187,6 +187,29 @@ public class MainShellController {
         }
     }
 
+    @FXML
+    void navBloqueios() {
+        try {
+            FXMLLoader loader = new FXMLLoader(
+                    getClass().getResource("/adm_calendario_bloqueios.fxml"));
+
+            Parent novoConteudo = loader.load();
+
+            calendarioAtivoController = loader.getController();
+
+            areaConteudo.getChildren().clear();
+            areaConteudo.getChildren().add(novoConteudo);
+
+            planejamentoAtivoController = null;
+            coordPainelAtivoController = null;
+
+            calendarioAtivoController.abrirAbaBloqueios();
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
     private void processarDadosAnos() {
         SemestreLetivoDAO slDao = new SemestreLetivoDAO();
         try {
