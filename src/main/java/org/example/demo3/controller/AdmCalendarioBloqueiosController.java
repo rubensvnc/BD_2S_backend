@@ -73,6 +73,8 @@ public class AdmCalendarioBloqueiosController {
     private List<TemplateHorarioTurno> listaHorariosSelecionados = new ArrayList<>();
     private Map<LocalDate, String> mapaEstadoBotaoDia = new LinkedHashMap<>();
     private String corBotaoSelecionada;
+    private List<Button> listaBtnDia = new ArrayList<>();
+    private Boolean reacaoEmCadeiaBtns = false;
 
     private int idSemestreAtual;
     private int ID_ADM_LOGADO;
@@ -349,6 +351,45 @@ public class AdmCalendarioBloqueiosController {
         }
     }
 
+
+    public void configurarComboboxCbTurnoFeriado(String motivo){
+        ObservableList<String> opcoesTurno = FXCollections.observableArrayList("Dia inteiro", "manha", "noite");
+        cbTurno.setItems(opcoesTurno);
+        cbTurno.setValue("Dia inteiro");
+
+        if (corBotaoSelecionada.equals("FFA500")){
+            checkFeriado.setSelected(true);
+            cbTurno.setDisable(true);
+            btnCancelar.setText("Editar feriado");
+            tfMotivoCancelamento.setText(motivo);
+
+            List<DataBloqueada> listaDb = new ArrayList<>();
+
+
+            btnCancelar.setOnAction(event -> {
+                for (LocalDate data: listaDiaBotaoPressionado){
+                    DataBloqueada db = new DataBloqueada();
+                    db.setAdmId(logado.getId_usuario());
+                    db.setMotivo(tfMotivoCancelamento.getText());
+                    db.setData(data);
+                    db.setSemestreLetivoId(idSemestreAtual);
+                    listaDb.add(db);
+                    System.out.println("\n=====================");
+                    System.out.println("COMBO INFORMAÇÕES: ");
+                    System.out.println(logado.getId_usuario());
+                    System.out.println(tfMotivoCancelamento.getText());
+                    System.out.println(data);
+                    System.out.println(idSemestreAtual);
+                }
+                try{
+                    databDao.atualizarEmLote(listaDb);
+                } catch (SQLException e){
+                    e.printStackTrace();
+                }
+            });
+        }
+    }
+
     public void recuperarCancelamentos(){
         List<LocalDate> datasBloqueadasRecuperadas = databDao.listarDatasBloqueadasPorSemestre(idSemestreAtual);
         List<CancelamentoAdm> datasCanceladasRecuperadas = cancelamentoDAO.listarPorSemestre(idSemestreAtual);
@@ -362,6 +403,54 @@ public class AdmCalendarioBloqueiosController {
             if (!mapaEstadoBotaoDia.containsKey(data)){
                 mapaEstadoBotaoDia.put(data, "-fx-border-color: transparent; -fx-background-color: #FF0000;");
             }
+        }
+    }
+
+    public void refletirMudancaNosBotoesRelacionadosFeriado(LocalDate dataPrimeiro){
+        for (LocalDate data : listaDiaBotaoPressionado){
+            for (Button btn : listaBtnDia) {
+                if (btn.getText().equals(String.valueOf(data.getDayOfMonth()))){
+                    if (data != dataPrimeiro) {
+                        System.out.println("ativou o botao: " + data);
+                        btn.setStyle("-fx-border-color: #FFA500; " +
+                                "-fx-background-color: -fx-control-inner-background;");
+                        mapaEstadoBotaoDia.put(data, btn.getStyle());
+                    }
+                }
+            }
+        }
+        reacaoEmCadeiaBtns = true;
+    }
+
+    public void preencherCamposConfiguracaoCancelamento(LocalDate dataSelecionada){
+        configurarComboboxCbTurno();
+        List<LocalDate> datasMotivoIgual = new ArrayList<>();
+        if (!corBotaoSelecionada.equals("D3D3D3") && !corBotaoSelecionada.equals("FFFF00")){
+            if (reacaoEmCadeiaBtns == false) {
+                try {
+                    if (corBotaoSelecionada.equals("FFA500")) {
+                        String motivo = databDao.recuperarMotivoData(dataSelecionada);
+                        tfMotivoCancelamento.setText(motivo);
+                        List<LocalDate> resultados = databDao.listarDatasMotivoComumSL(idSemestreAtual, motivo);
+
+                        if (resultados != null) {
+                            datasMotivoIgual.addAll(resultados);
+                        }
+                    }
+                } catch (SQLException e) {
+                    e.printStackTrace();
+                }
+
+                for (LocalDate data : datasMotivoIgual) {
+                    if (!listaDiaBotaoPressionado.contains(data)) {
+                        listaDiaBotaoPressionado.add(data);
+                    }
+                }
+                refletirMudancaNosBotoesRelacionadosFeriado(dataSelecionada);
+                configurarComboboxCbTurnoFeriado(tfMotivoCancelamento.getText());
+            }
+
+            listaDiaBotaoPressionado.forEach(System.out::println);
         }
     }
 
@@ -406,7 +495,7 @@ public class AdmCalendarioBloqueiosController {
         } else {
             boxConfigCancelamento.setManaged(true);
             boxConfigCancelamento.setVisible(true);
-            configurarComboboxCbTurno();
+            preencherCamposConfiguracaoCancelamento(dataDesteBotao);
         }
     }
 
@@ -549,6 +638,7 @@ public class AdmCalendarioBloqueiosController {
     public void handleCancelamentoSelecaoMes(){
         if (cbMes.getValue() == null) return;
         gridDias.getChildren().clear();
+        listaBtnDia.clear();
         if (mapaEstadoBotaoDia.isEmpty()) recuperarCancelamentos();
 
         Month mesEnum = converterNomeParaMonth(cbMes.getValue());
@@ -609,6 +699,9 @@ public class AdmCalendarioBloqueiosController {
 
                     if (listaDiaBotaoPressionado.isEmpty()) {
                         corBotaoSelecionada = null;
+                        reacaoEmCadeiaBtns = false;
+                        btnCancelar.setText("Cancelar Datas");
+
                     }
                 }
             });
@@ -617,6 +710,7 @@ public class AdmCalendarioBloqueiosController {
 
             btnDia.setId("btn-" + mesEnum.name() + "-" + numeroData);
 
+            listaBtnDia.add(btnDia);
             gridDias.add(btnDia, pos_coluna, pos_linha);
 
             pos_coluna++;
