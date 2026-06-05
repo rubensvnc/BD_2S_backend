@@ -35,7 +35,7 @@
     </top>
 
     <center>
-        <TabPane tabClosingPolicy="UNAVAILABLE">
+        <TabPane fx:id="tabPane" tabClosingPolicy="UNAVAILABLE">
 
             <!-- ── ABA 1: CALENDÁRIO DO SEMESTRE ── -->
             <Tab text="📅 Calendário do Semestre">
@@ -96,7 +96,7 @@
             </Tab>
 
             <!-- ── ABA 2: BLOQUEIOS E CANCELAMENTOS ── -->
-            <Tab text="🚫 Bloqueios e Cancelamentos">
+            <Tab fx:id="tabBloqueios" text="🚫 Bloqueios e Cancelamentos">
                 <ScrollPane fitToWidth="true">
                     <VBox spacing="12">
                         <padding><Insets bottom="14" left="16" right="16" top="14"/></padding>
