@@ -79,14 +79,15 @@ public class DataBloqueadaDAO {
         }
     }
 
-    public String recuperarMotivoData(LocalDate data) throws SQLException{
+    public String recuperarMotivoData(LocalDate data, Integer slId) throws SQLException{
         String sql = "SELECT motivo FROM data_bloqueada " +
-                "WHERE data = ?";
+                "WHERE data = ? AND semestre_letivo_id = ?";
 
         try (Connection conn = DatabaseConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
 
             stmt.setObject(1, data);
+            stmt.setInt(2, slId);
             ResultSet rs = stmt.executeQuery();
             if (rs.next()) {
                 return rs.getString("motivo");
