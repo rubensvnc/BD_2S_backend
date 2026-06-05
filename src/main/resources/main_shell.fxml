@@ -73,7 +73,7 @@
                 <Button maxWidth="Infinity" onAction="#navCalendario" styleClass="menu-item" text="📅  Calendário Acadêmico" />
                 <Button maxWidth="Infinity" onAction="#navCursosHorarios" styleClass="menu-item" text="🏫  Cursos e Horários" />
                 <Button maxWidth="Infinity" onAction="#navCoordenaodresAdms" styleClass="menu-item" text="👥  Coordenadores / ADMs" />
-                <Button maxWidth="Infinity" onAction="#navCalendario" styleClass="menu-item" text="🚫  Bloqueios e Cancelamentos" />
+                <Button maxWidth="Infinity" onAction="#navBloqueios" styleClass="menu-item" text="🚫  Bloqueios e Cancelamentos" />
             </VBox>
 
             <VBox fx:id="secaoCoordenador" managed="false" spacing="2" visible="false">
