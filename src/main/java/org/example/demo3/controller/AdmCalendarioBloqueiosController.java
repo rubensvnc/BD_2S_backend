@@ -336,7 +336,6 @@ public class AdmCalendarioBloqueiosController {
 
             List<DataBloqueada> listaDb = new ArrayList<>();
 
-
             btnCancelar.setOnAction(event -> {
                 for (LocalDate data: listaDiaBotaoPressionado){
                     DataBloqueada db = new DataBloqueada();
@@ -345,15 +344,42 @@ public class AdmCalendarioBloqueiosController {
                     db.setData(data);
                     db.setSemestreLetivoId(idSemestreAtual);
                     listaDb.add(db);
-                    System.out.println("\n=====================");
-                    System.out.println("COMBO INFORMAÇÕES: ");
-                    System.out.println(logado.getId_usuario());
-                    System.out.println(tfMotivoCancelamento.getText());
-                    System.out.println(data);
-                    System.out.println(idSemestreAtual);
                 }
                 try{
                     databDao.atualizarEmLote(listaDb);
+                } catch (SQLException e){
+                    e.printStackTrace();
+                }
+            });
+        }
+    }
+
+    public void configurarComboboxCbTurnoCancelamento(String motivo){
+        ObservableList<String> opcoesTurno = FXCollections.observableArrayList("Dia inteiro", "manha", "noite");
+        cbTurno.setItems(opcoesTurno);
+        cbTurno.setValue("Dia inteiro");
+
+        if (corBotaoSelecionada.equals("FF0000")){
+            checkFeriado.setSelected(false);
+            cbTurno.setDisable(true);
+            btnCancelar.setText("Editar cancelamento");
+            tfMotivoCancelamento.setText(motivo);
+
+            List<CancelamentoAdm> listaCadm = new ArrayList<>();
+
+            btnCancelar.setOnAction(event -> {
+                for (LocalDate data: listaDiaBotaoPressionado){
+                    CancelamentoAdm cadm = new CancelamentoAdm();
+                    cadm.setAdm_id(logado.getId_usuario());
+                    cadm.setSemestre_letivo_id(idSemestreAtual);
+                    cadm.setData(data);
+                    cadm.setDia_inteiro(true);
+                    cadm.setMotivo(tfMotivoCancelamento.getText());
+
+                    listaCadm.add(cadm);
+                }
+                try{
+                    cancelamentoDAO.atualizarEmLote(listaCadm);
                 } catch (SQLException e){
                     e.printStackTrace();
                 }
@@ -377,15 +403,21 @@ public class AdmCalendarioBloqueiosController {
         }
     }
 
-    public void refletirMudancaNosBotoesRelacionadosFeriado(LocalDate dataPrimeiro){
+    public void refletirMudancaNosBotoesRelacionadosFeriado(LocalDate dataPrimeiro, String cor){
         for (LocalDate data : listaDiaBotaoPressionado){
             for (Button btn : listaBtnDia) {
                 if (btn.getText().equals(String.valueOf(data.getDayOfMonth()))){
                     if (data != dataPrimeiro) {
                         System.out.println("ativou o botao: " + data);
-                        btn.setStyle("-fx-border-color: #FFA500; " +
-                                "-fx-background-color: -fx-control-inner-background;");
-                        mapaEstadoBotaoDia.put(data, btn.getStyle());
+                        if (cor.equals("FFA500")) {
+                            btn.setStyle("-fx-border-color: #FFA500; " +
+                                    "-fx-background-color: -fx-control-inner-background;");
+                            mapaEstadoBotaoDia.put(data, btn.getStyle());
+                        } else if (cor.equals("FF0000")){
+                            btn.setStyle("-fx-border-color: #FF0000; " +
+                                    "-fx-background-color: -fx-control-inner-background;");
+                            mapaEstadoBotaoDia.put(data, btn.getStyle());
+                        }
                     }
                 }
             }
@@ -396,17 +428,30 @@ public class AdmCalendarioBloqueiosController {
     public void preencherCamposConfiguracaoCancelamento(LocalDate dataSelecionada){
         configurarComboboxCbTurno();
         List<LocalDate> datasMotivoIgual = new ArrayList<>();
+
         if (!corBotaoSelecionada.equals("D3D3D3") && !corBotaoSelecionada.equals("FFFF00")){
             if (reacaoEmCadeiaBtns == false) {
                 try {
                     if (corBotaoSelecionada.equals("FFA500")) {
-                        String motivo = databDao.recuperarMotivoData(dataSelecionada);
+                        String motivo = databDao.recuperarMotivoData(dataSelecionada, idSemestreAtual);
                         tfMotivoCancelamento.setText(motivo);
                         List<LocalDate> resultados = databDao.listarDatasMotivoComumSL(idSemestreAtual, motivo);
 
                         if (resultados != null) {
                             datasMotivoIgual.addAll(resultados);
                         }
+                    }
+                    if (corBotaoSelecionada.equals("FF0000")) {
+                        String motivo = cancelamentoDAO.recuperarMotivoData(dataSelecionada, idSemestreAtual);
+                        tfMotivoCancelamento.setText(motivo);
+                        List<LocalDate> resultados = cancelamentoDAO.listarDatasDiaInteiroMotivoComumSL(
+                                idSemestreAtual, motivo
+                        );
+
+                        if (resultados != null) {
+                            datasMotivoIgual.addAll(resultados);
+                        }
+
                     }
                 } catch (SQLException e) {
                     e.printStackTrace();
@@ -417,8 +462,13 @@ public class AdmCalendarioBloqueiosController {
                         listaDiaBotaoPressionado.add(data);
                     }
                 }
-                refletirMudancaNosBotoesRelacionadosFeriado(dataSelecionada);
-                configurarComboboxCbTurnoFeriado(tfMotivoCancelamento.getText());
+                refletirMudancaNosBotoesRelacionadosFeriado(dataSelecionada, corBotaoSelecionada);
+
+                if (corBotaoSelecionada.equals("FFA500")){
+                    configurarComboboxCbTurnoFeriado(tfMotivoCancelamento.getText());
+                } else if(corBotaoSelecionada.equals("FF0000")){
+                    configurarComboboxCbTurnoCancelamento(tfMotivoCancelamento.getText());
+                }
             }
 
             listaDiaBotaoPressionado.forEach(System.out::println);
