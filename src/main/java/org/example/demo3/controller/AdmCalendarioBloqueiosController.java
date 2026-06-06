@@ -325,6 +325,7 @@ public class AdmCalendarioBloqueiosController {
         try{
             List<DataBloqueada> datasSelecionadas = new ArrayList<>();
             for (LocalDate data: mapaBotaoPressionadoEstilo.keySet()){
+                System.out.println("Data no set: "+data);
                 DataBloqueada dataB = new DataBloqueada();
                 dataB.setAdmId(logado.getId_usuario());
                 dataB.setData(data);
@@ -334,6 +335,7 @@ public class AdmCalendarioBloqueiosController {
                 datasSelecionadas.add(dataB);
             }
             databDao.atualizarEmLote(datasSelecionadas);
+            datasBloqueadasRecuperadasBanco = databDao.listarDatasBloqueadasPorSemestre(idSemestreAtual);
 
         } catch (SQLException e){
             e.printStackTrace();
@@ -374,6 +376,16 @@ public class AdmCalendarioBloqueiosController {
         });
     }
 
+    public void atualizarGridBtnDia(){
+        for (Button btnDia: listaBtnDia){
+            LocalDate dataDesteBotao = LocalDate.of
+                    (anoSelecionado, mesSelecionadoTipoMonth, Integer.parseInt(btnDia.getText()));
+            if (mapaBotaoPressionadoEstilo.containsKey(dataDesteBotao)){
+                btnDia.setStyle(mapaBotaoPressionadoEstilo.get(dataDesteBotao));
+            }
+        }
+    }
+
     public void bloquearBtnDiasNaoComunsFeriado(){
         if (!mapaBotaoPressionadoEstilo.isEmpty()) {
             for (Button btnDia : listaBtnDia) {
@@ -386,25 +398,19 @@ public class AdmCalendarioBloqueiosController {
                 btnDia.setDisable(false);
             }
         }
+        atualizarGridBtnDia();
     }
 
     public void selecionarBotoesFeriadoMotivoIgual(LocalDate dataBtnPressionado){
         try{
             String motivo = databDao.recuperarMotivoData(dataBtnPressionado, idSemestreAtual);
             List<LocalDate> datasMotivoIgual = databDao.listarDatasMotivoComumSL(idSemestreAtual, motivo);
-            for (Button btnDia: listaBtnDia){
-                LocalDate dataDesteBotao = LocalDate.of
-                        (anoSelecionado, mesSelecionadoTipoMonth, Integer.parseInt(btnDia.getText()));
 
-                if (!dataDesteBotao.equals(dataBtnPressionado)){
-                    if (datasMotivoIgual.contains(dataDesteBotao)){
-                        System.out.println(dataDesteBotao);
-                        btnDia.setStyle(laranjaBorda);
-                        mapaBotaoPressionadoEstilo.put(dataDesteBotao, laranjaBorda);
-                    }
-                }
-
+            for (LocalDate data: datasMotivoIgual){
+                System.out.println("Data encontrada: "+data);
+                mapaBotaoPressionadoEstilo.put(data, laranjaBorda);
             }
+
             preencherDadosConfigCancelamento(motivo);
         } catch (SQLException e){
             e.printStackTrace();
@@ -526,20 +532,10 @@ public class AdmCalendarioBloqueiosController {
 
     @FXML
     public void handleDesfazerSelecao(){
-        for (Button btnDia: listaBtnDia){
-            LocalDate dataDesteBotao = LocalDate.of
-                    (anoSelecionado, mesSelecionadoTipoMonth, Integer.parseInt(btnDia.getText()));
-            if (mapaBotaoPressionadoEstilo.containsKey(dataDesteBotao)){
-                switch (mapaBotaoPressionadoEstilo.get(dataDesteBotao)){
-                    case (laranjaCheio) -> btnDia.setStyle(laranjaBorda);
-                    case (laranjaBorda) -> btnDia.setStyle(laranjaCheio);
-                    case ("") -> btnDia.setStyle(corInicial);
-                }
-                mapaBotaoPressionadoEstilo.remove(dataDesteBotao);
-            }
-        }
+        mapaBotaoPressionadoEstilo.clear();
         bloquearBtnDiasNaoComunsFeriado();
         verificarPodeAbrirConfigCancelamento();
+        alterarBotoesValoresBancoFeriado(mesSelecionadoTipoMonth);
     }
 
     @FXML
