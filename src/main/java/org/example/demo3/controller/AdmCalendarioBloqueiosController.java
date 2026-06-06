@@ -74,7 +74,6 @@ public class AdmCalendarioBloqueiosController {
     private List<TemplateHorarioTurno> listaHorariosSelecionados = new ArrayList<>();
     private List<Button> listaBtnDia = new ArrayList<>();
     private List<LocalDate> datasBloqueadasRecuperadasBanco = new ArrayList<>();
-    private Map<LocalDate, String> mapaEstadoBotaoDia = new LinkedHashMap<>();
     private Map<LocalDate, String> mapaBotaoPressionadoEstilo = new LinkedHashMap<>();
     private String corBotaoSelecionada;
     private Month mesSelecionadoTipoMonth;
@@ -320,6 +319,27 @@ public class AdmCalendarioBloqueiosController {
     // ----------- METODOS BLOQUEIOS E CANCELAMENTOS ---------------
     // =============================================================
 
+    // ------------- CRUD:
+
+    public void atualizarValoresFeriadoBanco(String motivo){
+        try{
+            List<DataBloqueada> datasSelecionadas = new ArrayList<>();
+            for (LocalDate data: mapaBotaoPressionadoEstilo.keySet()){
+                DataBloqueada dataB = new DataBloqueada();
+                dataB.setAdmId(logado.getId_usuario());
+                dataB.setData(data);
+                dataB.setMotivo(motivo);
+                dataB.setSemestreLetivoId(idSemestreAtual);
+
+                datasSelecionadas.add(dataB);
+            }
+            databDao.atualizarEmLote(datasSelecionadas);
+
+        } catch (SQLException e){
+            e.printStackTrace();
+        }
+    }
+
     public void verificarPodeAbrirConfigCancelamento(){
         if (!mapaBotaoPressionadoEstilo.isEmpty()){
             boxConfigCancelamento.setManaged(true);
@@ -330,13 +350,24 @@ public class AdmCalendarioBloqueiosController {
         }
     }
 
+    public void resetarDadosConfigCancelamento(){
+        checkFeriado.setSelected(false);
+        cbTurno.setDisable(false);
+        tfMotivoCancelamento.setText("");
+        btnCancelar.setText("Cancelar Datas");
+        btnCancelar.setOnAction(event -> {
+            handleCancelarDatas();
+        });
+    }
+
     public void preencherDadosConfigCancelamento(String motivo){
         tfMotivoCancelamento.setText(motivo);
         checkFeriado.setSelected(true);
         cbTurno.setDisable(true);
         btnCancelar.setText("Editar feriado");
         btnCancelar.setOnAction(event -> {
-
+            atualizarValoresFeriadoBanco(tfMotivoCancelamento.getText());
+            resetarDadosConfigCancelamento();
         });
     }
 
