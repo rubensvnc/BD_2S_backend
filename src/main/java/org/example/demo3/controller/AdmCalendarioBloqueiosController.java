@@ -77,12 +77,16 @@ public class AdmCalendarioBloqueiosController {
     private Map<LocalDate, String> mapaEstadoBotaoDia = new LinkedHashMap<>();
     private Map<LocalDate, String> mapaBotaoPressionadoEstilo = new LinkedHashMap<>();
     private String corBotaoSelecionada;
-    private String mesSelecionado;
+    private Month mesSelecionadoTipoMonth;
     private Boolean reacaoEmCadeiaBtns = false;
     private int anoSelecionado;
     private int anoSemestreSelecionado;
     private int idSemestreAtual;
     private int ID_ADM_LOGADO;
+
+    private final String laranjaCheio = "-fx-border-color: transparent; -fx-background-color: #FFA500;";
+    private final String laranjaBorda = "-fx-border-color: #FFA500; -fx-background-color: -fx-control-inner-background;";
+
 
     @FXML
     public void initialize() {
@@ -326,10 +330,27 @@ public class AdmCalendarioBloqueiosController {
         }
     }
 
-    public void verificarEstadoBotoes(Month mes){
-        String laranjaCheio = "-fx-border-color: transparent; -fx-background-color: #FFA500;";
-        String laranjaBorda = "-fx-border-color: #FFA500; -fx-background-color: -fx-control-inner-background;";
+    public void selecionarBotoesFeriadoMotivoIgual(LocalDate dataBtnPressionado){
+        System.out.println("ENTROU");
+        try{
+            String motivo = databDao.recuperarMotivoData(dataBtnPressionado, idSemestreAtual);
+            List<LocalDate> datasMotivoIgual = databDao.listarDatasMotivoComumSL(idSemestreAtual, motivo);
+            for (Button btnDia: listaBtnDia){
+                LocalDate dataDesteBotao = LocalDate.of
+                        (anoSelecionado, mesSelecionadoTipoMonth, Integer.parseInt(btnDia.getText()));
+                if (datasMotivoIgual.contains(dataDesteBotao) && !dataDesteBotao.equals(dataBtnPressionado)){
+                    System.out.println(dataDesteBotao);
+                    btnDia.setStyle(laranjaBorda);
+                    mapaBotaoPressionadoEstilo.put(dataDesteBotao, laranjaBorda);
+                    verificarEstadoBotoes(mesSelecionadoTipoMonth);
+                }
+            }
+        } catch (SQLException e){
+            e.printStackTrace();
+        }
+    }
 
+    public void verificarEstadoBotoes(Month mes){
         for (Button btnDia: listaBtnDia){
             LocalDate dataDesteBotao = LocalDate.of
                     (anoSelecionado, mes, Integer.parseInt(btnDia.getText()));
@@ -338,6 +359,10 @@ public class AdmCalendarioBloqueiosController {
                 String estilo = btnDia.getStyle();
 
                 if (estilo.contains("FFA500")){
+                    if (mapaBotaoPressionadoEstilo.isEmpty()){
+                        selecionarBotoesFeriadoMotivoIgual(dataDesteBotao);
+                    }
+
                     if (estilo.equals(laranjaCheio)){
                         btnDia.setStyle(laranjaBorda);
                         mapaBotaoPressionadoEstilo.put(dataDesteBotao, estilo);
@@ -353,9 +378,6 @@ public class AdmCalendarioBloqueiosController {
     }
 
     public void alterarBotoesValoresBancoFeriado(Month mes){
-        String laranjaCheio = "-fx-border-color: transparent; -fx-background-color: #FFA500;";
-        String laranjaBorda = "-fx-border-color: #FFA500; -fx-background-color: -fx-control-inner-background;";
-
         for (Button btnDia: listaBtnDia){
             LocalDate dataDesteBotao = LocalDate.of
                     (anoSelecionado, mes, Integer.parseInt(btnDia.getText()));
@@ -428,15 +450,15 @@ public class AdmCalendarioBloqueiosController {
 
     @FXML
     public void handleCancelamentoSelecaoMes(){
-        String mesSelecionado = cbMes.getValue();
+        String mesSelecionadoCbMes = cbMes.getValue();
 
         DateTimeFormatter formatador = DateTimeFormatter.ofPattern("MMMM")
                 .withLocale(Locale.of("pt", "BR"));
-        Month mes = Month.from(formatador.parse(mesSelecionado.toLowerCase()));
+        mesSelecionadoTipoMonth = Month.from(formatador.parse(mesSelecionadoCbMes.toLowerCase()));
 
-        gerarBotoesDia(mes);
-        alterarBotoesValoresBancoFeriado(mes);
-        verificarEstadoBotoes(mes);
+        gerarBotoesDia(mesSelecionadoTipoMonth);
+        alterarBotoesValoresBancoFeriado(mesSelecionadoTipoMonth);
+        verificarEstadoBotoes(mesSelecionadoTipoMonth);
     }
 
     @FXML
