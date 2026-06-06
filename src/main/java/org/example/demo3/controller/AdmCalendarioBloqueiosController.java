@@ -325,7 +325,6 @@ public class AdmCalendarioBloqueiosController {
         try{
             List<DataBloqueada> datasSelecionadas = new ArrayList<>();
             for (LocalDate data: mapaBotaoPressionadoEstilo.keySet()){
-                System.out.println("Data no set: "+data);
                 DataBloqueada dataB = new DataBloqueada();
                 dataB.setAdmId(logado.getId_usuario());
                 dataB.setData(data);
@@ -335,6 +334,26 @@ public class AdmCalendarioBloqueiosController {
                 datasSelecionadas.add(dataB);
             }
             databDao.atualizarEmLote(datasSelecionadas);
+            datasBloqueadasRecuperadasBanco = databDao.listarDatasBloqueadasPorSemestre(idSemestreAtual);
+
+        } catch (SQLException e){
+            e.printStackTrace();
+        }
+    }
+
+    public void excluirFeriadoBanco(String motivo){
+        try{
+            List<DataBloqueada> datasSelecionadas = new ArrayList<>();
+            for (LocalDate data: mapaBotaoPressionadoEstilo.keySet()){
+                DataBloqueada dataB = new DataBloqueada();
+                dataB.setAdmId(logado.getId_usuario());
+                dataB.setData(data);
+                dataB.setMotivo(motivo);
+                dataB.setSemestreLetivoId(idSemestreAtual);
+
+                datasSelecionadas.add(dataB);
+            }
+            databDao.excluirEmLote(datasSelecionadas);
             datasBloqueadasRecuperadasBanco = databDao.listarDatasBloqueadasPorSemestre(idSemestreAtual);
 
         } catch (SQLException e){
@@ -428,6 +447,8 @@ public class AdmCalendarioBloqueiosController {
                 if (estilo.contains("FFA500")){
                     if (mapaBotaoPressionadoEstilo.isEmpty()){
                         selecionarBotoesFeriadoMotivoIgual(dataDesteBotao);
+                        btnDeletar.setManaged(true);
+                        btnDeletar.setVisible(true);
                     }
 
                     if (estilo.equals(laranjaCheio)){
@@ -456,6 +477,8 @@ public class AdmCalendarioBloqueiosController {
                 else {
                     btnDia.setStyle(laranjaBorda);
                 }
+            } else {
+                btnDia.setStyle(corInicial);
             }
         }
     }
@@ -555,7 +578,9 @@ public class AdmCalendarioBloqueiosController {
 
     @FXML
     public void handleDeletarCancelamento() {
-
+        excluirFeriadoBanco(tfMotivoCancelamento.getText());
+        resetarDadosConfigCancelamento();
+        handleDesfazerSelecao();
     }
 
     // --- METODOS UTILITARIOS GENERICOS ---
