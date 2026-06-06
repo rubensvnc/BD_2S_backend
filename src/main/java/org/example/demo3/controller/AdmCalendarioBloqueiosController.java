@@ -85,7 +85,7 @@ public class AdmCalendarioBloqueiosController {
 
     private final String laranjaCheio = "-fx-border-color: transparent; -fx-background-color: #FFA500;";
     private final String laranjaBorda = "-fx-border-color: #FFA500; -fx-background-color: -fx-control-inner-background;";
-
+    private final String corInicial = "-fx-border-color: transparent; -fx-background-color: #D3D3D3;";
 
     @FXML
     public void initialize() {
@@ -366,8 +366,11 @@ public class AdmCalendarioBloqueiosController {
         cbTurno.setDisable(true);
         btnCancelar.setText("Editar feriado");
         btnCancelar.setOnAction(event -> {
-            atualizarValoresFeriadoBanco(tfMotivoCancelamento.getText());
-            resetarDadosConfigCancelamento();
+            if (checkFeriado.isSelected()) {
+                atualizarValoresFeriadoBanco(tfMotivoCancelamento.getText());
+                resetarDadosConfigCancelamento();
+                handleDesfazerSelecao();
+            }
         });
     }
 
@@ -423,7 +426,7 @@ public class AdmCalendarioBloqueiosController {
 
                     if (estilo.equals(laranjaCheio)){
                         btnDia.setStyle(laranjaBorda);
-                        mapaBotaoPressionadoEstilo.put(dataDesteBotao, estilo);
+                        mapaBotaoPressionadoEstilo.put(dataDesteBotao, laranjaBorda);
                     } else {
                         btnDia.setStyle(laranjaCheio);
                         mapaBotaoPressionadoEstilo.remove(dataDesteBotao);
@@ -523,7 +526,20 @@ public class AdmCalendarioBloqueiosController {
 
     @FXML
     public void handleDesfazerSelecao(){
-
+        for (Button btnDia: listaBtnDia){
+            LocalDate dataDesteBotao = LocalDate.of
+                    (anoSelecionado, mesSelecionadoTipoMonth, Integer.parseInt(btnDia.getText()));
+            if (mapaBotaoPressionadoEstilo.containsKey(dataDesteBotao)){
+                switch (mapaBotaoPressionadoEstilo.get(dataDesteBotao)){
+                    case (laranjaCheio) -> btnDia.setStyle(laranjaBorda);
+                    case (laranjaBorda) -> btnDia.setStyle(laranjaCheio);
+                    case ("") -> btnDia.setStyle(corInicial);
+                }
+                mapaBotaoPressionadoEstilo.remove(dataDesteBotao);
+            }
+        }
+        bloquearBtnDiasNaoComunsFeriado();
+        verificarPodeAbrirConfigCancelamento();
     }
 
     @FXML
