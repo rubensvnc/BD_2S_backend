@@ -168,6 +168,28 @@ public class DataBloqueadaDAO {
         return datas;
     }
 
+    public void excluirEmLote(List<DataBloqueada> datasB) throws SQLException{
+        String sql = "DELETE FROM data_bloqueada WHERE " +
+                "semestre_letivo_id = ? AND " +
+                "data = ? AND " +
+                "motivo = ?";
+
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            for (DataBloqueada dataB: datasB){
+                stmt.setInt(1, dataB.getSemestreLetivoId());
+                stmt.setObject(2, dataB.getData());
+                stmt.setString(3, dataB.getMotivo());
+                stmt.executeUpdate();
+            }
+
+        } catch (SQLException e) {
+            System.err.println("Erro ao excluir data bloqueada em lote: " + e.getMessage());
+            throw e;
+        }
+    }
+
 
     public void excluir(int id) throws SQLException {
         String sql = "DELETE FROM data_bloqueada WHERE id_data_bloqueada = ?";
