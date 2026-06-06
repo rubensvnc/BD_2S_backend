@@ -71,11 +71,11 @@ public class AdmCalendarioBloqueiosController {
 
     private SemestreLetivo slAtual;
 
-    private List<LocalDate> listaDiaBotaoPressionado = new ArrayList<>();
     private List<TemplateHorarioTurno> listaHorariosSelecionados = new ArrayList<>();
     private List<Button> listaBtnDia = new ArrayList<>();
     private List<LocalDate> datasBloqueadasRecuperadasBanco = new ArrayList<>();
     private Map<LocalDate, String> mapaEstadoBotaoDia = new LinkedHashMap<>();
+    private Map<LocalDate, String> mapaBotaoPressionadoEstilo = new LinkedHashMap<>();
     private String corBotaoSelecionada;
     private String mesSelecionado;
     private Boolean reacaoEmCadeiaBtns = false;
@@ -316,14 +316,55 @@ public class AdmCalendarioBloqueiosController {
     // ----------- METODOS BLOQUEIOS E CANCELAMENTOS ---------------
     // =============================================================
 
-    public void recuperarDadosBloqueiosBanco(Month mes){
+    public void verificarPodeAbrirConfigCancelamento(){
+        if (!mapaBotaoPressionadoEstilo.isEmpty()){
+            boxConfigCancelamento.setManaged(true);
+            boxConfigCancelamento.setVisible(true);
+        } else {
+            boxConfigCancelamento.setManaged(false);
+            boxConfigCancelamento.setVisible(false);
+        }
+    }
+
+    public void verificarEstadoBotoes(Month mes){
         String laranjaCheio = "-fx-border-color: transparent; -fx-background-color: #FFA500;";
+        String laranjaBorda = "-fx-border-color: #FFA500; -fx-background-color: -fx-control-inner-background;";
+
+        for (Button btnDia: listaBtnDia){
+            LocalDate dataDesteBotao = LocalDate.of
+                    (anoSelecionado, mes, Integer.parseInt(btnDia.getText()));
+
+            btnDia.setOnAction(event -> {
+                String estilo = btnDia.getStyle();
+
+                if (estilo.contains("FFA500")){
+                    if (estilo.equals(laranjaCheio)){
+                        btnDia.setStyle(laranjaBorda);
+                        mapaBotaoPressionadoEstilo.put(dataDesteBotao, estilo);
+                    } else {
+                        btnDia.setStyle(laranjaCheio);
+                        mapaBotaoPressionadoEstilo.remove(dataDesteBotao);
+                    }
+                }
+
+                verificarPodeAbrirConfigCancelamento();
+            });
+        }
+    }
+
+    public void alterarBotoesValoresBancoFeriado(Month mes){
+        String laranjaCheio = "-fx-border-color: transparent; -fx-background-color: #FFA500;";
+        String laranjaBorda = "-fx-border-color: #FFA500; -fx-background-color: -fx-control-inner-background;";
 
         for (Button btnDia: listaBtnDia){
             LocalDate dataDesteBotao = LocalDate.of
                     (anoSelecionado, mes, Integer.parseInt(btnDia.getText()));
             if (datasBloqueadasRecuperadasBanco.contains(dataDesteBotao)){
-                btnDia.setStyle(laranjaCheio);
+                if (!mapaBotaoPressionadoEstilo.containsKey(dataDesteBotao))
+                    btnDia.setStyle(laranjaCheio);
+                else {
+                    btnDia.setStyle(laranjaBorda);
+                }
             }
         }
     }
@@ -394,7 +435,8 @@ public class AdmCalendarioBloqueiosController {
         Month mes = Month.from(formatador.parse(mesSelecionado.toLowerCase()));
 
         gerarBotoesDia(mes);
-        recuperarDadosBloqueiosBanco(mes);
+        alterarBotoesValoresBancoFeriado(mes);
+        verificarEstadoBotoes(mes);
     }
 
     @FXML
