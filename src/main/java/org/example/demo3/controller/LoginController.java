@@ -89,9 +89,10 @@ public class LoginController {
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/main_shell.fxml"));
             Parent root = loader.load();
 
-            // Atualizado para pegar a Scene a partir do componente correto
             Stage stage = (Stage) loginEmail.getScene().getWindow();
-            stage.setScene(new Scene(root));
+
+            Scene scene = new Scene(root, 1440, 620);
+            stage.setScene(scene);
             stage.centerOnScreen();
             stage.show();
         } catch (IOException e) {
