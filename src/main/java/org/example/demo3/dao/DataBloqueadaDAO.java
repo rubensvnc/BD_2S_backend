@@ -41,7 +41,7 @@ public class DataBloqueadaDAO {
                 stmt.setDate(2, Date.valueOf(db.getData()));
                 stmt.setString(3, db.getMotivo());
                 stmt.setInt(4, db.getAdmId());
-                stmt.setBoolean(5, db.isRecorrente());
+                stmt.setBoolean(5, true);
 
                 stmt.executeUpdate();
             }
