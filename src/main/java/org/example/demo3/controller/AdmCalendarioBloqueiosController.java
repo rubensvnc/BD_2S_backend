@@ -443,7 +443,6 @@ public class AdmCalendarioBloqueiosController {
                 if (estilo.contains("FFFF00") || estilo.contains("D3D3D3")){
                     btnDia.setDisable(false);
                 } else{
-                    System.out.println(btnDia.getText());
                     btnDia.setDisable(true);
                 }
             }
@@ -462,7 +461,6 @@ public class AdmCalendarioBloqueiosController {
             List<LocalDate> datasMotivoIgual = databDao.listarDatasMotivoComumSL(idSemestreAtual, motivo);
 
             for (LocalDate data: datasMotivoIgual){
-                System.out.println("Data encontrada: "+data);
                 mapaBotaoPressionadoEstilo.put(data, laranjaBorda);
             }
 
@@ -514,9 +512,9 @@ public class AdmCalendarioBloqueiosController {
                 verificarPodeAbrirConfigCancelamento();
             });
             if (corBotaoSelecionada != null){
-                if (estilo_antes.contains("FFA500")) {
+                if (corBotaoSelecionada.contains("FFA500")) {
                     bloquearBtnDiasNaoComunsFeriado();
-                } else if (estilo_antes.contains("D3D3D3") || estilo_antes.contains("FFFF00")){
+                } else if (corBotaoSelecionada.contains("D3D3D3") || corBotaoSelecionada.contains("FFFF00")){
                     bloquearBtnDiasNaoAmarelos();
                 }
             }
