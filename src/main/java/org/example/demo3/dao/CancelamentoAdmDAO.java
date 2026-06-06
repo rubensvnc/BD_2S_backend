@@ -175,6 +175,26 @@ public class CancelamentoAdmDAO {
         return null;
     }
 
+    public List<LocalDate> listarCancelamentosPorSemestre(Integer sl){
+        String sql = "SELECT cadm.data FROM cancelamento_adm cadm WHERE semestre_letivo_id = ? ORDER BY cadm.data;";
+
+        List<LocalDate> datas = new ArrayList<>();
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            ps.setInt(1, sl);
+
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    datas.add(rs.getObject("data", LocalDate.class));
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return datas;
+    }
+
     public List<LocalDate> listarDatasDiaInteiroMotivoComumSL(Integer slId, String motivo) throws SQLException{
         String sql = "SELECT data FROM cancelamento_adm " +
                 "WHERE semestre_letivo_id = ? " +
