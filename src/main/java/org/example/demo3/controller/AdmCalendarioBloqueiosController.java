@@ -74,6 +74,7 @@ public class AdmCalendarioBloqueiosController {
     private List<TemplateHorarioTurno> listaHorariosSelecionados = new ArrayList<>();
     private List<Button> listaBtnDia = new ArrayList<>();
     private List<LocalDate> datasBloqueadasRecuperadasBanco = new ArrayList<>();
+    private List<LocalDate> datasCanceladasRecuperadasBanco = new ArrayList<>();
     private Map<LocalDate, String> mapaBotaoPressionadoEstilo = new LinkedHashMap<>();
     private Month mesSelecionadoTipoMonth;
     private Boolean reacaoEmCadeiaBtns = false;
@@ -86,6 +87,8 @@ public class AdmCalendarioBloqueiosController {
     private final String laranjaBorda = "-fx-border-color: #FFA500; -fx-background-color: -fx-control-inner-background;";
     private final String amareloCheio = "-fx-border-color: transparent; -fx-background-color: #FFFF00;";
     private final String amareloBorda = "-fx-border-color: #FFFF00; -fx-background-color: -fx-control-inner-background;";
+    private final String vermelhoCheio = "-fx-border-color: transparent; -fx-background-color: #FF0000;";
+    private final String vermelhoBorda = "-fx-border-color: #FF0000; -fx-background-color: -fx-control-inner-background;";
     private final String corInicial = "-fx-border-color: transparent; -fx-background-color: #D3D3D3;";
     private String corBotaoSelecionada;
 
@@ -127,6 +130,7 @@ public class AdmCalendarioBloqueiosController {
 
         //CARREGAR AO INICIAR ABA CANCELAMENTOS:
         datasBloqueadasRecuperadasBanco = databDao.listarDatasBloqueadasPorSemestre(idSemestreAtual);
+        datasCanceladasRecuperadasBanco = cancelamentoDAO.listarCancelamentosPorSemestre(idSemestreAtual);
         carregarMesesCbMes();
 
     }
@@ -522,7 +526,7 @@ public class AdmCalendarioBloqueiosController {
         atualizarGridBtnDia();
     }
 
-    public void alterarBotoesValoresBancoFeriado(Month mes){
+    public void alterarBotoesValoresBanco(Month mes){
         for (Button btnDia: listaBtnDia){
             LocalDate dataDesteBotao = LocalDate.of
                     (anoSelecionado, mes, Integer.parseInt(btnDia.getText()));
@@ -531,6 +535,12 @@ public class AdmCalendarioBloqueiosController {
                     btnDia.setStyle(laranjaCheio);
                 else {
                     btnDia.setStyle(laranjaBorda);
+                }
+            } else if (datasCanceladasRecuperadasBanco.contains(dataDesteBotao)){
+                if (!mapaBotaoPressionadoEstilo.containsKey(dataDesteBotao))
+                    btnDia.setStyle(vermelhoCheio);
+                else {
+                    btnDia.setStyle(vermelhoBorda);
                 }
             } else {
                 btnDia.setStyle(corInicial);
@@ -604,7 +614,7 @@ public class AdmCalendarioBloqueiosController {
         mesSelecionadoTipoMonth = Month.from(formatador.parse(mesSelecionadoCbMes.toLowerCase()));
 
         gerarBotoesDia(mesSelecionadoTipoMonth);
-        alterarBotoesValoresBancoFeriado(mesSelecionadoTipoMonth);
+        alterarBotoesValoresBanco(mesSelecionadoTipoMonth);
         verificarEstadoBotoesClick(mesSelecionadoTipoMonth);
     }
 
@@ -613,7 +623,7 @@ public class AdmCalendarioBloqueiosController {
         mapaBotaoPressionadoEstilo.clear();
         bloquearBtnDiasNaoComunsFeriado();
         verificarPodeAbrirConfigCancelamento();
-        alterarBotoesValoresBancoFeriado(mesSelecionadoTipoMonth);
+        alterarBotoesValoresBanco(mesSelecionadoTipoMonth);
     }
 
     @FXML
