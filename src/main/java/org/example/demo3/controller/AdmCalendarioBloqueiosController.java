@@ -341,19 +341,6 @@ public class AdmCalendarioBloqueiosController {
         return datasSelecionadas;
     }
 
-    public List<CancelamentoAdm> prepararListaCancelamento(String motivo){
-        List<CancelamentoAdm> cancelamentosSelecionados = new ArrayList<>();
-        for (LocalDate data: mapaBotaoPressionadoEstilo.keySet()){
-            CancelamentoAdm cadm = new CancelamentoAdm();
-            cadm.setAdm_id(logado.getId_usuario());
-            cadm.setMotivo(motivo);
-            cadm.setData(data);
-            cadm.setSemestre_letivo_id(idSemestreAtual);
-            cancelamentosSelecionados.add(cadm);
-        }
-        return cancelamentosSelecionados;
-    }
-
     public void adicionarFeriadosBanco(String motivo){
         List<DataBloqueada> datasSelecionadas = prepararListaDataBloqueada(motivo);
         try {
@@ -363,6 +350,30 @@ public class AdmCalendarioBloqueiosController {
             }
 
             datasBloqueadasRecuperadasBanco = databDao.listarDatasBloqueadasPorSemestre(idSemestreAtual);
+        } catch (SQLException e){
+            e.printStackTrace();
+        }
+    }
+
+    public void adicionarCancelamentosDiaInteiroBanco(String motivo){
+        List<CancelamentoAdm> cancelamentosSelecionados = new ArrayList<>();
+        for (LocalDate data: mapaBotaoPressionadoEstilo.keySet()){
+            CancelamentoAdm cadm = new CancelamentoAdm();
+            cadm.setAdm_id(logado.getId_usuario());
+            cadm.setMotivo(motivo);
+            cadm.setData(data);
+            cadm.setSemestre_letivo_id(idSemestreAtual);
+            cadm.setDia_inteiro(true);
+            cadm.setCriado_em(LocalDate.now());
+            cancelamentosSelecionados.add(cadm);
+        }
+
+        try {
+            if (cbTurno.getValue().equals("Dia inteiro")){
+                cancelamentoDAO.salvarEmLote(cancelamentosSelecionados);
+            }
+
+            datasCanceladasRecuperadasBanco = cancelamentoDAO.listarCancelamentosPorSemestre(idSemestreAtual);
         } catch (SQLException e){
             e.printStackTrace();
         }
@@ -379,9 +390,17 @@ public class AdmCalendarioBloqueiosController {
         }
     }
 
-    public void atualizarValoresCancelamentoBanco(String motivo){
+    public void atualizarValoresCancelamentoDiaInteiroBanco(String motivo){
+        List<CancelamentoAdm> cancelamentosSelecionados = new ArrayList<>();
+        for (LocalDate data: mapaBotaoPressionadoEstilo.keySet()){
+            CancelamentoAdm cadm = new CancelamentoAdm();
+            cadm.setAdm_id(logado.getId_usuario());
+            cadm.setMotivo(motivo);
+            cadm.setData(data);
+            cadm.setSemestre_letivo_id(idSemestreAtual);
+            cancelamentosSelecionados.add(cadm);
+        }
         try{
-            List<CancelamentoAdm> cancelamentosSelecionados = prepararListaCancelamento(motivo);
             cancelamentoDAO.atualizarEmLote(cancelamentosSelecionados);
             datasCanceladasRecuperadasBanco = cancelamentoDAO.listarCancelamentosPorSemestre(idSemestreAtual);
 
@@ -405,6 +424,8 @@ public class AdmCalendarioBloqueiosController {
         if (!mapaBotaoPressionadoEstilo.isEmpty()){
             boxConfigCancelamento.setManaged(true);
             boxConfigCancelamento.setVisible(true);
+            cbTurno.setValue("Dia inteiro");
+            checkFeriado.setSelected(false);
         } else {
             boxConfigCancelamento.setManaged(false);
             boxConfigCancelamento.setVisible(false);
@@ -444,7 +465,7 @@ public class AdmCalendarioBloqueiosController {
         btnCancelar.setText("Editar cancelamento");
         btnCancelar.setOnAction(event -> {
             if (cbTurno.getValue().equals("Dia inteiro")) {
-                atualizarValoresCancelamentoBanco(tfMotivoCancelamento.getText());
+                atualizarValoresCancelamentoDiaInteiroBanco(tfMotivoCancelamento.getText());
                 resetarDadosConfigCancelamento();
                 handleDesfazerSelecao();
             }
@@ -713,7 +734,12 @@ public class AdmCalendarioBloqueiosController {
 
     @FXML
     public void handleCancelarDatas() {
-        adicionarFeriadosBanco(tfMotivoCancelamento.getText());
+        if (checkFeriado.isSelected()){
+            adicionarFeriadosBanco(tfMotivoCancelamento.getText());
+        } else if (cbTurno.getValue().equals("Dia inteiro")){
+            adicionarCancelamentosDiaInteiroBanco(tfMotivoCancelamento.getText());
+        }
+
         resetarDadosConfigCancelamento();
         handleDesfazerSelecao();
     }
