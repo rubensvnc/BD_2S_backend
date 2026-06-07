@@ -292,6 +292,29 @@ public class CancelamentoAdmDAO {
         }
     }
 
+    public void excluirEmLote(List<CancelamentoAdm> listaCadm) throws SQLException{
+        String sql = "DELETE FROM cancelamento_adm WHERE " +
+                "semestre_letivo_id = ? AND " +
+                "data = ? AND " +
+                "motivo = ? AND " +
+                "dia_inteiro = 1";
+
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            for (CancelamentoAdm cadm: listaCadm){
+                stmt.setInt(1, cadm.getSemestre_letivo_id());
+                stmt.setObject(2, cadm.getData());
+                stmt.setString(3, cadm.getMotivo());
+                stmt.executeUpdate();
+            }
+
+        } catch (SQLException e) {
+            System.err.println("Erro ao excluir cadm em lote: " + e.getMessage());
+            throw e;
+        }
+    }
+
     public Map<Integer, List<Integer>> listarHorariosCanceladosPorCancelamento(Integer sl) {
         String sql = """
         SELECT cah.cancelamento_adm_id, cah.horario_curso_id
