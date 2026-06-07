@@ -341,6 +341,23 @@ public class AdmCalendarioBloqueiosController {
         return datasSelecionadas;
     }
 
+    public List<CancelamentoAdm> prepararListaCancelamentoDiaInteiro(String motivo, Boolean diaInteiro, String turno){
+        List<CancelamentoAdm> cancelamentosSelecionados = new ArrayList<>();
+
+        for (LocalDate data: mapaBotaoPressionadoEstilo.keySet()){
+            CancelamentoAdm cadm = new CancelamentoAdm();
+            cadm.setAdm_id(logado.getId_usuario());
+            cadm.setMotivo(motivo);
+            cadm.setData(data);
+            cadm.setSemestre_letivo_id(idSemestreAtual);
+            cadm.setDia_inteiro(diaInteiro);
+            cadm.setTurno(turno);
+            cadm.setCriado_em(LocalDate.now());
+            cancelamentosSelecionados.add(cadm);
+        }
+        return cancelamentosSelecionados;
+    }
+
     public void adicionarFeriadosBanco(String motivo){
         List<DataBloqueada> datasSelecionadas = prepararListaDataBloqueada(motivo);
         try {
@@ -356,17 +373,8 @@ public class AdmCalendarioBloqueiosController {
     }
 
     public void adicionarCancelamentosDiaInteiroBanco(String motivo){
-        List<CancelamentoAdm> cancelamentosSelecionados = new ArrayList<>();
-        for (LocalDate data: mapaBotaoPressionadoEstilo.keySet()){
-            CancelamentoAdm cadm = new CancelamentoAdm();
-            cadm.setAdm_id(logado.getId_usuario());
-            cadm.setMotivo(motivo);
-            cadm.setData(data);
-            cadm.setSemestre_letivo_id(idSemestreAtual);
-            cadm.setDia_inteiro(true);
-            cadm.setCriado_em(LocalDate.now());
-            cancelamentosSelecionados.add(cadm);
-        }
+        List<CancelamentoAdm> cancelamentosSelecionados = prepararListaCancelamentoDiaInteiro
+                (motivo, true, null);
 
         try {
             if (cbTurno.getValue().equals("Dia inteiro")){
@@ -391,15 +399,9 @@ public class AdmCalendarioBloqueiosController {
     }
 
     public void atualizarValoresCancelamentoDiaInteiroBanco(String motivo){
-        List<CancelamentoAdm> cancelamentosSelecionados = new ArrayList<>();
-        for (LocalDate data: mapaBotaoPressionadoEstilo.keySet()){
-            CancelamentoAdm cadm = new CancelamentoAdm();
-            cadm.setAdm_id(logado.getId_usuario());
-            cadm.setMotivo(motivo);
-            cadm.setData(data);
-            cadm.setSemestre_letivo_id(idSemestreAtual);
-            cancelamentosSelecionados.add(cadm);
-        }
+        List<CancelamentoAdm> cancelamentosSelecionados = prepararListaCancelamentoDiaInteiro
+                (motivo, true, null);
+
         try{
             cancelamentoDAO.atualizarEmLote(cancelamentosSelecionados);
             datasCanceladasRecuperadasBanco = cancelamentoDAO.listarCancelamentosPorSemestre(idSemestreAtual);
@@ -421,15 +423,8 @@ public class AdmCalendarioBloqueiosController {
     }
 
     public void excluirCancelamentoDiaInteiroBanco(String motivo){
-        List<CancelamentoAdm> cancelamentosSelecionados = new ArrayList<>();
-        for (LocalDate data: mapaBotaoPressionadoEstilo.keySet()){
-            CancelamentoAdm cadm = new CancelamentoAdm();
-            cadm.setAdm_id(logado.getId_usuario());
-            cadm.setMotivo(motivo);
-            cadm.setData(data);
-            cadm.setSemestre_letivo_id(idSemestreAtual);
-            cancelamentosSelecionados.add(cadm);
-        }
+        List<CancelamentoAdm> cancelamentosSelecionados = prepararListaCancelamentoDiaInteiro
+                (motivo, true, null);
         try{
             cancelamentoDAO.excluirEmLote(cancelamentosSelecionados);
             datasCanceladasRecuperadasBanco = cancelamentoDAO.listarCancelamentosPorSemestre(idSemestreAtual);
