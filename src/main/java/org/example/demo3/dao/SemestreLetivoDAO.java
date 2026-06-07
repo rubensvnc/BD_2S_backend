@@ -11,7 +11,8 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
-public class SemestreLetivoDAO{
+public class SemestreLetivoDAO {
+
     public List<SemestreLetivo> listarProfessorAnoESemestreAno(int professorId) throws SQLException {
         String sql = """
             SELECT DISTINCT sl.id_semestre_letivo, sl.ano, sl.numero_semestre 
@@ -81,7 +82,7 @@ public class SemestreLetivoDAO{
             """;
 
         try (Connection conn = DatabaseConnection.getConnection();
-        PreparedStatement ps = conn.prepareStatement(sql)) {
+             PreparedStatement ps = conn.prepareStatement(sql)) {
 
             ps.setInt(1, id);
 
@@ -169,5 +170,39 @@ public class SemestreLetivoDAO{
         }
 
         return lista;
+    }
+
+    // --- NOVO MÉTODO ADICIONADO EXTRAÍDO DO CONTROLLER ---
+    public int salvarOuAtualizarSemestre(Connection conn, SemestreLetivo sl) throws SQLException {
+        String sqlUpsert = """
+            INSERT INTO semestre_letivo
+                (criado_por_adm_id, ano, numero_semestre, data_inicio, data_fim, data_tg, data_feira)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+            ON DUPLICATE KEY UPDATE
+                data_inicio = VALUES(data_inicio),
+                data_fim    = VALUES(data_fim),
+                data_tg     = VALUES(data_tg),
+                data_feira  = VALUES(data_feira)
+        """;
+
+        try (PreparedStatement stmtSem = conn.prepareStatement(sqlUpsert, PreparedStatement.RETURN_GENERATED_KEYS)) {
+            stmtSem.setInt(1, sl.getCriado_por_adm_id());
+            stmtSem.setInt(2, sl.getAno());
+            stmtSem.setInt(3, sl.getNumero_semestre());
+            stmtSem.setDate(4, java.sql.Date.valueOf(sl.getData_inicio()));
+            stmtSem.setDate(5, java.sql.Date.valueOf(sl.getData_fim()));
+            stmtSem.setDate(6, java.sql.Date.valueOf(sl.getData_tg()));
+            stmtSem.setDate(7, java.sql.Date.valueOf(sl.getData_feira()));
+            stmtSem.executeUpdate();
+
+            try (ResultSet keys = stmtSem.getGeneratedKeys()) {
+                if (keys.next()) {
+                    return keys.getInt(1);
+                } else {
+                    Integer id = getIdSemestreLetivo(sl.getAno(), sl.getNumero_semestre());
+                    return (id != null) ? id : -1;
+                }
+            }
+        }
     }
 }
