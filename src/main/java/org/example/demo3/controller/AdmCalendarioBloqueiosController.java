@@ -102,7 +102,13 @@ public class AdmCalendarioBloqueiosController {
     public void carregarDadosPorAnoESemestre(int anoFiltro, int numeroSemestre) {
         listaSprintsFX.clear();
 
-        this.idSemestreAtual = buscarIdSemestreDoBanco(anoFiltro, numeroSemestre);
+
+        try {
+            Integer id = slDao.getIdSemestreLetivo(anoFiltro, numeroSemestre);
+            this.idSemestreAtual = (id != null) ? id : -1;
+        } catch (SQLException e) {
+            this.idSemestreAtual = -1;
+        }
 
         buscarEPreencherDatasMacro(this.idSemestreAtual, anoFiltro, numeroSemestre);
 
@@ -125,39 +131,16 @@ public class AdmCalendarioBloqueiosController {
         tabelaSprints.setItems(listaSprintsFX);
     }
 
-    private int buscarIdSemestreDoBanco(int ano, int numeroSemestre) {
-        String sql = "SELECT id_semestre_letivo FROM semestre_letivo WHERE ano = ? AND numero_semestre = ?";
-        try (Connection conn = DatabaseConnection.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
-            stmt.setInt(1, ano);
-            stmt.setInt(2, numeroSemestre);
-            try (ResultSet rs = stmt.executeQuery()) {
-                if (rs.next()) {
-                    return rs.getInt("id_semestre_letivo");
-                }
-            }
-        } catch (SQLException e) {
-            System.err.println("Erro ao buscar id_semestre_letivo dinamico: " + e.getMessage());
-        }
-        return -1;
-    }
 
     private void buscarEPreencherDatasMacro(int idSemestre, int anoFiltro, int numeroSemestre) {
-        String sql = "SELECT data_inicio, data_fim, data_tg, data_feira FROM semestre_letivo WHERE id_semestre_letivo = ?";
-        try (Connection conn = DatabaseConnection.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
-            stmt.setInt(1, idSemestre);
-            try (ResultSet rs = stmt.executeQuery()) {
-                if (rs.next()) {
-                    dpInicioSemestre.setValue(rs.getDate("data_inicio").toLocalDate());
-                    dpFimSemestre.setValue(rs.getDate("data_fim").toLocalDate());
-                    dpTcc.setValue(rs.getDate("data_tg").toLocalDate());
-                    dpFeira.setValue(rs.getDate("data_feira").toLocalDate());
-                    return;
-                }
-            }
-        } catch (SQLException e) {
-            System.err.println("Erro ao carregar datas macro do semestre: " + e.getMessage());
+        SemestreLetivo sl = slDao.listarSLPorId(idSemestre);
+
+        if (sl != null && sl.getData_inicio() != null) {
+            dpInicioSemestre.setValue(sl.getData_inicio());
+            dpFimSemestre.setValue(sl.getData_fim());
+            dpTcc.setValue(sl.getData_tg());
+            dpFeira.setValue(sl.getData_feira());
+            return;
         }
 
         int mesInicio = (numeroSemestre == 2) ? 8 : 2;
@@ -250,35 +233,17 @@ public class AdmCalendarioBloqueiosController {
             try {
                 int anoSemestre = inicio.getMonthValue() >= 7 ? 2 : 1;
 
-                String sqlUpsert = """
-                    INSERT INTO semestre_letivo
-                        (criado_por_adm_id, ano, numero_semestre, data_inicio, data_fim, data_tg, data_feira)
-                    VALUES (?, ?, ?, ?, ?, ?, ?)
-                    ON DUPLICATE KEY UPDATE
-                        data_inicio = VALUES(data_inicio),
-                        data_fim    = VALUES(data_fim),
-                        data_tg     = VALUES(data_tg),
-                        data_feira  = VALUES(data_feira)
-                """;
 
-                try (PreparedStatement stmtSem = connection.prepareStatement(
-                        sqlUpsert, PreparedStatement.RETURN_GENERATED_KEYS)) {
-                    stmtSem.setInt(1, ID_ADM_LOGADO);
-                    stmtSem.setInt(2, inicio.getYear());
-                    stmtSem.setInt(3, anoSemestre);
-                    stmtSem.setDate(4, java.sql.Date.valueOf(inicio));
-                    stmtSem.setDate(5, java.sql.Date.valueOf(fim));
-                    stmtSem.setDate(6, java.sql.Date.valueOf(tcc));
-                    stmtSem.setDate(7, java.sql.Date.valueOf(feira));
-                    stmtSem.executeUpdate();
+                SemestreLetivo sl = new SemestreLetivo();
+                sl.setCriado_por_adm_id(ID_ADM_LOGADO);
+                sl.setAno(inicio.getYear());
+                sl.setNumero_semestre(anoSemestre);
+                sl.setData_inicio(inicio);
+                sl.setData_fim(fim);
+                sl.setData_tg(tcc);
+                sl.setData_feira(feira);
 
-                    ResultSet keys = stmtSem.getGeneratedKeys();
-                    if (keys.next()) {
-                        this.idSemestreAtual = keys.getInt(1);
-                    } else {
-                        this.idSemestreAtual = buscarIdSemestreDoBanco(inicio.getYear(), anoSemestre);
-                    }
-                }
+                this.idSemestreAtual = slDao.salvarOuAtualizarSemestre(connection, sl);
 
                 for (Sprint sprint : listaSprintsFX) {
                     sprint.setSemestre_letivo_id(this.idSemestreAtual);
@@ -505,7 +470,7 @@ public class AdmCalendarioBloqueiosController {
         }
     }
 
-    public void handleCancelarFeriados(String motivo){
+    public void handleCancelariaFeriados(String motivo){
         List<DataBloqueada> listaDatasBloqueadas = new ArrayList<>();
         try{
             for (LocalDate data: listaDiaBotaoPressionado){
@@ -728,7 +693,7 @@ public class AdmCalendarioBloqueiosController {
     public void handleCancelarDatas() {
         String motivo = tfMotivoCancelamento.getText();
         if (checkFeriado.isSelected()){
-            handleCancelarFeriados(motivo);
+            handleCancelariaFeriados(motivo);
         } else {
             handleCancelarAdm(motivo);
         }
@@ -739,8 +704,6 @@ public class AdmCalendarioBloqueiosController {
     public void handleDeletarCancelamento() {
 
     }
-
-    // --- METODOS UTILITARIOS GENERICOS ---
 
     private void exibirFeedback(Label label, String mensagem, boolean isErro) {
         label.setText(mensagem);
