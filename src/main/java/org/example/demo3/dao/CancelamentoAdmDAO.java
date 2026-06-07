@@ -176,7 +176,8 @@ public class CancelamentoAdmDAO {
     }
 
     public List<LocalDate> listarCancelamentosPorSemestre(Integer sl){
-        String sql = "SELECT cadm.data FROM cancelamento_adm cadm WHERE semestre_letivo_id = ? ORDER BY cadm.data;";
+        String sql = "SELECT cadm.data FROM cancelamento_adm cadm WHERE semestre_letivo_id = ? " +
+                "AND cadm.deletado_em IS NULL ORDER BY cadm.data;";
 
         List<LocalDate> datas = new ArrayList<>();
         try (Connection conn = DatabaseConnection.getConnection();
@@ -246,71 +247,91 @@ public class CancelamentoAdmDAO {
     }
 
     public void salvarEmLote(List<CancelamentoAdm> cancelamentoAdms) throws SQLException {
-        String sql = """
-            INSERT INTO cancelamento_adm (adm_id, semestre_letivo_id, data, turno, dia_inteiro, motivo, criado_em) 
-            VALUES (?, ?, ?, ?, ?, ?, ?)
-            """;
+        String sqlInsert = """
+        INSERT INTO cancelamento_adm (adm_id, semestre_letivo_id, data, turno, dia_inteiro, motivo, criado_em) 
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+        """;
 
-        try (Connection conn = DatabaseConnection.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
-            for (CancelamentoAdm cadm: cancelamentoAdms){
-                stmt.setInt(1, cadm.getAdm_id());
-                stmt.setInt(2, cadm.getSemestre_letivo_id());
-                stmt.setObject(3, cadm.getData());
-                stmt.setString(4, cadm.getTurno());
-                stmt.setBoolean(5, cadm.getDia_inteiro());
-                stmt.setString(6, cadm.getMotivo());
-                stmt.setObject(7, cadm.getCriado_em());
+        String sqlUpdate = """
+        UPDATE cancelamento_adm 
+        SET adm_id = ?, turno = ?, dia_inteiro = ?, motivo = ?, criado_em = ?, deletado_em = NULL
+        WHERE semestre_letivo_id = ? AND data = ? AND deletado_em IS NOT NULL
+        """;
 
-                stmt.executeUpdate();
+        String sqlVerificar = """
+        SELECT id_cancelamento_adm FROM cancelamento_adm 
+        WHERE semestre_letivo_id = ? AND data = ? AND deletado_em IS NOT NULL
+        """;
+
+        try (Connection conn = DatabaseConnection.getConnection()) {
+            for (CancelamentoAdm cadm : cancelamentoAdms) {
+                boolean existeDeletado = false;
+
+                try (PreparedStatement stmtVerificar = conn.prepareStatement(sqlVerificar)) {
+                    stmtVerificar.setInt(1, cadm.getSemestre_letivo_id());
+                    stmtVerificar.setObject(2, cadm.getData());
+
+                    try (ResultSet rs = stmtVerificar.executeQuery()) {
+                        existeDeletado = rs.next();
+                    }
+                }
+
+                if (existeDeletado) {
+                    try (PreparedStatement stmtUpdate = conn.prepareStatement(sqlUpdate)) {
+                        stmtUpdate.setInt(1, cadm.getAdm_id());
+                        stmtUpdate.setString(2, cadm.getTurno());
+                        stmtUpdate.setBoolean(3, cadm.getDia_inteiro());
+                        stmtUpdate.setString(4, cadm.getMotivo());
+                        stmtUpdate.setObject(5, cadm.getCriado_em());
+                        stmtUpdate.setInt(6, cadm.getSemestre_letivo_id());
+                        stmtUpdate.setObject(7, cadm.getData());
+
+                        stmtUpdate.executeUpdate();
+                    }
+                } else {
+                    try (PreparedStatement stmtInsert = conn.prepareStatement(sqlInsert)) {
+                        stmtInsert.setInt(1, cadm.getAdm_id());
+                        stmtInsert.setInt(2, cadm.getSemestre_letivo_id());
+                        stmtInsert.setObject(3, cadm.getData());
+                        stmtInsert.setString(4, cadm.getTurno());
+                        stmtInsert.setBoolean(5, cadm.getDia_inteiro());
+                        stmtInsert.setString(6, cadm.getMotivo());
+                        stmtInsert.setObject(7, cadm.getCriado_em());
+
+                        stmtInsert.executeUpdate();
+                    }
+                }
             }
-
         } catch (SQLException e) {
             System.err.println("Erro ao salvar cancelamento Adm em cadeia: " + e.getMessage());
             throw e;
         }
     }
 
-    public void excluir(int idCancelamentoAdm) throws SQLException {
-        // Se o seu sistema faz exclusão lógica (update deletado_em), mude para o UPDATE correspondente.
-        // Aqui usaremos o DELETE físico para seguir a mesma lógica do DataBloqueadaDAO.
-        String sql = "DELETE FROM cancelamento_adm WHERE id_cancelamento_adm = ?";
-        Connection conn = null;
-        PreparedStatement ps = null;
-
-        try {
-            conn = DatabaseConnection.getConnection();
-            ps = conn.prepareStatement(sql);
-            ps.setInt(1, idCancelamentoAdm);
-
-            ps.executeUpdate();
-        } catch (SQLException e) {
-            System.err.println("Erro ao excluir cancelamento: " + e.getMessage());
-            throw e;
-        } finally {
-            DatabaseConnection.closeConnection();
-        }
-    }
-
     public void excluirEmLote(List<CancelamentoAdm> listaCadm) throws SQLException{
-        String sql = "DELETE FROM cancelamento_adm WHERE " +
-                "semestre_letivo_id = ? AND " +
-                "data = ? AND " +
-                "motivo = ? AND " +
-                "dia_inteiro = 1";
+        String sql = """
+        UPDATE cancelamento_adm 
+        SET turno = ?, dia_inteiro = ?, motivo = ?, deletado_em = ?, adm_id = ?
+        WHERE semestre_letivo_id = ? AND data = ? AND deletado_em IS NULL
+        """;
 
         try (Connection conn = DatabaseConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
 
             for (CancelamentoAdm cadm: listaCadm){
-                stmt.setInt(1, cadm.getSemestre_letivo_id());
-                stmt.setObject(2, cadm.getData());
+                stmt.setString(1, cadm.getTurno());
+                stmt.setBoolean(2, cadm.getDia_inteiro());
                 stmt.setString(3, cadm.getMotivo());
+                stmt.setObject(4, LocalDate.now());
+                stmt.setInt(5, cadm.getAdm_id());
+                stmt.setInt(6, cadm.getSemestre_letivo_id());
+                stmt.setObject(7, cadm.getData());
+
                 stmt.executeUpdate();
             }
 
         } catch (SQLException e) {
-            System.err.println("Erro ao excluir cadm em lote: " + e.getMessage());
+            System.err.println("Erro ao excluir (soft_delete) cadm em lote: " + e.getMessage());
             throw e;
         }
     }
