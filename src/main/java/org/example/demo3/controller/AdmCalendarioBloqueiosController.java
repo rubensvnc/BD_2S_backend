@@ -420,6 +420,25 @@ public class AdmCalendarioBloqueiosController {
         }
     }
 
+    public void excluirCancelamentoDiaInteiroBanco(String motivo){
+        List<CancelamentoAdm> cancelamentosSelecionados = new ArrayList<>();
+        for (LocalDate data: mapaBotaoPressionadoEstilo.keySet()){
+            CancelamentoAdm cadm = new CancelamentoAdm();
+            cadm.setAdm_id(logado.getId_usuario());
+            cadm.setMotivo(motivo);
+            cadm.setData(data);
+            cadm.setSemestre_letivo_id(idSemestreAtual);
+            cancelamentosSelecionados.add(cadm);
+        }
+        try{
+            cancelamentoDAO.excluirEmLote(cancelamentosSelecionados);
+            datasCanceladasRecuperadasBanco = cancelamentoDAO.listarCancelamentosPorSemestre(idSemestreAtual);
+
+        } catch (SQLException e){
+            e.printStackTrace();
+        }
+    }
+
     public void verificarPodeAbrirConfigCancelamento(){
         if (!mapaBotaoPressionadoEstilo.isEmpty()){
             boxConfigCancelamento.setManaged(true);
@@ -746,7 +765,12 @@ public class AdmCalendarioBloqueiosController {
 
     @FXML
     public void handleDeletarCancelamento() {
-        excluirFeriadoBanco(tfMotivoCancelamento.getText());
+        if (checkFeriado.isSelected()){
+            excluirFeriadoBanco(tfMotivoCancelamento.getText());
+        } else if (cbTurno.getValue().equals("Dia inteiro")){
+            excluirCancelamentoDiaInteiroBanco(tfMotivoCancelamento.getText());
+        }
+
         resetarDadosConfigCancelamento();
         handleDesfazerSelecao();
     }
