@@ -155,8 +155,8 @@ public class CancelamentoAdmDAO {
         }
     }
 
-    public String recuperarMotivoData(LocalDate data, Integer slId) throws SQLException{
-        String sql = "SELECT motivo FROM cancelamento_adm " +
+    public CancelamentoAdm recuperarCancelamentoAdm(LocalDate data, Integer slId) throws SQLException{
+        String sql = "SELECT * FROM cancelamento_adm " +
                 "WHERE data = ? AND semestre_letivo_id = ?";
 
         try (Connection conn = DatabaseConnection.getConnection();
@@ -166,7 +166,18 @@ public class CancelamentoAdmDAO {
             stmt.setInt(2, slId);
             ResultSet rs = stmt.executeQuery();
             if (rs.next()) {
-                return rs.getString("motivo");
+                CancelamentoAdm cadm = new CancelamentoAdm(
+                        rs.getInt("id_cancelamento_adm"),
+                        rs.getInt("adm_id"),
+                        rs.getInt("semestre_letivo_id"),
+                        rs.getObject("data", LocalDate.class),
+                        rs.getString("turno"),
+                        rs.getBoolean("dia_inteiro"),
+                        rs.getString("motivo"),
+                        rs.getObject("criado_em", LocalDate.class),
+                        rs.getObject("deletado_em", LocalDate.class)
+                );
+                return cadm;
             }
         } catch (SQLException e) {
             System.err.println("Erro ao listar datas bloqueadas: " + e.getMessage());
@@ -175,7 +186,37 @@ public class CancelamentoAdmDAO {
         return null;
     }
 
-    public List<LocalDate> listarCancelamentosPorSemestre(Integer sl){
+    public List<CancelamentoAdm> recuperarTodosCancelamentoAdm(Integer slId){
+        String sql = "SELECT * FROM cancelamento_adm " +
+                "WHERE semestre_letivo_id = ?";
+
+        List<CancelamentoAdm> listCadm = new ArrayList<>();
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            stmt.setInt(1, slId);
+            ResultSet rs = stmt.executeQuery();
+            while (rs.next()) {
+                CancelamentoAdm cadm = new CancelamentoAdm(
+                        rs.getInt("id_cancelamento_adm"),
+                        rs.getInt("adm_id"),
+                        rs.getInt("semestre_letivo_id"),
+                        rs.getObject("data", LocalDate.class),
+                        rs.getString("turno"),
+                        rs.getBoolean("dia_inteiro"),
+                        rs.getString("motivo"),
+                        rs.getObject("criado_em", LocalDate.class),
+                        rs.getObject("deletado_em", LocalDate.class)
+                );
+                listCadm.add(cadm);
+            }
+        } catch (SQLException e) {
+            System.err.println("Erro ao listar datas bloqueadas: " + e.getMessage());
+        }
+        return listCadm;
+    }
+
+    public List<LocalDate> listarDatasCancelamentosPorSemestre(Integer sl){
         String sql = "SELECT cadm.data FROM cancelamento_adm cadm WHERE semestre_letivo_id = ? " +
                 "AND cadm.deletado_em IS NULL ORDER BY cadm.data;";
 
