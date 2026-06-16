@@ -2,6 +2,7 @@ package org.example.demo3.dao;
 
 import org.example.demo3.DatabaseConnection;
 import org.example.demo3.dto.AdmCursoExibicao;
+import org.example.demo3.entity.CancelamentoAdmHorario;
 import org.example.demo3.entity.HorarioCurso;
 import org.example.demo3.entity.TemplateHorarioTurno;
 
@@ -108,6 +109,46 @@ public class HorarioCursoDAO {
             ps.executeUpdate();
 
         }
+    }
+
+    public List<HorarioCurso> listarHorarioCursoIdsCAH(List<CancelamentoAdmHorario> listCAH){
+
+        String sql = """
+            SELECT hc.* FROM horario_curso hc
+             INNER JOIN cancelamento_adm_horario cah
+             ON cah.horario_curso_id = hc.id_horario_curso
+             WHERE cah.id_cancelamento_adm_horario = ?
+        """;
+
+        List<HorarioCurso> listaHC = new ArrayList<>();
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            for (CancelamentoAdmHorario cAH: listCAH){
+                ps.setInt(1, cAH.getId_cancelamento_adm_horario());
+                try (ResultSet rs = ps.executeQuery()) {
+                    while (rs.next()) {
+                        HorarioCurso hc = new HorarioCurso(
+                                rs.getInt("hc.id_horario_curso"),
+                                rs.getInt("hc.curso_id"),
+                                rs.getInt("hc.semestre_letivo_id"),
+                                rs.getString("hc.tipo"),
+                                rs.getInt("hc.numero_ordem"),
+                                rs.getObject("hc.hora_inicio", LocalTime.class),
+                                rs.getObject("hc.hora_fim", LocalTime.class)
+                        );
+                        listaHC.add(hc);
+                    }
+                } catch (SQLException e){
+                    e.printStackTrace();
+                }
+            }
+
+
+        } catch (SQLException e){
+            e.printStackTrace();
+        }
+        return listaHC;
     }
 
     public List<Integer> recuperarIdsHoraInicioFim(LocalTime hi, LocalTime hf) throws SQLException{
