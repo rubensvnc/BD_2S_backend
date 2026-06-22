@@ -188,7 +188,7 @@ public class CancelamentoAdmDAO {
 
     public List<CancelamentoAdm> recuperarTodosCancelamentoAdm(Integer slId){
         String sql = "SELECT * FROM cancelamento_adm " +
-                "WHERE semestre_letivo_id = ?";
+                "WHERE semestre_letivo_id = ? AND deletado_em IS NULL";
 
         List<CancelamentoAdm> listCadm = new ArrayList<>();
         try (Connection conn = DatabaseConnection.getConnection();
