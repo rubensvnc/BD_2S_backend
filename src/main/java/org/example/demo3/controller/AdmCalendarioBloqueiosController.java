@@ -4,6 +4,7 @@ import javafx.collections.FXCollections;
 import javafx.collections.ObservableArray;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
+import javafx.scene.Node;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.control.cell.TextFieldTableCell;
@@ -76,7 +77,9 @@ public class AdmCalendarioBloqueiosController {
     private List<LocalDate> datasBloqueadasRecuperadasBanco = new ArrayList<>();
     private List<LocalDate> datasCanceladasRecuperadasBanco = new ArrayList<>();
     private List<CancelamentoAdm> todosCancelamentosSemestre = new ArrayList<>();
+    private List<LocalTime> listCheckHorariosSelecionados = new ArrayList<>();
 
+    private Map<String, List<TemplateHorarioTurno>> mapaTurnoListTHT = new LinkedHashMap<>();
     private Map<LocalDate, String> mapaBotaoPressionadoEstilo = new LinkedHashMap<>();
     private Month mesSelecionadoTipoMonth;
     private Boolean reacaoEmCadeiaBtns = false;
@@ -134,6 +137,8 @@ public class AdmCalendarioBloqueiosController {
         datasBloqueadasRecuperadasBanco = databDao.listarDatasBloqueadasPorSemestre(idSemestreAtual);
         datasCanceladasRecuperadasBanco = cancelamentoDAO.listarDatasCancelamentosPorSemestre(idSemestreAtual);
         todosCancelamentosSemestre = cancelamentoDAO.recuperarTodosCancelamentoAdm(idSemestreAtual);
+
+        recuperarHorariosTurnos();
         carregarMesesCbMes();
         configurarDadosConfigCancelamento();
 
@@ -388,6 +393,10 @@ public class AdmCalendarioBloqueiosController {
         } catch (SQLException e){
             e.printStackTrace();
         }
+    }
+
+    public void adicionarCancelamentoHorariosBanco(String motivo, String turno){
+
     }
 
     public void atualizarValoresFeriadoBanco(String motivo){
@@ -736,6 +745,44 @@ public class AdmCalendarioBloqueiosController {
         }
     }
 
+    // ------- CHECKBOXES
+
+    private void gerarCheckboxHorarios(String turno){
+        for (TemplateHorarioTurno tht : mapaTurnoListTHT.get(turno)){
+            CheckBox checkBoxHorario = new CheckBox();
+            checkBoxHorario.setText(tht.getHora_inicio() + " - " + tht.getHora_fim());
+
+            if (listCheckHorariosSelecionados.contains(tht.getHora_inicio())){
+                checkBoxHorario.setSelected(true);
+            } else {
+                checkBoxHorario.setSelected(false);
+            }
+
+            checkBoxHorario.setOnAction(event ->{
+                if (listCheckHorariosSelecionados.contains(tht.getHora_inicio())){
+                    listCheckHorariosSelecionados.remove(tht.getHora_inicio());
+                } else {
+                    listCheckHorariosSelecionados.add(tht.getHora_inicio());
+                }
+            });
+
+            flowHorarios.getChildren().add(checkBoxHorario);
+        }
+    }
+
+    private void recuperarHorariosTurnos(){
+        List<TemplateHorarioTurno> listaTHT = thtDao.listarTodosHorariosTurnos();
+        List<TemplateHorarioTurno> listaTurnoManha = listaTHT.stream()
+                .filter(lambdaTHT -> "manha".equals(lambdaTHT.getTurno()))
+                .toList();
+        List<TemplateHorarioTurno> listaTurnoNoite = listaTHT.stream()
+                .filter(lambdaTHT -> "noite".equals(lambdaTHT.getTurno()))
+                .toList();
+
+        mapaTurnoListTHT.put("manha", listaTurnoManha);
+        mapaTurnoListTHT.put("noite", listaTurnoNoite);
+    }
+
     @FXML
     public void handleCancelamentoSelecaoMes(){
         String mesSelecionadoCbMes = cbMes.getValue();
@@ -769,7 +816,16 @@ public class AdmCalendarioBloqueiosController {
 
     @FXML
     public void handleSelecaoTurno(){
+        flowHorarios.getChildren().clear();
+        painelHorarios.setManaged(false);
+        painelHorarios.setVisible(false);
 
+        if (!cbTurno.getValue().equals("Dia inteiro")){
+            painelHorarios.setManaged(true);
+            painelHorarios.setVisible(true);
+
+            gerarCheckboxHorarios(cbTurno.getValue());
+        }
     }
 
     @FXML
@@ -778,6 +834,10 @@ public class AdmCalendarioBloqueiosController {
             adicionarFeriadosBanco(tfMotivoCancelamento.getText());
         } else if (cbTurno.getValue().equals("Dia inteiro")){
             adicionarCancelamentosDiaInteiroBanco(tfMotivoCancelamento.getText());
+        } else if (!listCheckHorariosSelecionados.isEmpty()){
+            adicionarCancelamentoHorariosBanco(tfMotivoCancelamento.getText());
+        } else {
+            // addpopuphere
         }
 
         resetarDadosConfigCancelamento();
