@@ -464,6 +464,76 @@ public class AdmCalendarioBloqueiosController {
         }
     }
 
+    public void atualizarValoresCancelamentoComHorarios(String motivo, String turno){
+        try {
+            // Atualiza motivo/turno nas linhas de cancelamento_adm
+            List<CancelamentoAdm> cancelamentosAtualizados = prepararListaCancelamentoHorario(motivo, turno);
+            cancelamentoDAO.atualizarEmLote(cancelamentosAtualizados);
+
+            linhasCancelamentoAdmRecuperadoBanco = cancelamentoDAO.recuperarTodosCancelamentoAdm(idSemestreAtual);
+
+            // Pega os cadms (com id real do banco) que correspondem às datas selecionadas
+            List<CancelamentoAdm> listCadmSelecionados = linhasCancelamentoAdmRecuperadoBanco.stream()
+                    .filter(c -> mapaBotaoPressionadoEstilo.containsKey(c.getData()))
+                    .toList();
+
+            // Horários atualmente salvos no banco para esses cadms
+            List<CancelamentoAdmHorario> listCadmHAtual =
+                    cancelamentoAdmHDAO.listarHorariosDeCancelamentos(listCadmSelecionados);
+
+            // Horários que DEVERIAM estar selecionados (estado atual da UI)
+            List<HorarioCurso> listHorarioCursoDesejado =
+                    hcDao.listarHorarioCursoPorHoraInicio(idSemestreAtual, listCheckHorariosSelecionados);
+            Set<Integer> idsDesejados = listHorarioCursoDesejado.stream()
+                    .map(HorarioCurso::getId_horario_curso)
+                    .collect(Collectors.toSet());
+
+            List<CancelamentoAdmHorario> listaParaInserir = new ArrayList<>();
+            List<CancelamentoAdmHorario> listaParaRemover = new ArrayList<>();
+
+            // Para cada cadm, calcula o diff entre o que está no banco e o que deveria estar
+            for (CancelamentoAdm cadm : listCadmSelecionados){
+                Integer idCadm = cadm.getId_cancelamento_adm();
+
+                Set<Integer> idsAtuais = listCadmHAtual.stream()
+                        .filter(cah -> idCadm.equals(cah.getCancelamento_adm_id()))
+                        .map(CancelamentoAdmHorario::getHorario_curso_id)
+                        .collect(Collectors.toSet());
+
+                // Está em "desejado" mas não em "atual" -> precisa INSERIR
+                for (Integer idHorario : idsDesejados){
+                    if (!idsAtuais.contains(idHorario)){
+                        CancelamentoAdmHorario novo = new CancelamentoAdmHorario();
+                        novo.setCancelamento_adm_id(idCadm);
+                        novo.setHorario_curso_id(idHorario);
+                        listaParaInserir.add(novo);
+                    }
+                }
+
+                // Está em "atual" mas não em "desejado" -> precisa REMOVER
+                for (Integer idHorario : idsAtuais){
+                    if (!idsDesejados.contains(idHorario)){
+                        CancelamentoAdmHorario remover = new CancelamentoAdmHorario();
+                        remover.setCancelamento_adm_id(idCadm);
+                        remover.setHorario_curso_id(idHorario);
+                        listaParaRemover.add(remover);
+                    }
+                }
+            }
+
+            if (!listaParaInserir.isEmpty()){
+                cancelamentoAdmHDAO.salvarEmLote(listaParaInserir);
+            }
+            if (!listaParaRemover.isEmpty()){
+                cancelamentoAdmHDAO.excluirEmLote(listaParaRemover);
+            }
+
+        } catch (SQLException e){
+            e.printStackTrace();
+        }
+    }
+
+
     public void excluirFeriadoBanco(String motivo){
         try{
             List<DataBloqueada> datasSelecionadas = prepararListaDataBloqueada(motivo);
@@ -487,7 +557,7 @@ public class AdmCalendarioBloqueiosController {
     }
 
     public void configurarDadosConfigCancelamento(){
-        cbTurno.setItems(FXCollections.observableArrayList("Dia inteiro", "manha", "noite"));
+        cbTurno.setItems(FXCollections.observableArrayList("Dia inteiro", "manha", "noite", "Ambos turnos"));
         cbTurno.setValue("Dia inteiro");
         checkFeriado.setSelected(false);
     }
@@ -556,12 +626,18 @@ public class AdmCalendarioBloqueiosController {
     public void preencherDadosConfigCancelamentoComHorarios(String motivo, String turno){
         tfMotivoCancelamento.setText(motivo);
         checkFeriado.setSelected(false);
-        cbTurno.setValue(turno);
 
+        String valorCombo = (turno == null) ? "Ambos turnos" : turno;
+        cbTurno.setValue(valorCombo);
+
+        painelHorarios.setManaged(true);
+        painelHorarios.setVisible(true);
+        gerarCheckboxHorarios(valorCombo);
 
         btnCancelar.setText("Editar cancelamento");
         btnCancelar.setOnAction(event -> {
-            //atualizarValoresCancelamentoComHorarios(tfMotivoCancelamento.getText());
+            String turnoParaSalvar = "Ambos turnos".equals(cbTurno.getValue()) ? null : cbTurno.getValue();
+            atualizarValoresCancelamentoComHorarios(tfMotivoCancelamento.getText(), turnoParaSalvar);
             resetarDadosConfigCancelamento();
             handleDesfazerSelecao();
         });
@@ -635,7 +711,7 @@ public class AdmCalendarioBloqueiosController {
         Integer id = cadmPrimeiroSelecionado.getId_cancelamento_adm();
 
         List<CancelamentoAdm> listCAdmFiltroInicial = linhasCancelamentoAdmRecuperadoBanco.stream()
-                .filter(lambdaCadm -> turno.equals(lambdaCadm.getTurno()))
+                .filter(lambdaCadm -> Objects.equals(turno, lambdaCadm.getTurno()))
                 .filter(lambdaCadm -> motivo.equals(lambdaCadm.getMotivo()))
                 .toList();
 
@@ -879,26 +955,57 @@ public class AdmCalendarioBloqueiosController {
 
     // ------- CHECKBOXES
 
-    private void gerarCheckboxHorarios(String turno){
+    private void atualizarCbTurnoConformeSelecaoHorarios(){
+        Set<LocalTime> selecionados = new HashSet<>(listCheckHorariosSelecionados);
+
+        boolean temManha = mapaTurnoListTHT.get("manha").stream()
+                .map(TemplateHorarioTurno::getHora_inicio).anyMatch(selecionados::contains);
+        boolean temNoite = mapaTurnoListTHT.get("noite").stream()
+                .map(TemplateHorarioTurno::getHora_inicio).anyMatch(selecionados::contains);
+
+        String turnoAtual = cbTurno.getValue();
+
+        if (temManha && temNoite && !"Ambos turnos".equals(turnoAtual)){
+            // passou a usar os dois turnos -> exibe combo e os dois painéis juntos
+            cbTurno.setValue("Ambos turnos");
+            gerarCheckboxHorarios("Ambos turnos");
+        } else if (!(temManha && temNoite) && "Ambos turnos".equals(turnoAtual)){
+            // desmarcou até restar só um turno -> volta pro turno único
+            String turnoRestante = temManha ? "manha" : (temNoite ? "noite" : null);
+            if (turnoRestante != null){
+                cbTurno.setValue(turnoRestante);
+                gerarCheckboxHorarios(turnoRestante);
+            }
+        }
+    }
+
+    private void adicionarCheckboxesDoTurno(String turno){
         for (TemplateHorarioTurno tht : mapaTurnoListTHT.get(turno)){
             CheckBox checkBoxHorario = new CheckBox();
             checkBoxHorario.setText(tht.getHora_inicio() + " - " + tht.getHora_fim());
+            checkBoxHorario.setSelected(listCheckHorariosSelecionados.contains(tht.getHora_inicio()));
 
-            if (listCheckHorariosSelecionados.contains(tht.getHora_inicio())){
-                checkBoxHorario.setSelected(true);
-            } else {
-                checkBoxHorario.setSelected(false);
-            }
-
-            checkBoxHorario.setOnAction(event ->{
+            checkBoxHorario.setOnAction(event -> {
                 if (listCheckHorariosSelecionados.contains(tht.getHora_inicio())){
                     listCheckHorariosSelecionados.remove(tht.getHora_inicio());
                 } else {
                     listCheckHorariosSelecionados.add(tht.getHora_inicio());
                 }
+                atualizarCbTurnoConformeSelecaoHorarios();
             });
 
             flowHorarios.getChildren().add(checkBoxHorario);
+        }
+    }
+
+    private void gerarCheckboxHorarios(String turno){
+        flowHorarios.getChildren().clear();
+
+        if ("Ambos turnos".equals(turno)){
+            adicionarCheckboxesDoTurno("manha");
+            adicionarCheckboxesDoTurno("noite");
+        } else {
+            adicionarCheckboxesDoTurno(turno);
         }
     }
 
@@ -968,30 +1075,15 @@ public class AdmCalendarioBloqueiosController {
         } else if (cbTurno.getValue().equals("Dia inteiro")){
             adicionarCancelamentosDiaInteiroBanco(tfMotivoCancelamento.getText());
         } else if (!listCheckHorariosSelecionados.isEmpty()){
-            Set<LocalTime> setCheckHorariosSelecionados = new HashSet<>(listCheckHorariosSelecionados);
-            boolean usaTodosTurnos = mapaTurnoListTHT.values().stream()
-                    .allMatch(listaTHT -> listaTHT.stream()
-                            .map(TemplateHorarioTurno::getHora_inicio)
-                            .anyMatch(setCheckHorariosSelecionados::contains)
-                    );
-
-            if (usaTodosTurnos){
-                adicionarCancelamentoHorariosBanco(tfMotivoCancelamento.getText(), null);
-            } else {
-                adicionarCancelamentoHorariosBanco(tfMotivoCancelamento.getText(), cbTurno.getValue());
-            }
-
-
+            String turnoParaSalvar = "Ambos turnos".equals(cbTurno.getValue()) ? null : cbTurno.getValue();
+            adicionarCancelamentoHorariosBanco(tfMotivoCancelamento.getText(), turnoParaSalvar);
         } else {
-            // adicionar popup dizendo que o usuario não pode adicionar um
-            // cancelamento com turno (manha ou noite)
-            // sem selecionar checkbox alguma
+            // popup: precisa selecionar ao menos um checkbox
         }
 
         resetarDadosConfigCancelamento();
         handleDesfazerSelecao();
     }
-
     @FXML
     public void handleDeletarCancelamento() {
         if (checkFeriado.isSelected()){
