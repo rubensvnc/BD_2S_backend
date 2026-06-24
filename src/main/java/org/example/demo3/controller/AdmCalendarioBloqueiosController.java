@@ -59,7 +59,7 @@ public class AdmCalendarioBloqueiosController {
 
     private final SprintDAO sprintDAO = new SprintDAO();
     private final CancelamentoAdmDAO cancelamentoDAO = new CancelamentoAdmDAO();
-    private final CancelamentoAdmHorarioDAO cancelamentoHDAO = new CancelamentoAdmHorarioDAO();
+    private final CancelamentoAdmHorarioDAO cancelamentoAdmHDAO = new CancelamentoAdmHorarioDAO();
     private final DataBloqueadaDAO databDao = new DataBloqueadaDAO();
     private final SemestreLetivoDAO slDao = new SemestreLetivoDAO();
     private final TemplateHorarioTurnoDAO thtDao = new TemplateHorarioTurnoDAO();
@@ -365,6 +365,24 @@ public class AdmCalendarioBloqueiosController {
         return cancelamentosSelecionados;
     }
 
+    public List<CancelamentoAdm> prepararListaCancelamentoHorario(String motivo, String turno){
+        List<CancelamentoAdm> cancelamentosSelecionados = new ArrayList<>();
+
+        for (LocalDate data: mapaBotaoPressionadoEstilo.keySet()){
+            CancelamentoAdm cadm = new CancelamentoAdm();
+            cadm.setAdm_id(logado.getId_usuario());
+            cadm.setMotivo(motivo);
+            cadm.setData(data);
+            cadm.setSemestre_letivo_id(idSemestreAtual);
+            cadm.setTurno(turno);
+            cadm.setDia_inteiro(false);
+            cadm.setCriado_em(LocalDate.now());
+
+            cancelamentosSelecionados.add(cadm);
+        }
+        return cancelamentosSelecionados;
+    }
+
     public void adicionarFeriadosBanco(String motivo){
         List<DataBloqueada> datasSelecionadas = prepararListaDataBloqueada(motivo);
         try {
@@ -383,9 +401,7 @@ public class AdmCalendarioBloqueiosController {
         List<CancelamentoAdm> cancelamentosSelecionados = prepararListaCancelamentoDiaInteiro(motivo);
 
         try {
-            if (cbTurno.getValue().equals("Dia inteiro")){
-                cancelamentoDAO.salvarEmLote(cancelamentosSelecionados);
-            }
+            cancelamentoDAO.salvarEmLote(cancelamentosSelecionados);
 
             linhasCancelamentoAdmRecuperadoBanco = cancelamentoDAO.recuperarTodosCancelamentoAdm(idSemestreAtual);
         } catch (SQLException e){
@@ -394,7 +410,55 @@ public class AdmCalendarioBloqueiosController {
     }
 
     public void adicionarCancelamentoHorariosBanco(String motivo, String turno){
+        List<CancelamentoAdm> cancelamentosSelecionados = prepararListaCancelamentoHorario(motivo, turno);
+        try {
+            cancelamentoDAO.salvarEmLote(cancelamentosSelecionados);
 
+            linhasCancelamentoAdmRecuperadoBanco = cancelamentoDAO.recuperarTodosCancelamentoAdm(idSemestreAtual);
+        } catch (SQLException e){
+            e.printStackTrace();
+        }
+
+
+        List<HorarioCurso> listHorarioCursoTurno = hcDao.listarHorarioCursoPorHoraInicio(idSemestreAtual,
+                listCheckHorariosSelecionados);
+        List<CancelamentoAdm> listCancelamentoAdmSelecionados = linhasCancelamentoAdmRecuperadoBanco.stream()
+                .filter(lambdaCadm -> mapaBotaoPressionadoEstilo.containsKey(lambdaCadm.getData()))
+                .toList();
+
+        List<CancelamentoAdmHorario> listaCadmH = new ArrayList<>();
+        for (CancelamentoAdm cadm: listCancelamentoAdmSelecionados){
+            for (HorarioCurso hc: listHorarioCursoTurno){
+                CancelamentoAdmHorario cAdmH = new CancelamentoAdmHorario();
+                cAdmH.setCancelamento_adm_id(cadm.getId_cancelamento_adm());
+                cAdmH.setHorario_curso_id(hc.getId_horario_curso());
+
+                listaCadmH.add(cAdmH);
+            }
+        }
+
+        System.out.println("\n\nANTES DO LOOP HC:");
+        for (HorarioCurso hc: listHorarioCursoTurno){
+            System.out.println("\nCOMECO LOOP HC:");
+            System.out.println(hc.getId_horario_curso());
+            System.out.println(hc.getHora_inicio());
+        }
+
+        System.out.println("\n\nANTES DO LOOP CADM:");
+        for (CancelamentoAdm cadm: listCancelamentoAdmSelecionados){
+            System.out.println("\nCOMECO LOOP CADM:");
+            System.out.println(cadm.getId_cancelamento_adm());
+            System.out.println(cadm.getData());
+        }
+
+        System.out.println("\n\nANTES DO LOOP CADMH:");
+        for (CancelamentoAdmHorario o : listaCadmH){
+            System.out.println("\nCOMECO LOOP CADMH:");
+            System.out.println(o.getCancelamento_adm_id());
+            System.out.println(o.getHorario_curso_id());
+        }
+
+        cancelamentoAdmHDAO.salvarEmLote(listaCadmH);
     }
 
     public void atualizarValoresFeriadoBanco(String motivo){
@@ -839,9 +903,25 @@ public class AdmCalendarioBloqueiosController {
         } else if (cbTurno.getValue().equals("Dia inteiro")){
             adicionarCancelamentosDiaInteiroBanco(tfMotivoCancelamento.getText());
         } else if (!listCheckHorariosSelecionados.isEmpty()){
-            adicionarCancelamentoHorariosBanco(tfMotivoCancelamento.getText(), cbTurno.getValue());
+            Set<LocalTime> setCheckHorariosSelecionados = new HashSet<>(listCheckHorariosSelecionados);
+            boolean usaTodosTurnos = mapaTurnoListTHT.values().stream()
+                    .allMatch(listaTHT -> listaTHT.stream()
+                            .map(TemplateHorarioTurno::getHora_inicio)
+                            .anyMatch(setCheckHorariosSelecionados::contains)
+                    );
+
+            if (usaTodosTurnos){
+                adicionarCancelamentoHorariosBanco(tfMotivoCancelamento.getText(), "manha");
+                adicionarCancelamentoHorariosBanco(tfMotivoCancelamento.getText(), "noite");
+            } else {
+                adicionarCancelamentoHorariosBanco(tfMotivoCancelamento.getText(), cbTurno.getValue());
+            }
+
+
         } else {
-            // addpopuphere
+            // adicionar popup dizendo que o usuario não pode adicionar um
+            // cancelamento com turno (manha ou noite)
+            // sem selecionar checkbox alguma
         }
 
         resetarDadosConfigCancelamento();
