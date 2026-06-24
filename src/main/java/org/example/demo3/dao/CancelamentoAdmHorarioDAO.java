@@ -67,7 +67,7 @@ public class CancelamentoAdmHorarioDAO {
         return listCadmH;
     }
 
-    public void salvarEmLote(List<CancelamentoAdmHorario> listaCadmH) throws SQLException{
+    public void salvarEmLote(List<CancelamentoAdmHorario> listaCadmH){
         String sql = "INSERT INTO cancelamento_adm_horario " +
                 "(cancelamento_adm_id, horario_curso_id) " +
                 "VALUES (?, ?)";
@@ -82,8 +82,7 @@ public class CancelamentoAdmHorarioDAO {
             }
 
         } catch (SQLException e) {
-            System.err.println("Erro ao salvar cancelamento_adm_horario em cadeia: " + e.getMessage());
-            throw e;
+            System.err.println("\n\nErro ao salvar 'CadmH - salvarEmLote': " + e.getMessage() + "\n\n");
         }
     }
 }
