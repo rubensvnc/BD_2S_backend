@@ -291,4 +291,128 @@ public class CursoDAO {
         return false;
     }
 
+    public void softDeletarCursoComVinculos(int idCurso) throws SQLException {
+        String[] hardDeletes = {
+                // 1. Remove dependências de temas das disciplinas do curso
+                """
+        DELETE dt FROM dependencia_tema dt
+        INNER JOIN tema t ON t.id_tema = dt.tema_id
+        INNER JOIN disciplina d ON d.id_disciplina = t.disciplina_id
+        WHERE d.curso_id = ? AND d.deletado_em IS NULL
+        """,
+
+                // 2. Remove slots vinculados a temas das disciplinas do curso
+                """
+                DELETE sp FROM slot_planejamento sp
+                INNER JOIN tema t ON t.id_tema = sp.tema_id
+                INNER JOIN disciplina d ON d.id_disciplina = t.disciplina_id
+                WHERE d.curso_id = ? AND d.deletado_em IS NULL AND t.deletado_em IS NULL
+                """,
+
+                // 3. Remove temas das disciplinas do curso
+                """
+        UPDATE tema t
+        INNER JOIN disciplina d ON d.id_disciplina = t.disciplina_id
+        SET t.deletado_em = NOW()
+        WHERE d.curso_id = ? AND d.deletado_em IS NULL AND t.deletado_em IS NULL
+        """,
+
+                // 4. Remove slots vinculados a planejamentos das atribuições do curso
+                """
+        DELETE sp FROM slot_planejamento sp
+        INNER JOIN planejamento p ON p.id_planejamento = sp.planejamento_id
+        INNER JOIN atribuicao_professor ap ON ap.id_atribuicao_professor = p.atribuicao_professor_id
+        INNER JOIN disciplina d ON d.id_disciplina = ap.disciplina_id
+        WHERE d.curso_id = ? AND d.deletado_em IS NULL
+        """,
+
+                // 5. Remove planejamentos das atribuições do curso
+                """
+        DELETE p FROM planejamento p
+        INNER JOIN atribuicao_professor ap ON ap.id_atribuicao_professor = p.atribuicao_professor_id
+        INNER JOIN disciplina d ON d.id_disciplina = ap.disciplina_id
+        WHERE d.curso_id = ? AND d.deletado_em IS NULL
+        """,
+
+                // 6. Remove atribuições de horário das atribuições do curso
+                """
+        DELETE ah FROM atribuicao_horario ah
+        INNER JOIN atribuicao_professor ap ON ap.id_atribuicao_professor = ah.atribuicao_id
+        INNER JOIN disciplina d ON d.id_disciplina = ap.disciplina_id
+        WHERE d.curso_id = ? AND d.deletado_em IS NULL
+        """,
+
+                // 7. Remove atribuições de professor das disciplinas do curso
+                """
+        DELETE ap FROM atribuicao_professor ap
+        INNER JOIN disciplina d ON d.id_disciplina = ap.disciplina_id
+        WHERE d.curso_id = ? AND d.deletado_em IS NULL
+        """,
+
+                // 8. Remove slots vinculados aos horários do curso
+                """
+        DELETE sp FROM slot_planejamento sp
+        INNER JOIN horario_curso hc ON hc.id_horario_curso = sp.horario_curso_id
+        WHERE hc.curso_id = ?
+        """,
+
+                // 9. Remove cancelamentos de horários específicos do curso
+                """
+        DELETE cah FROM cancelamento_adm_horario cah
+        INNER JOIN horario_curso hc ON hc.id_horario_curso = cah.horario_curso_id
+        WHERE hc.curso_id = ?
+        """,
+
+                // 10. Remove atribuições de horário vinculadas aos horários do curso
+                """
+        DELETE ah FROM atribuicao_horario ah
+        INNER JOIN horario_curso hc ON hc.id_horario_curso = ah.horario_curso_id
+        WHERE hc.curso_id = ?
+        """,
+
+                // 11. Remove os horários do curso
+                "DELETE FROM horario_curso WHERE curso_id = ?",
+
+                // 12. Desvincula o coordenador (professor continua existindo)
+                "UPDATE curso SET coordenador_id = NULL WHERE id_curso = ?"
+        };
+
+        String softDeleteDisciplinas =
+                "UPDATE disciplina SET deletado_em = NOW() WHERE curso_id = ? AND deletado_em IS NULL";
+
+        String softDeleteCurso =
+                "UPDATE curso SET deletado_em = NOW() WHERE id_curso = ?";
+
+        try (Connection conn = DatabaseConnection.getConnection()) {
+            conn.setAutoCommit(false);
+            try {
+                for (String sql : hardDeletes) {
+                    try (PreparedStatement ps = conn.prepareStatement(sql)) {
+                        ps.setInt(1, idCurso);
+                        ps.executeUpdate();
+                    }
+                }
+
+                // Soft delete nas disciplinas
+                try (PreparedStatement ps = conn.prepareStatement(softDeleteDisciplinas)) {
+                    ps.setInt(1, idCurso);
+                    ps.executeUpdate();
+                }
+
+                // Soft delete no curso
+                try (PreparedStatement ps = conn.prepareStatement(softDeleteCurso)) {
+                    ps.setInt(1, idCurso);
+                    ps.executeUpdate();
+                }
+
+                conn.commit();
+            } catch (SQLException e) {
+                conn.rollback();
+                throw e;
+            } finally {
+                conn.setAutoCommit(true);
+            }
+        }
+    }
+
 }
