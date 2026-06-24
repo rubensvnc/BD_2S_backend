@@ -301,4 +301,52 @@ public class HorarioCursoDAO {
             e.printStackTrace();
         }
     }
+
+
+    public void removerHorariosCursoSLEmCascata(int cursoId, int slId) throws SQLException {
+        String[] sqls = {
+                // 1. Remove slots vinculados a esses horários
+                """
+        DELETE sp FROM slot_planejamento sp
+        INNER JOIN horario_curso hc ON hc.id_horario_curso = sp.horario_curso_id
+        WHERE hc.curso_id = ? AND hc.semestre_letivo_id = ?
+        """,
+
+                // 2. Remove cancelamentos de horários específicos vinculados
+                """
+        DELETE cah FROM cancelamento_adm_horario cah
+        INNER JOIN horario_curso hc ON hc.id_horario_curso = cah.horario_curso_id
+        WHERE hc.curso_id = ? AND hc.semestre_letivo_id = ?
+        """,
+
+                // 3. Remove atribuições de horário vinculadas
+                """
+        DELETE ah FROM atribuicao_horario ah
+        INNER JOIN horario_curso hc ON hc.id_horario_curso = ah.horario_curso_id
+        WHERE hc.curso_id = ? AND hc.semestre_letivo_id = ?
+        """,
+
+                // 4. Por último, remove os horários em si
+                "DELETE FROM horario_curso WHERE curso_id = ? AND semestre_letivo_id = ?"
+        };
+
+        try (Connection conn = DatabaseConnection.getConnection()) {
+            conn.setAutoCommit(false);
+            try {
+                for (String sql : sqls) {
+                    try (PreparedStatement ps = conn.prepareStatement(sql)) {
+                        ps.setInt(1, cursoId);
+                        ps.setInt(2, slId);
+                        ps.executeUpdate();
+                    }
+                }
+                conn.commit();
+            } catch (SQLException e) {
+                conn.rollback();
+                throw e;
+            } finally {
+                conn.setAutoCommit(true);
+            }
+        }
+    }
 }
