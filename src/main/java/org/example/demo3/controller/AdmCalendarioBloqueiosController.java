@@ -74,9 +74,8 @@ public class AdmCalendarioBloqueiosController {
     private SemestreLetivo slAtual;
 
     private List<Button> listaBtnDia = new ArrayList<>();
-    private List<LocalDate> datasBloqueadasRecuperadasBanco = new ArrayList<>();
-    private List<LocalDate> datasCanceladasRecuperadasBanco = new ArrayList<>();
-    private List<CancelamentoAdm> todosCancelamentosSemestre = new ArrayList<>();
+    private List<DataBloqueada> linhasDataBloqueadaRecuperadaBanco = new ArrayList<>();
+    private List<CancelamentoAdm> linhasCancelamentoAdmRecuperadoBanco = new ArrayList<>();
     private List<LocalTime> listCheckHorariosSelecionados = new ArrayList<>();
 
     private Map<String, List<TemplateHorarioTurno>> mapaTurnoListTHT = new LinkedHashMap<>();
@@ -134,9 +133,8 @@ public class AdmCalendarioBloqueiosController {
         carregarDadosPorAnoESemestre(anoFiltro, numeroSemestre);
 
         //CARREGAR AO INICIAR ABA CANCELAMENTOS:
-        datasBloqueadasRecuperadasBanco = databDao.listarDatasBloqueadasPorSemestre(idSemestreAtual);
-        datasCanceladasRecuperadasBanco = cancelamentoDAO.listarDatasCancelamentosPorSemestre(idSemestreAtual);
-        todosCancelamentosSemestre = cancelamentoDAO.recuperarTodosCancelamentoAdm(idSemestreAtual);
+        linhasDataBloqueadaRecuperadaBanco = databDao.listarDataBloqueadaPorSemestre(idSemestreAtual);
+        linhasCancelamentoAdmRecuperadoBanco = cancelamentoDAO.recuperarTodosCancelamentoAdm(idSemestreAtual);
 
         recuperarHorariosTurnos();
         carregarMesesCbMes();
@@ -375,7 +373,7 @@ public class AdmCalendarioBloqueiosController {
                 databDao.salvarEmLote(datasSelecionadas);
             }
 
-            datasBloqueadasRecuperadasBanco = databDao.listarDatasBloqueadasPorSemestre(idSemestreAtual);
+            linhasDataBloqueadaRecuperadaBanco = databDao.listarDataBloqueadaPorSemestre(idSemestreAtual);
         } catch (SQLException e){
             e.printStackTrace();
         }
@@ -389,7 +387,7 @@ public class AdmCalendarioBloqueiosController {
                 cancelamentoDAO.salvarEmLote(cancelamentosSelecionados);
             }
 
-            datasCanceladasRecuperadasBanco = cancelamentoDAO.listarDatasCancelamentosPorSemestre(idSemestreAtual);
+            linhasCancelamentoAdmRecuperadoBanco = cancelamentoDAO.recuperarTodosCancelamentoAdm(idSemestreAtual);
         } catch (SQLException e){
             e.printStackTrace();
         }
@@ -403,7 +401,7 @@ public class AdmCalendarioBloqueiosController {
         try{
             List<DataBloqueada> datasSelecionadas = prepararListaDataBloqueada(motivo);
             databDao.atualizarEmLote(datasSelecionadas);
-            datasBloqueadasRecuperadasBanco = databDao.listarDatasBloqueadasPorSemestre(idSemestreAtual);
+            linhasDataBloqueadaRecuperadaBanco = databDao.listarDataBloqueadaPorSemestre(idSemestreAtual);
 
         } catch (SQLException e){
             e.printStackTrace();
@@ -415,7 +413,7 @@ public class AdmCalendarioBloqueiosController {
 
         try{
             cancelamentoDAO.atualizarEmLote(cancelamentosSelecionados);
-            datasCanceladasRecuperadasBanco = cancelamentoDAO.listarDatasCancelamentosPorSemestre(idSemestreAtual);
+            linhasCancelamentoAdmRecuperadoBanco = cancelamentoDAO.recuperarTodosCancelamentoAdm(idSemestreAtual);
 
         } catch (SQLException e){
             e.printStackTrace();
@@ -426,7 +424,7 @@ public class AdmCalendarioBloqueiosController {
         try{
             List<DataBloqueada> datasSelecionadas = prepararListaDataBloqueada(motivo);
             databDao.excluirEmLote(datasSelecionadas);
-            datasBloqueadasRecuperadasBanco = databDao.listarDatasBloqueadasPorSemestre(idSemestreAtual);
+            linhasDataBloqueadaRecuperadaBanco = databDao.listarDataBloqueadaPorSemestre(idSemestreAtual);
 
         } catch (SQLException e){
             e.printStackTrace();
@@ -437,7 +435,7 @@ public class AdmCalendarioBloqueiosController {
         List<CancelamentoAdm> cancelamentosSelecionados = prepararListaCancelamentoDiaInteiro(motivo);
         try{
             cancelamentoDAO.excluirEmLote(cancelamentosSelecionados);
-            datasCanceladasRecuperadasBanco = cancelamentoDAO.listarDatasCancelamentosPorSemestre(idSemestreAtual);
+            linhasCancelamentoAdmRecuperadoBanco = cancelamentoDAO.recuperarTodosCancelamentoAdm(idSemestreAtual);
 
         } catch (SQLException e){
             e.printStackTrace();
@@ -461,9 +459,8 @@ public class AdmCalendarioBloqueiosController {
     }
 
     public void resetarDadosConfigCancelamento(){
-        datasBloqueadasRecuperadasBanco = databDao.listarDatasBloqueadasPorSemestre(idSemestreAtual);
-        datasCanceladasRecuperadasBanco = cancelamentoDAO.listarDatasCancelamentosPorSemestre(idSemestreAtual);
-        todosCancelamentosSemestre = cancelamentoDAO.recuperarTodosCancelamentoAdm(idSemestreAtual);
+        linhasDataBloqueadaRecuperadaBanco = databDao.listarDataBloqueadaPorSemestre(idSemestreAtual);
+        linhasCancelamentoAdmRecuperadoBanco = cancelamentoDAO.recuperarTodosCancelamentoAdm(idSemestreAtual);
 
         checkFeriado.setSelected(false);
         cbTurno.setDisable(false);
@@ -584,7 +581,7 @@ public class AdmCalendarioBloqueiosController {
             CancelamentoAdm cadm = cancelamentoDAO.recuperarCancelamentoAdm(dataBtnPressionado, idSemestreAtual);
             String motivo = cadm.getMotivo();
             System.out.println("MOTIVO DO botao "+ dataBtnPressionado+": "+motivo);
-            List<LocalDate> datasFiltradas = todosCancelamentosSemestre.stream()
+            List<LocalDate> datasFiltradas = linhasCancelamentoAdmRecuperadoBanco.stream()
                     .filter(lambdaCadm -> motivo.equals(lambdaCadm.getMotivo()))
                     .map(CancelamentoAdm::getData)
                     .toList();
@@ -670,13 +667,20 @@ public class AdmCalendarioBloqueiosController {
         for (Button btnDia: listaBtnDia){
             LocalDate dataDesteBotao = LocalDate.of
                     (anoSelecionado, mes, Integer.parseInt(btnDia.getText()));
-            if (datasBloqueadasRecuperadasBanco.contains(dataDesteBotao)){
+
+            boolean possuiDataBloqueada = linhasDataBloqueadaRecuperadaBanco.stream()
+                    .anyMatch(lambdaDataB -> dataDesteBotao.equals(lambdaDataB.getData()));
+            boolean possuiDataCancelamentoAdm = linhasCancelamentoAdmRecuperadoBanco.stream()
+                    .anyMatch(lambdaCadm -> dataDesteBotao.equals(lambdaCadm.getData()));
+
+
+            if (possuiDataBloqueada){
                 if (!mapaBotaoPressionadoEstilo.containsKey(dataDesteBotao))
                     btnDia.setStyle(laranjaCheio);
                 else {
                     btnDia.setStyle(laranjaBorda);
                 }
-            } else if (datasCanceladasRecuperadasBanco.contains(dataDesteBotao)){
+            } else if (possuiDataCancelamentoAdm){
                 if (!mapaBotaoPressionadoEstilo.containsKey(dataDesteBotao))
                     btnDia.setStyle(vermelhoCheio);
                 else {
@@ -835,7 +839,7 @@ public class AdmCalendarioBloqueiosController {
         } else if (cbTurno.getValue().equals("Dia inteiro")){
             adicionarCancelamentosDiaInteiroBanco(tfMotivoCancelamento.getText());
         } else if (!listCheckHorariosSelecionados.isEmpty()){
-            adicionarCancelamentoHorariosBanco(tfMotivoCancelamento.getText());
+            adicionarCancelamentoHorariosBanco(tfMotivoCancelamento.getText(), cbTurno.getValue());
         } else {
             // addpopuphere
         }
