@@ -115,4 +115,17 @@ public class CancelamentoAdmHorarioDAO {
             System.err.println("\n\nErro ao salvar 'CadmH - salvarEmLote': " + e.getMessage() + "\n\n");
         }
     }
+
+    public void excluirEmLote(List<CancelamentoAdmHorario> lista) throws SQLException {
+        String sql = "DELETE FROM cancelamento_adm_horario WHERE cancelamento_adm_id = ? AND horario_curso_id = ?";
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            for (CancelamentoAdmHorario c : lista){
+                stmt.setInt(1, c.getCancelamento_adm_id());
+                stmt.setInt(2, c.getHorario_curso_id());
+                stmt.addBatch();
+            }
+            stmt.executeBatch();
+        }
+    }
 }
