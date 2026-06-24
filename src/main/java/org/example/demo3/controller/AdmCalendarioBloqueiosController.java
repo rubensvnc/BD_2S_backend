@@ -50,13 +50,14 @@ public class AdmCalendarioBloqueiosController {
     @FXML private ComboBox<String> cbTurno;
     @FXML private TextField tfMotivoCancelamento;
     @FXML private Label lblFeedbackCancelamento;
-    @FXML private ListView<CancelamentoAdm> listCancelamentos;
+    @FXML private ListView<String> listCancelamentos;
     @FXML private Button btnDeletar;
     @FXML private FlowPane flowHorarios;
     @FXML private VBox painelHorarios;
     @FXML private CheckBox checkFeriado;
     @FXML private Button btnCancelar;
     @FXML private Button btnDesfazer;
+
 
     private final SprintDAO sprintDAO = new SprintDAO();
     private final CancelamentoAdmDAO cancelamentoDAO = new CancelamentoAdmDAO();
@@ -69,7 +70,7 @@ public class AdmCalendarioBloqueiosController {
     private final UsuarioAtual logado = UsuarioAtual.getInstancia();
 
     private final ObservableList<Sprint> listaSprintsFX = FXCollections.observableArrayList();
-    private final ObservableList<CancelamentoAdm> listaCancelamentosFX = FXCollections.observableArrayList();
+    private final ObservableList<String> listaCancelamentosFX = FXCollections.observableArrayList();
     private LocalDate dataSelecionadaNoCalendario;
 
     private SemestreLetivo slAtual;
@@ -143,7 +144,7 @@ public class AdmCalendarioBloqueiosController {
         recuperarHorariosTurnos();
         carregarMesesCbMes();
         configurarDadosConfigCancelamento();
-
+        atualizarListaCancelamentosLog();
     }
 
     // ==========================================
@@ -387,6 +388,15 @@ public class AdmCalendarioBloqueiosController {
         return cancelamentosSelecionados;
     }
 
+    private void preservarCriadoEmOriginal(List<CancelamentoAdm> listaParaAtualizar){
+        for (CancelamentoAdm cadm : listaParaAtualizar){
+            linhasCancelamentoAdmRecuperadoBanco.stream()
+                    .filter(original -> original.getData().equals(cadm.getData()))
+                    .findFirst()
+                    .ifPresent(original -> cadm.setCriado_em(original.getCriado_em()));
+        }
+    }
+
     public void adicionarFeriadosBanco(String motivo){
         List<DataBloqueada> datasSelecionadas = prepararListaDataBloqueada(motivo);
         try {
@@ -457,6 +467,7 @@ public class AdmCalendarioBloqueiosController {
 
     public void atualizarValoresCancelamentoDiaInteiroBanco(String motivo){
         List<CancelamentoAdm> cancelamentosSelecionados = prepararListaCancelamentoDiaInteiro(motivo);
+        preservarCriadoEmOriginal(cancelamentosSelecionados);
 
         try{
             cancelamentoDAO.atualizarEmLote(cancelamentosSelecionados);
@@ -471,6 +482,7 @@ public class AdmCalendarioBloqueiosController {
         try {
             // Atualiza motivo/turno nas linhas de cancelamento_adm
             List<CancelamentoAdm> cancelamentosAtualizados = prepararListaCancelamentoHorario(motivo, turno);
+            preservarCriadoEmOriginal(cancelamentosAtualizados);
             cancelamentoDAO.atualizarEmLote(cancelamentosAtualizados);
 
             linhasCancelamentoAdmRecuperadoBanco = cancelamentoDAO.recuperarTodosCancelamentoAdm(idSemestreAtual);
@@ -577,6 +589,7 @@ public class AdmCalendarioBloqueiosController {
     public void resetarDadosConfigCancelamento(){
         linhasDataBloqueadaRecuperadaBanco = databDao.listarDataBloqueadaPorSemestre(idSemestreAtual);
         linhasCancelamentoAdmRecuperadoBanco = cancelamentoDAO.recuperarTodosCancelamentoAdm(idSemestreAtual);
+        atualizarListaCancelamentosLog();
 
         tipoOrigemCancelamento = null;
         checkFeriado.setSelected(false);
@@ -1098,6 +1111,92 @@ public class AdmCalendarioBloqueiosController {
             return false;
         }
         return true;
+    }
+
+    // ------- LISTVIEW LOG CANCELAMENTOS:
+
+    // ------- LOG DE ALTERACOES (listCancelamentos) -------
+
+    private void atualizarListaCancelamentosLog(){
+        DateTimeFormatter fmtData = DateTimeFormatter.ofPattern("dd/MM/yyyy");
+        List<String> linhasLog = new ArrayList<>();
+
+        // ---- FERIADOS ----
+        for (DataBloqueada db : linhasDataBloqueadaRecuperadaBanco){
+            linhasLog.add("[FERIADO] " + db.getData().format(fmtData) + " — " + db.getMotivo());
+        }
+
+        // ---- CANCELAMENTOS POR HORARIO: pré-carrega os horários específicos ----
+        List<CancelamentoAdm> cadmsPorTurno = linhasCancelamentoAdmRecuperadoBanco.stream()
+                .filter(c -> !Boolean.TRUE.equals(c.getDia_inteiro()))
+                .toList();
+
+        Map<Integer, List<Integer>> mapaCadmIdParaHorarioCursoIds = new HashMap<>();
+        Map<Integer, String> mapaHorarioCursoIdParaTexto = new HashMap<>();
+
+        if (!cadmsPorTurno.isEmpty()){
+            List<CancelamentoAdmHorario> horarios =
+                    cancelamentoAdmHDAO.listarHorariosDeCancelamentos(cadmsPorTurno);
+
+            for (CancelamentoAdmHorario h : horarios){
+                mapaCadmIdParaHorarioCursoIds
+                        .computeIfAbsent(h.getCancelamento_adm_id(), k -> new ArrayList<>())
+                        .add(h.getHorario_curso_id());
+            }
+
+            List<Integer> idsHorarioCurso = horarios.stream()
+                    .map(CancelamentoAdmHorario::getHorario_curso_id)
+                    .distinct()
+                    .toList();
+
+            if (!idsHorarioCurso.isEmpty()){
+                for (HorarioCurso hc : hcDao.listarHorarioCursoPorIds(idsHorarioCurso)){
+                    mapaHorarioCursoIdParaTexto.put(hc.getId_horario_curso(),
+                            hc.getHora_inicio() + "–" + hc.getHora_fim());
+                }
+            }
+        }
+
+        // ---- CANCELAMENTOS (dia inteiro + por turno) ----
+        for (CancelamentoAdm cadm : linhasCancelamentoAdmRecuperadoBanco){
+            boolean diaInteiro = Boolean.TRUE.equals(cadm.getDia_inteiro());
+            StringBuilder sb = new StringBuilder();
+
+            if (diaInteiro){
+                sb.append("[CANCELAMENTO - DIA INTEIRO] ");
+            } else {
+                String turno = cadm.getTurno() != null ? cadm.getTurno().toUpperCase() : "TURNO";
+                sb.append("[CANCELAMENTO - ").append(turno).append("] ");
+            }
+
+            sb.append(cadm.getData().format(fmtData)).append(" — ").append(cadm.getMotivo());
+
+            if (!diaInteiro){
+                List<Integer> idsHorario = mapaCadmIdParaHorarioCursoIds.get(cadm.getId_cancelamento_adm());
+                if (idsHorario != null && !idsHorario.isEmpty()){
+                    String horariosTexto = idsHorario.stream()
+                            .map(mapaHorarioCursoIdParaTexto::get)
+                            .filter(Objects::nonNull)
+                            .sorted()
+                            .collect(Collectors.joining(", "));
+                    if (!horariosTexto.isEmpty()){
+                        sb.append(" (").append(horariosTexto).append(")");
+                    }
+                }
+            }
+
+            if (cadm.getCriado_em() != null){
+                sb.append(" | criado em ").append(fmtData.format(cadm.getCriado_em()));
+            }
+            if (cadm.getDeletado_em() != null){
+                sb.append(" | EXCLUÍDO em ").append(fmtData.format(cadm.getDeletado_em()));
+            }
+
+            linhasLog.add(sb.toString());
+        }
+
+        listaCancelamentosFX.setAll(linhasLog);
+        listCancelamentos.setItems(listaCancelamentosFX);
     }
 
     @FXML
