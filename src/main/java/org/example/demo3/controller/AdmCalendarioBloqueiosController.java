@@ -536,7 +536,6 @@ public class AdmCalendarioBloqueiosController {
         }
     }
 
-
     public void excluirFeriadoBanco(String motivo){
         try{
             List<DataBloqueada> datasSelecionadas = prepararListaDataBloqueada(motivo);
@@ -1072,8 +1071,44 @@ public class AdmCalendarioBloqueiosController {
         }
     }
 
+    // ------- ALERTAS
+
+    private boolean validarMotivoPreenchido() {
+        if (tfMotivoCancelamento.getText() == null || tfMotivoCancelamento.getText().trim().isEmpty()) {
+            Alert alert = new Alert(Alert.AlertType.WARNING);
+            alert.setTitle("Motivo obrigatório");
+            alert.setHeaderText(null);
+            alert.setContentText("Informe o motivo do cancelamento antes de continuar.");
+            alert.showAndWait();
+            return false;
+        }
+        return true;
+    }
+
+    private boolean validarSelecaoTurno() {
+        boolean ehCancelamentoPorTurno = !checkFeriado.isSelected()
+                && !"Dia inteiro".equals(cbTurno.getValue());
+
+        if (ehCancelamentoPorTurno && listCheckHorariosSelecionados.isEmpty()) {
+            Alert alert = new Alert(Alert.AlertType.WARNING);
+            alert.setTitle("Horário obrigatório");
+            alert.setHeaderText(null);
+            alert.setContentText("Selecione ao menos um horário (checkbox) do turno antes de continuar.");
+            alert.showAndWait();
+            return false;
+        }
+        return true;
+    }
+
     @FXML
     public void handleSalvarEdicaoCancelamento(){
+        if (!validarMotivoPreenchido()) {
+            return;
+        }
+        if (!validarSelecaoTurno()) {
+            return;
+        }
+
         String motivo = tfMotivoCancelamento.getText();
         TipoCancelamento tipoDestino = obterTipoCancelamentoAtualUI();
 
@@ -1142,6 +1177,13 @@ public class AdmCalendarioBloqueiosController {
 
     @FXML
     public void handleCancelarDatas() {
+        if (!validarMotivoPreenchido()) {
+            return;
+        }
+        if (!validarSelecaoTurno()) {
+            return;
+        }
+
         if (checkFeriado.isSelected()){
             adicionarFeriadosBanco(tfMotivoCancelamento.getText());
         } else if (cbTurno.getValue().equals("Dia inteiro")){
@@ -1158,6 +1200,13 @@ public class AdmCalendarioBloqueiosController {
     }
     @FXML
     public void handleDeletarCancelamento() {
+        if (!validarMotivoPreenchido()) {
+            return;
+        }
+        if (!validarSelecaoTurno()) {
+            return;
+        }
+
         if (checkFeriado.isSelected()){
             excluirFeriadoBanco(tfMotivoCancelamento.getText());
         } else if (cbTurno.getValue().equals("Dia inteiro")){
