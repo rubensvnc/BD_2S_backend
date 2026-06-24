@@ -173,6 +173,47 @@ public class HorarioCursoDAO {
         return listaIds;
     }
 
+    public List<HorarioCurso> listarHorarioCursoPorHoraInicio(Integer sl, List<LocalTime> listHi){
+
+        String sql = """
+            SELECT hc.*
+             FROM horario_curso hc
+             INNER JOIN curso c ON hc.curso_id = c.id_curso
+             WHERE hc.hora_inicio = ?
+             AND hc.semestre_letivo_id = ?
+             AND c.deletado_em IS NULL;
+        """;
+
+        List<HorarioCurso> listaHorarioCurso = new ArrayList<>();
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            ps.setInt(1, sl);
+            for (LocalTime hi: listHi){
+                ps.setObject(2, hi);
+
+                ResultSet rs = ps.executeQuery();
+                while (rs.next()) {
+                    HorarioCurso hc = new HorarioCurso(
+                            rs.getInt("hc.id_horario_curso"),
+                            rs.getInt("hc.curso_id"),
+                            rs.getInt("hc.semestre_letivo_id"),
+                            rs.getString("hc.tipo"),
+                            rs.getInt("hc.numero_ordem"),
+                            rs.getObject("hc.hora_inicio", LocalTime.class),
+                            rs.getObject("hc.hora_fim", LocalTime.class)
+                    );
+
+                    listaHorarioCurso.add(hc);
+                }
+            }
+
+        } catch (SQLException e){
+            System.err.println("Erro ao listar Horarios 'listarHorarioCursoPorHoraInicio': "+e.getMessage());
+        }
+        return listaHorarioCurso;
+    }
+
     public void inserirTemplateHorarioCurso(List<TemplateHorarioTurno> thtLista,
                                             Integer cursoId, Integer slId) throws SQLException {
         String sql = """
