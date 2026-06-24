@@ -67,6 +67,36 @@ public class CancelamentoAdmHorarioDAO {
         return listCadmH;
     }
 
+    public List<CancelamentoAdmHorario> listarHorariosDeCancelamentos(List<CancelamentoAdm> listCadm){
+        String sql = """
+            SELECT * FROM cancelamento_adm_horario
+             WHERE cancelamento_adm_id = ?
+        """;
+
+        List<CancelamentoAdmHorario> listCadmH = new ArrayList<>();
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            for (CancelamentoAdm cadm : listCadm){
+                stmt.setInt(1, cadm.getId_cancelamento_adm());
+
+                ResultSet rs = stmt.executeQuery();
+                while (rs.next()) {
+                    CancelamentoAdmHorario cadmH = new CancelamentoAdmHorario(
+                            rs.getInt("id_cancelamento_adm_horario"),
+                            rs.getInt("cancelamento_adm_id"),
+                            rs.getInt("horario_curso_id")
+                    );
+                    listCadmH.add(cadmH);
+                }
+            }
+
+        } catch (SQLException e) {
+            System.err.println("Erro ao listar horarios cadmh 'listarHorariosDeCancelamentos': " + e.getMessage());
+        }
+        return listCadmH;
+    }
+
     public void salvarEmLote(List<CancelamentoAdmHorario> listaCadmH){
         String sql = "INSERT INTO cancelamento_adm_horario " +
                 "(cancelamento_adm_id, horario_curso_id) " +
