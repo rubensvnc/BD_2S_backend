@@ -28,6 +28,7 @@ import java.time.YearMonth;
 import java.time.format.DateTimeFormatter;
 import java.time.format.TextStyle;
 import java.util.*;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class AdmCalendarioBloqueiosController {
@@ -437,27 +438,6 @@ public class AdmCalendarioBloqueiosController {
             }
         }
 
-        System.out.println("\n\nANTES DO LOOP HC:");
-        for (HorarioCurso hc: listHorarioCursoTurno){
-            System.out.println("\nCOMECO LOOP HC:");
-            System.out.println(hc.getId_horario_curso());
-            System.out.println(hc.getHora_inicio());
-        }
-
-        System.out.println("\n\nANTES DO LOOP CADM:");
-        for (CancelamentoAdm cadm: listCancelamentoAdmSelecionados){
-            System.out.println("\nCOMECO LOOP CADM:");
-            System.out.println(cadm.getId_cancelamento_adm());
-            System.out.println(cadm.getData());
-        }
-
-        System.out.println("\n\nANTES DO LOOP CADMH:");
-        for (CancelamentoAdmHorario o : listaCadmH){
-            System.out.println("\nCOMECO LOOP CADMH:");
-            System.out.println(o.getCancelamento_adm_id());
-            System.out.println(o.getHorario_curso_id());
-        }
-
         cancelamentoAdmHDAO.salvarEmLote(listaCadmH);
     }
 
@@ -528,11 +508,22 @@ public class AdmCalendarioBloqueiosController {
 
         checkFeriado.setSelected(false);
         cbTurno.setDisable(false);
+        resetarDadosInterfaceConfigCancelamento();
         tfMotivoCancelamento.setText("");
         btnCancelar.setText("Cancelar Datas");
         btnCancelar.setOnAction(event -> {
             handleCancelarDatas();
         });
+    }
+
+    public void resetarDadosInterfaceConfigCancelamento(){
+
+        listCheckHorariosSelecionados.clear();
+
+        flowHorarios.getChildren().clear();
+        painelHorarios.setManaged(false);
+        painelHorarios.setVisible(false);
+        cbTurno.setValue("Dia inteiro");
     }
 
     public void preencherDadosConfigCancelamentoFeriado(String motivo){
@@ -563,12 +554,11 @@ public class AdmCalendarioBloqueiosController {
     }
 
     public void preencherDadosConfigCancelamentoComHorarios(String motivo, String turno){
-        System.out.println("ENTROU EM 'preencherDadosConfigCancelamentoComHorarios'");
-        System.out.println(turno);
         tfMotivoCancelamento.setText(motivo);
         checkFeriado.setSelected(false);
         cbTurno.setValue(turno);
-        System.out.println("--> preencherDadosConfigCancelamentoComHorarios : valor cbTurno = " + cbTurno.getValue());
+
+
         btnCancelar.setText("Editar cancelamento");
         btnCancelar.setOnAction(event -> {
             //atualizarValoresCancelamentoComHorarios(tfMotivoCancelamento.getText());
@@ -639,27 +629,101 @@ public class AdmCalendarioBloqueiosController {
         }
     }
 
+    private void selecionarBotoesCancelamentoMotivoHorariosIgual(CancelamentoAdm cadmPrimeiroSelecionado){
+        String turno = cadmPrimeiroSelecionado.getTurno();
+        String motivo = cadmPrimeiroSelecionado.getMotivo();
+        Integer id = cadmPrimeiroSelecionado.getId_cancelamento_adm();
+
+        List<CancelamentoAdm> listCAdmFiltroInicial = linhasCancelamentoAdmRecuperadoBanco.stream()
+                .filter(lambdaCadm -> turno.equals(lambdaCadm.getTurno()))
+                .filter(lambdaCadm -> motivo.equals(lambdaCadm.getMotivo()))
+                .toList();
+
+        System.out.println("\n\nLIST FILTRO INICIAL: ");
+        for (CancelamentoAdm c : listCAdmFiltroInicial){
+            System.out.println("DATA: "+c.getData());
+        }
+
+        List<CancelamentoAdmHorario> listCadmH = cancelamentoAdmHDAO.
+                listarHorariosDeCancelamentos(listCAdmFiltroInicial);
+
+        Set<Integer> idsHorarioCursoPrimeiroSelecionado = listCadmH.stream()
+                .filter(lambdaCadmH -> id.equals(lambdaCadmH.getCancelamento_adm_id()))
+                .map(CancelamentoAdmHorario::getHorario_curso_id)
+                .collect(Collectors.toSet());
+
+        System.out.println("\n\nLIST IDS HORARIO BOTAO INICIAL: ");
+        for (Integer c : idsHorarioCursoPrimeiroSelecionado){
+            System.out.println("ID: "+c);
+        }
+
+        Set<Integer> idsCancelamentosCompartilhados = listCadmH.stream()
+                .collect(Collectors.groupingBy(
+                        CancelamentoAdmHorario::getCancelamento_adm_id,
+                        Collectors.mapping(CancelamentoAdmHorario::getHorario_curso_id, Collectors.toSet())
+                ))
+                .entrySet().stream()
+                .filter(e -> e.getValue().equals(idsHorarioCursoPrimeiroSelecionado))
+                .map(Map.Entry::getKey)
+                .collect(Collectors.toSet());
+
+        System.out.println("\n\nLIST IDS CADM: ");
+        for (Integer c : idsCancelamentosCompartilhados){
+            System.out.println("ID: "+c);
+        }
+
+        List<CancelamentoAdm> listCAdmFiltroFinal = listCAdmFiltroInicial.stream()
+                .filter(ca -> idsCancelamentosCompartilhados.contains(ca.getId_cancelamento_adm()))
+                .toList();
+
+        System.out.println("\n\nLIST FINAL: ");
+        for (CancelamentoAdm c : listCAdmFiltroFinal){
+            System.out.println("DATA: "+c.getData());
+        }
+
+        Set<LocalDate> datasSelecionadasFinais = listCAdmFiltroFinal.stream()
+                .map(CancelamentoAdm::getData)
+                .collect(Collectors.toSet());
+
+        for (LocalDate data : datasSelecionadasFinais) {
+            mapaBotaoPressionadoEstilo.put(data, vermelhoBorda);
+        }
+
+        List<HorarioCurso> listHorarioCurso = hcDao.
+                listarHorarioCursoPorIds(idsHorarioCursoPrimeiroSelecionado.stream().toList());
+
+        listCheckHorariosSelecionados.clear();
+        listCheckHorariosSelecionados = new ArrayList<>(listHorarioCurso.stream()
+                .map(HorarioCurso::getHora_inicio)
+                .toList());
+
+        preencherDadosConfigCancelamentoComHorarios(motivo, turno);
+
+    }
+
     public void selecionarBotoesCancelamentoMotivoIgual(LocalDate dataBtnPressionado){
         System.out.println("\n\nENTROU EM 'selecionarBotoesCancelamentoMotivoIgual'");
         try{
             CancelamentoAdm cadm = cancelamentoDAO.recuperarCancelamentoAdm(dataBtnPressionado, idSemestreAtual);
+            List<LocalDate> datasFiltradas;
+
+
             String motivo = cadm.getMotivo();
-            System.out.println("MOTIVO DO botao "+ dataBtnPressionado+": "+motivo);
-            List<LocalDate> datasFiltradas = linhasCancelamentoAdmRecuperadoBanco.stream()
-                    .filter(lambdaCadm -> motivo.equals(lambdaCadm.getMotivo()))
-                    .map(CancelamentoAdm::getData)
-                    .toList();
+            if (cadm.getDia_inteiro() != true){
+                selecionarBotoesCancelamentoMotivoHorariosIgual(cadm);
+            } else {
+                System.out.println("MOTIVO DO botao "+ dataBtnPressionado+": "+motivo);
+                datasFiltradas = linhasCancelamentoAdmRecuperadoBanco.stream()
+                        .filter(lambdaCadm -> motivo.equals(lambdaCadm.getMotivo()))
+                        .map(CancelamentoAdm::getData)
+                        .toList();
 
-            for (LocalDate data : datasFiltradas) {
-                mapaBotaoPressionadoEstilo.put(data, vermelhoBorda);
+                for (LocalDate data : datasFiltradas) {
+                    mapaBotaoPressionadoEstilo.put(data, vermelhoBorda);
+                }
+
+                preencherDadosConfigCancelamentoDiaInteiro(motivo);
             }
-
-            System.out.println("\n--->DATAS SELECIONADAS:");
-            for (LocalDate data: mapaBotaoPressionadoEstilo.keySet()){
-                System.out.println("-----> Data: "+data);
-            }
-
-            preencherDadosConfigCancelamentoDiaInteiro(motivo);
 
         } catch (SQLException e){
             e.printStackTrace();
@@ -870,6 +934,7 @@ public class AdmCalendarioBloqueiosController {
         bloquearBtnDiasNaoComuns();
         verificarPodeAbrirConfigCancelamento();
         alterarCorBotoesUsandoValoresBanco(mesSelecionadoTipoMonth);
+        resetarDadosInterfaceConfigCancelamento();
     }
 
     @FXML
@@ -911,8 +976,7 @@ public class AdmCalendarioBloqueiosController {
                     );
 
             if (usaTodosTurnos){
-                adicionarCancelamentoHorariosBanco(tfMotivoCancelamento.getText(), "manha");
-                adicionarCancelamentoHorariosBanco(tfMotivoCancelamento.getText(), "noite");
+                adicionarCancelamentoHorariosBanco(tfMotivoCancelamento.getText(), null);
             } else {
                 adicionarCancelamentoHorariosBanco(tfMotivoCancelamento.getText(), cbTurno.getValue());
             }
