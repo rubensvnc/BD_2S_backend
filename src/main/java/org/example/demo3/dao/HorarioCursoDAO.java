@@ -179,8 +179,8 @@ public class HorarioCursoDAO {
             SELECT hc.*
              FROM horario_curso hc
              INNER JOIN curso c ON hc.curso_id = c.id_curso
-             WHERE hc.hora_inicio = ?
-             AND hc.semestre_letivo_id = ?
+             WHERE hc.semestre_letivo_id = ?
+             AND hc.hora_inicio = ?
              AND c.deletado_em IS NULL;
         """;
 
