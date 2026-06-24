@@ -2,6 +2,7 @@ package org.example.demo3.dao;
 
 import org.example.demo3.DatabaseConnection;
 import org.example.demo3.dto.AdmCursoExibicao;
+import org.example.demo3.entity.CancelamentoAdm;
 import org.example.demo3.entity.CancelamentoAdmHorario;
 import org.example.demo3.entity.HorarioCurso;
 import org.example.demo3.entity.TemplateHorarioTurno;
@@ -149,6 +150,40 @@ public class HorarioCursoDAO {
             e.printStackTrace();
         }
         return listaHC;
+    }
+
+    public List<HorarioCurso> listarHorarioCursoPorIds(List<Integer> listIdsHorarioCurso){
+        String sql = """
+            SELECT hc.* FROM horario_curso hc
+             WHERE id_horario_curso = ?
+        """;
+
+        List<HorarioCurso> listHc = new ArrayList<>();
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            for (Integer id : listIdsHorarioCurso){
+                stmt.setInt(1, id);
+
+                ResultSet rs = stmt.executeQuery();
+                while (rs.next()) {
+                    HorarioCurso hc = new HorarioCurso(
+                            rs.getInt("hc.id_horario_curso"),
+                            rs.getInt("hc.curso_id"),
+                            rs.getInt("hc.semestre_letivo_id"),
+                            rs.getString("hc.tipo"),
+                            rs.getInt("hc.numero_ordem"),
+                            rs.getObject("hc.hora_inicio", LocalTime.class),
+                            rs.getObject("hc.hora_fim", LocalTime.class)
+                    );
+                    listHc.add(hc);
+                }
+            }
+
+        } catch (SQLException e) {
+            System.err.println("\n\nErro ao listar horario_curso 'listarHorarioCursoPorIds': " + e.getMessage());
+        }
+        return listHc;
     }
 
     public List<Integer> recuperarIdsHoraInicioFim(LocalTime hi, LocalTime hf) throws SQLException{
