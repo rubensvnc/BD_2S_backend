@@ -96,6 +96,9 @@ public class AdmCalendarioBloqueiosController {
     private final String corDefault = "-fx-border-color: transparent; -fx-background-color: #D3D3D3;";
     private String corBotaoSelecionado;
 
+    private enum TipoCancelamento { FERIADO, DIA_INTEIRO, HORARIO }
+    private TipoCancelamento tipoOrigemCancelamento;
+
 
     @FXML
     public void initialize() {
@@ -576,14 +579,13 @@ public class AdmCalendarioBloqueiosController {
         linhasDataBloqueadaRecuperadaBanco = databDao.listarDataBloqueadaPorSemestre(idSemestreAtual);
         linhasCancelamentoAdmRecuperadoBanco = cancelamentoDAO.recuperarTodosCancelamentoAdm(idSemestreAtual);
 
+        tipoOrigemCancelamento = null;
         checkFeriado.setSelected(false);
         cbTurno.setDisable(false);
         resetarDadosInterfaceConfigCancelamento();
         tfMotivoCancelamento.setText("");
         btnCancelar.setText("Cancelar Datas");
-        btnCancelar.setOnAction(event -> {
-            handleCancelarDatas();
-        });
+        btnCancelar.setOnAction(event -> handleCancelarDatas());
     }
 
     public void resetarDadosInterfaceConfigCancelamento(){
@@ -600,14 +602,9 @@ public class AdmCalendarioBloqueiosController {
         tfMotivoCancelamento.setText(motivo);
         checkFeriado.setSelected(true);
         handleFeriados();
+        tipoOrigemCancelamento = TipoCancelamento.FERIADO;
         btnCancelar.setText("Editar feriado");
-        btnCancelar.setOnAction(event -> {
-            if (checkFeriado.isSelected()) {
-                atualizarValoresFeriadoBanco(tfMotivoCancelamento.getText());
-                resetarDadosConfigCancelamento();
-                handleDesfazerSelecao();
-            }
-        });
+        btnCancelar.setOnAction(event -> handleSalvarEdicaoCancelamento());
     }
 
 
@@ -615,12 +612,9 @@ public class AdmCalendarioBloqueiosController {
         tfMotivoCancelamento.setText(motivo);
         checkFeriado.setSelected(false);
         cbTurno.setValue("Dia inteiro");
+        tipoOrigemCancelamento = TipoCancelamento.DIA_INTEIRO;
         btnCancelar.setText("Editar cancelamento");
-        btnCancelar.setOnAction(event -> {
-            atualizarValoresCancelamentoDiaInteiroBanco(tfMotivoCancelamento.getText());
-            resetarDadosConfigCancelamento();
-            handleDesfazerSelecao();
-        });
+        btnCancelar.setOnAction(event -> handleSalvarEdicaoCancelamento());
     }
 
     public void preencherDadosConfigCancelamentoComHorarios(String motivo, String turno){
@@ -634,13 +628,9 @@ public class AdmCalendarioBloqueiosController {
         painelHorarios.setVisible(true);
         gerarCheckboxHorarios(valorCombo);
 
+        tipoOrigemCancelamento = TipoCancelamento.HORARIO;
         btnCancelar.setText("Editar cancelamento");
-        btnCancelar.setOnAction(event -> {
-            String turnoParaSalvar = "Ambos turnos".equals(cbTurno.getValue()) ? null : cbTurno.getValue();
-            atualizarValoresCancelamentoComHorarios(tfMotivoCancelamento.getText(), turnoParaSalvar);
-            resetarDadosConfigCancelamento();
-            handleDesfazerSelecao();
-        });
+        btnCancelar.setOnAction(event -> handleSalvarEdicaoCancelamento());
     }
 
     public void atualizarGridBtnDia(){
@@ -1022,6 +1012,88 @@ public class AdmCalendarioBloqueiosController {
         mapaTurnoListTHT.put("noite", listaTurnoNoite);
     }
 
+    // ------- LIDAR COM O TIPO DO CANCELAMENTO: FERIADO, CANCELAMENTO, CHORARIO
+
+    private TipoCancelamento obterTipoCancelamentoAtualUI(){
+        if (checkFeriado.isSelected()){
+            return TipoCancelamento.FERIADO;
+        } else if ("Dia inteiro".equals(cbTurno.getValue())){
+            return TipoCancelamento.DIA_INTEIRO;
+        } else {
+            return TipoCancelamento.HORARIO;
+        }
+    }
+
+    private void removerCancelamentoPorTipo(TipoCancelamento origem, String motivo) throws SQLException {
+        switch (origem){
+            case FERIADO -> {
+                linhasDataBloqueadaRecuperadaBanco = databDao.listarDataBloqueadaPorSemestre(idSemestreAtual);
+                databDao.excluirEmLote(prepararListaDataBloqueada(motivo));
+                linhasDataBloqueadaRecuperadaBanco = databDao.listarDataBloqueadaPorSemestre(idSemestreAtual);
+            }
+            case DIA_INTEIRO -> {
+                linhasCancelamentoAdmRecuperadoBanco = cancelamentoDAO.recuperarTodosCancelamentoAdm(idSemestreAtual);
+                cancelamentoDAO.excluirEmLote(prepararListaCancelamentoDiaInteiro(motivo));
+                linhasCancelamentoAdmRecuperadoBanco = cancelamentoDAO.recuperarTodosCancelamentoAdm(idSemestreAtual);
+            }
+            case HORARIO -> {
+                linhasCancelamentoAdmRecuperadoBanco = cancelamentoDAO.recuperarTodosCancelamentoAdm(idSemestreAtual);
+
+                List<CancelamentoAdm> cadmOrigem = linhasCancelamentoAdmRecuperadoBanco.stream()
+                        .filter(c -> mapaBotaoPressionadoEstilo.containsKey(c.getData()))
+                        .toList();
+
+                List<CancelamentoAdmHorario> horariosOrigem =
+                        cancelamentoAdmHDAO.listarHorariosDeCancelamentos(cadmOrigem);
+                if (!horariosOrigem.isEmpty()){
+                    cancelamentoAdmHDAO.excluirEmLote(horariosOrigem);
+                }
+
+                cancelamentoDAO.excluirEmLote(cadmOrigem);
+                linhasCancelamentoAdmRecuperadoBanco = cancelamentoDAO.recuperarTodosCancelamentoAdm(idSemestreAtual);
+            }
+        }
+    }
+
+    private void migrarTipoCancelamento(TipoCancelamento origem, TipoCancelamento destino, String motivo){
+        try {
+            removerCancelamentoPorTipo(origem, motivo);
+
+            switch (destino){
+                case FERIADO -> adicionarFeriadosBanco(motivo);
+                case DIA_INTEIRO -> adicionarCancelamentosDiaInteiroBanco(motivo);
+                case HORARIO -> {
+                    String turno = "Ambos turnos".equals(cbTurno.getValue()) ? null : cbTurno.getValue();
+                    adicionarCancelamentoHorariosBanco(motivo, turno);
+                }
+            }
+        } catch (SQLException e){
+            e.printStackTrace();
+        }
+    }
+
+    @FXML
+    public void handleSalvarEdicaoCancelamento(){
+        String motivo = tfMotivoCancelamento.getText();
+        TipoCancelamento tipoDestino = obterTipoCancelamentoAtualUI();
+
+        if (tipoDestino == tipoOrigemCancelamento){
+            switch (tipoOrigemCancelamento){
+                case FERIADO -> atualizarValoresFeriadoBanco(motivo);
+                case DIA_INTEIRO -> atualizarValoresCancelamentoDiaInteiroBanco(motivo);
+                case HORARIO -> {
+                    String turno = "Ambos turnos".equals(cbTurno.getValue()) ? null : cbTurno.getValue();
+                    atualizarValoresCancelamentoComHorarios(motivo, turno);
+                }
+            }
+        } else {
+            migrarTipoCancelamento(tipoOrigemCancelamento, tipoDestino, motivo);
+        }
+
+        resetarDadosConfigCancelamento();
+        handleDesfazerSelecao();
+    }
+
     @FXML
     public void handleCancelamentoSelecaoMes(){
         String mesSelecionadoCbMes = cbMes.getValue();
@@ -1095,6 +1167,7 @@ public class AdmCalendarioBloqueiosController {
         resetarDadosConfigCancelamento();
         handleDesfazerSelecao();
     }
+
 
     // --- METODOS UTILITARIOS GENERICOS ---
 
