@@ -148,6 +148,33 @@ public class DataBloqueadaDAO {
         return lista;
     }
 
+    public List<DataBloqueada> listarDataBloqueadaPorSemestre(Integer sl) {
+        String sql = "SELECT * FROM data_bloqueada " +
+                "WHERE semestre_letivo_id = ?";
+        List<DataBloqueada> listaDataBloqueada = new ArrayList<>();
+
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            stmt.setInt(1, sl);
+            ResultSet rs = stmt.executeQuery();
+            while (rs.next()) {
+                DataBloqueada db = new DataBloqueada();
+                db.setIdDataBloqueada(rs.getInt("id_data_bloqueada"));
+                db.setSemestreLetivoId(rs.getInt("semestre_letivo_id"));
+                db.setData(rs.getDate("data").toLocalDate());
+                db.setMotivo(rs.getString("motivo"));
+                db.setAdmId(rs.getInt("adm_id"));
+                db.setRecorrente(rs.getBoolean("recorrente"));
+
+                listaDataBloqueada.add(db);
+            }
+        } catch (SQLException e) {
+            System.err.println("Erro ao listar datas bloqueadas 'listarDataBloqueadaPorSemestre': " + e.getMessage());
+        }
+        return listaDataBloqueada;
+    }
+
     public List<LocalDate> listarDatasBloqueadasPorSemestre (Integer sl){
         String sql = "SELECT db.data FROM data_bloqueada db WHERE semestre_letivo_id = ? ORDER BY db.data;";
 
