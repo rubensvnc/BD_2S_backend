@@ -1306,10 +1306,16 @@ public class AdmCalendarioBloqueiosController {
             return;
         }
 
-        if (checkFeriado.isSelected()){
-            excluirFeriadoBanco(tfMotivoCancelamento.getText());
-        } else if (cbTurno.getValue().equals("Dia inteiro")){
-            excluirCancelamentoDiaInteiroBanco(tfMotivoCancelamento.getText());
+        try {
+            if (checkFeriado.isSelected()){
+                excluirFeriadoBanco(tfMotivoCancelamento.getText());
+            } else if (cbTurno.getValue().equals("Dia inteiro")){
+                excluirCancelamentoDiaInteiroBanco(tfMotivoCancelamento.getText());
+            } else {
+                removerCancelamentoPorTipo(TipoCancelamento.HORARIO, tfMotivoCancelamento.getText());
+            }
+        } catch (SQLException e){
+            e.printStackTrace();
         }
 
         resetarDadosConfigCancelamento();
