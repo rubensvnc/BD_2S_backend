@@ -104,30 +104,32 @@ public class TemplateHorarioTurnoDAO {
         return lista;
     }
 
-    public List<TemplateHorarioTurno> listar() throws SQLException {
-        String sql = "SELECT * FROM template_horario_turno";
-        Connection conn = DatabaseConnection.getConnection();
-        PreparedStatement stmt = conn.prepareStatement(sql);
-        ResultSet rs = stmt.executeQuery();
+    public List<TemplateHorarioTurno> listarTodosHorariosTurnos() {
+        String sql = """
+            SELECT * FROM template_horario_turno;
+        """;
+        List<TemplateHorarioTurno> listTHT = new ArrayList<>();
 
-        List<TemplateHorarioTurno> lista = new ArrayList<>();
+        try (Connection con = DatabaseConnection.getConnection();
+             PreparedStatement stmt = con.prepareStatement(sql)) {
 
-        while (rs.next()) {
-            TemplateHorarioTurno t = new TemplateHorarioTurno(
-                    rs.getInt("id_template"),
-                    rs.getString("turno"),
-                    rs.getString("tipo"),
-                    rs.getInt("numero_ordem"),
-                    rs.getTime("hora_inicio").toLocalTime(),
-                    rs.getTime("hora_fim").toLocalTime()
-            );
-            lista.add(t);
+            ResultSet rs = stmt.executeQuery();
+            while (rs.next()) {
+                TemplateHorarioTurno tht = new TemplateHorarioTurno();
+                tht.setId_template(rs.getInt("id_template"));
+                tht.setTurno(rs.getString("turno"));
+                tht.setTipo(rs.getString("tipo"));
+                tht.setNumero_ordem(rs.getInt("numero_ordem"));
+                tht.setHora_inicio(rs.getObject("hora_inicio", LocalTime.class));
+                tht.setHora_fim(rs.getObject("hora_fim", LocalTime.class));
+
+                listTHT.add(tht);
+            }
+
+
+        } catch (SQLException e) {
+            System.err.println("Erro ao recuperar THT 'listarTodosHorariosTurnos': " + e.getMessage());
         }
-
-        rs.close();
-        stmt.close();
-        conn.close();
-
-        return lista;
+        return listTHT;
     }
 }

@@ -4,6 +4,7 @@ import javafx.collections.FXCollections;
 import javafx.collections.ObservableArray;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
+import javafx.scene.Node;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.control.cell.TextFieldTableCell;
@@ -23,8 +24,12 @@ import java.sql.SQLException;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.Month;
+import java.time.YearMonth;
+import java.time.format.DateTimeFormatter;
 import java.time.format.TextStyle;
 import java.util.*;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class AdmCalendarioBloqueiosController {
 
@@ -45,7 +50,7 @@ public class AdmCalendarioBloqueiosController {
     @FXML private ComboBox<String> cbTurno;
     @FXML private TextField tfMotivoCancelamento;
     @FXML private Label lblFeedbackCancelamento;
-    @FXML private ListView<CancelamentoAdm> listCancelamentos;
+    @FXML private ListView<String> listCancelamentos;
     @FXML private Button btnDeletar;
     @FXML private FlowPane flowHorarios;
     @FXML private VBox painelHorarios;
@@ -53,9 +58,10 @@ public class AdmCalendarioBloqueiosController {
     @FXML private Button btnCancelar;
     @FXML private Button btnDesfazer;
 
+
     private final SprintDAO sprintDAO = new SprintDAO();
     private final CancelamentoAdmDAO cancelamentoDAO = new CancelamentoAdmDAO();
-    private final CancelamentoAdmHorarioDAO cancelamentoHDAO = new CancelamentoAdmHorarioDAO();
+    private final CancelamentoAdmHorarioDAO cancelamentoAdmHDAO = new CancelamentoAdmHorarioDAO();
     private final DataBloqueadaDAO databDao = new DataBloqueadaDAO();
     private final SemestreLetivoDAO slDao = new SemestreLetivoDAO();
     private final TemplateHorarioTurnoDAO thtDao = new TemplateHorarioTurnoDAO();
@@ -64,27 +70,64 @@ public class AdmCalendarioBloqueiosController {
     private final UsuarioAtual logado = UsuarioAtual.getInstancia();
 
     private final ObservableList<Sprint> listaSprintsFX = FXCollections.observableArrayList();
-    private final ObservableList<CancelamentoAdm> listaCancelamentosFX = FXCollections.observableArrayList();
+    private final ObservableList<String> listaCancelamentosFX = FXCollections.observableArrayList();
     private LocalDate dataSelecionadaNoCalendario;
 
-    private List<String> listaMeses;
     private SemestreLetivo slAtual;
-    private String mesSelecionado;
-    private List<LocalDate> listaDiaBotaoPressionado = new ArrayList<>();
-    private List<TemplateHorarioTurno> listaHorariosSelecionados = new ArrayList<>();
-    private Map<LocalDate, String> mapaEstadoBotaoDia = new LinkedHashMap<>();
-    private String corBotaoSelecionada;
-    private List<Button> listaBtnDia = new ArrayList<>();
-    private Boolean reacaoEmCadeiaBtns = false;
 
+    private List<Button> listaBtnDia = new ArrayList<>();
+    private List<DataBloqueada> linhasDataBloqueadaRecuperadaBanco = new ArrayList<>();
+    private List<CancelamentoAdm> linhasCancelamentoAdmRecuperadoBanco = new ArrayList<>();
+    private List<LocalTime> listCheckHorariosSelecionados = new ArrayList<>();
+
+    private Map<String, List<TemplateHorarioTurno>> mapaTurnoListTHT = new LinkedHashMap<>();
+    private Map<LocalDate, String> mapaBotaoPressionadoEstilo = new LinkedHashMap<>();
+    private Month mesSelecionadoTipoMonth;
+    private Boolean reacaoEmCadeiaBtns = false;
+    private int anoSelecionado;
+    private int anoSemestreSelecionado;
     private int idSemestreAtual;
     private int ID_ADM_LOGADO;
 
+    private final String laranjaCheio = "-fx-border-color: transparent; -fx-background-color: #FFA500;";
+    private final String laranjaBorda = "-fx-border-color: #FFA500; -fx-background-color: -fx-control-inner-background;";
+    private final String vermelhoCheio = "-fx-border-color: transparent; -fx-background-color: #FF0000;";
+    private final String vermelhoBorda = "-fx-border-color: #FF0000; -fx-background-color: -fx-control-inner-background;";
+    private final String amareloCheio = "-fx-border-color: transparent; -fx-background-color: #FFFF00;";
+    private final String corDefault = "-fx-border-color: transparent; -fx-background-color: #D3D3D3;";
+    private String corBotaoSelecionado;
+
+    private enum TipoCancelamento { FERIADO, DIA_INTEIRO, HORARIO }
+    private TipoCancelamento tipoOrigemCancelamento;
+
+
     @FXML
     public void initialize() {
-        //REMOVER ESSA VARIAVEIS DEPOIS:
+        //REMOVER DEPOIS:
         logado.setId_usuario(1);
-        logado.setTipo("ADM");
+        logado.setAno(2026);
+        logado.setAnoSemestre(1);
+
+
+        anoSelecionado = logado.getAno();
+        anoSemestreSelecionado = logado.getAnoSemestre();
+        atualizarSemestreAtual(anoSelecionado, anoSemestreSelecionado);
+
+        logado.anoProperty().addListener((obs, oldVal, newVal) ->{
+            if (newVal != null) {
+                System.out.println("Ano: "+newVal);
+                this.anoSelecionado = newVal;
+                atualizarSemestreAtual(anoSelecionado, anoSemestreSelecionado);
+            };
+        });
+
+        logado.anoSemestreProperty().addListener((obs, oldVal, newVal) ->{
+            if (newVal != null) {
+                System.out.println("AnoSemestre: "+newVal);
+                this.anoSemestreSelecionado = newVal;
+                atualizarSemestreAtual(anoSelecionado, anoSemestreSelecionado);
+            };
+        });
 
         ID_ADM_LOGADO = logado.getId_usuario();
         configurarTabelaSprints();
@@ -94,10 +137,33 @@ public class AdmCalendarioBloqueiosController {
 
         carregarDadosPorAnoESemestre(anoFiltro, numeroSemestre);
 
-        carregarMesesCancelamento(anoFiltro, numeroSemestre);
+        //CARREGAR AO INICIAR ABA CANCELAMENTOS:
+        linhasDataBloqueadaRecuperadaBanco = databDao.listarDataBloqueadaPorSemestre(idSemestreAtual);
+        linhasCancelamentoAdmRecuperadoBanco = cancelamentoDAO.recuperarTodosCancelamentoAdm(idSemestreAtual);
+
+        recuperarHorariosTurnos();
+        carregarMesesCbMes();
+        configurarDadosConfigCancelamento();
+        atualizarListaCancelamentosLog();
     }
 
-    // --- METODOS DA ABA CALENDARIO DO SEMESTRE ---
+    // ==========================================
+    // ----------- METODOS GERAIS ---------------
+    // ==========================================
+
+    public void atualizarSemestreAtual(int ano, int anoSemestre){
+        try {
+            idSemestreAtual = slDao.getIdSemestreLetivo(ano, anoSemestre);
+            slAtual = slDao.listarSLPorId(idSemestreAtual);
+        } catch (SQLException e){
+            e.printStackTrace();
+        }
+    }
+
+
+    //╔═══════════════════════════════════════════════════════════════════╗
+    //║             METODOS DA ABA CALENDARIO DO SEMESTRE                 ║
+    //╚═══════════════════════════════════════════════════════════════════╝
 
     public void carregarDadosPorAnoESemestre(int anoFiltro, int numeroSemestre) {
         listaSprintsFX.clear();
@@ -267,10 +333,573 @@ public class AdmCalendarioBloqueiosController {
         }
     }
 
-    // --- METODOS DA ABA BLOQUEIOS E CANCELAMENTOS ---
+    //╔═══════════════════════════════════════════════════════════════════╗
+    //║          METODOS DA ABA BLOQUEIOS E CANCELAMENTOS                 ║
+    //╚═══════════════════════════════════════════════════════════════════╝
+
+    // ------------- CRUD:
+
+    public List<DataBloqueada> prepararListaDataBloqueada(String motivo){
+        List<DataBloqueada> datasSelecionadas = new ArrayList<>();
+        for (LocalDate data: mapaBotaoPressionadoEstilo.keySet()){
+            DataBloqueada dataB = new DataBloqueada();
+            dataB.setAdmId(logado.getId_usuario());
+            dataB.setData(data);
+            dataB.setMotivo(motivo);
+            dataB.setSemestreLetivoId(idSemestreAtual);
+
+            datasSelecionadas.add(dataB);
+        }
+        return datasSelecionadas;
+    }
+
+    public List<CancelamentoAdm> prepararListaCancelamentoDiaInteiro(String motivo){
+        List<CancelamentoAdm> cancelamentosSelecionados = new ArrayList<>();
+
+        for (LocalDate data: mapaBotaoPressionadoEstilo.keySet()){
+            CancelamentoAdm cadm = new CancelamentoAdm();
+            cadm.setAdm_id(logado.getId_usuario());
+            cadm.setMotivo(motivo);
+            cadm.setData(data);
+            cadm.setSemestre_letivo_id(idSemestreAtual);
+            cadm.setDia_inteiro(true);
+            cadm.setCriado_em(LocalDate.now());
+
+            cancelamentosSelecionados.add(cadm);
+        }
+        return cancelamentosSelecionados;
+    }
+
+    public List<CancelamentoAdm> prepararListaCancelamentoHorario(String motivo, String turno){
+        List<CancelamentoAdm> cancelamentosSelecionados = new ArrayList<>();
+
+        for (LocalDate data: mapaBotaoPressionadoEstilo.keySet()){
+            CancelamentoAdm cadm = new CancelamentoAdm();
+            cadm.setAdm_id(logado.getId_usuario());
+            cadm.setMotivo(motivo);
+            cadm.setData(data);
+            cadm.setSemestre_letivo_id(idSemestreAtual);
+            cadm.setTurno(turno);
+            cadm.setDia_inteiro(false);
+            cadm.setCriado_em(LocalDate.now());
+
+            cancelamentosSelecionados.add(cadm);
+        }
+        return cancelamentosSelecionados;
+    }
+
+    private void preservarCriadoEmOriginal(List<CancelamentoAdm> listaParaAtualizar){
+        for (CancelamentoAdm cadm : listaParaAtualizar){
+            linhasCancelamentoAdmRecuperadoBanco.stream()
+                    .filter(original -> original.getData().equals(cadm.getData()))
+                    .findFirst()
+                    .ifPresent(original -> cadm.setCriado_em(original.getCriado_em()));
+        }
+    }
+
+    public void adicionarFeriadosBanco(String motivo){
+        List<DataBloqueada> datasSelecionadas = prepararListaDataBloqueada(motivo);
+        try {
+
+            if (checkFeriado.isSelected()){
+                databDao.salvarEmLote(datasSelecionadas);
+            }
+
+            linhasDataBloqueadaRecuperadaBanco = databDao.listarDataBloqueadaPorSemestre(idSemestreAtual);
+        } catch (SQLException e){
+            e.printStackTrace();
+        }
+    }
+
+    public void adicionarCancelamentosDiaInteiroBanco(String motivo){
+        List<CancelamentoAdm> cancelamentosSelecionados = prepararListaCancelamentoDiaInteiro(motivo);
+
+        try {
+            cancelamentoDAO.salvarEmLote(cancelamentosSelecionados);
+
+            linhasCancelamentoAdmRecuperadoBanco = cancelamentoDAO.recuperarTodosCancelamentoAdm(idSemestreAtual);
+        } catch (SQLException e){
+            e.printStackTrace();
+        }
+    }
+
+    public void adicionarCancelamentoHorariosBanco(String motivo, String turno){
+        List<CancelamentoAdm> cancelamentosSelecionados = prepararListaCancelamentoHorario(motivo, turno);
+        try {
+            cancelamentoDAO.salvarEmLote(cancelamentosSelecionados);
+
+            linhasCancelamentoAdmRecuperadoBanco = cancelamentoDAO.recuperarTodosCancelamentoAdm(idSemestreAtual);
+        } catch (SQLException e){
+            e.printStackTrace();
+        }
+
+
+        List<HorarioCurso> listHorarioCursoTurno = hcDao.listarHorarioCursoPorHoraInicio(idSemestreAtual,
+                listCheckHorariosSelecionados);
+        List<CancelamentoAdm> listCancelamentoAdmSelecionados = linhasCancelamentoAdmRecuperadoBanco.stream()
+                .filter(lambdaCadm -> mapaBotaoPressionadoEstilo.containsKey(lambdaCadm.getData()))
+                .toList();
+
+        List<CancelamentoAdmHorario> listaCadmH = new ArrayList<>();
+        for (CancelamentoAdm cadm: listCancelamentoAdmSelecionados){
+            for (HorarioCurso hc: listHorarioCursoTurno){
+                CancelamentoAdmHorario cAdmH = new CancelamentoAdmHorario();
+                cAdmH.setCancelamento_adm_id(cadm.getId_cancelamento_adm());
+                cAdmH.setHorario_curso_id(hc.getId_horario_curso());
+
+                listaCadmH.add(cAdmH);
+            }
+        }
+
+        cancelamentoAdmHDAO.salvarEmLote(listaCadmH);
+    }
+
+    public void atualizarValoresFeriadoBanco(String motivo){
+        try{
+            List<DataBloqueada> datasSelecionadas = prepararListaDataBloqueada(motivo);
+            databDao.atualizarEmLote(datasSelecionadas);
+            linhasDataBloqueadaRecuperadaBanco = databDao.listarDataBloqueadaPorSemestre(idSemestreAtual);
+
+        } catch (SQLException e){
+            e.printStackTrace();
+        }
+    }
+
+    public void atualizarValoresCancelamentoDiaInteiroBanco(String motivo){
+        List<CancelamentoAdm> cancelamentosSelecionados = prepararListaCancelamentoDiaInteiro(motivo);
+        preservarCriadoEmOriginal(cancelamentosSelecionados);
+
+        try{
+            cancelamentoDAO.atualizarEmLote(cancelamentosSelecionados);
+            linhasCancelamentoAdmRecuperadoBanco = cancelamentoDAO.recuperarTodosCancelamentoAdm(idSemestreAtual);
+
+        } catch (SQLException e){
+            e.printStackTrace();
+        }
+    }
+
+    public void atualizarValoresCancelamentoComHorarios(String motivo, String turno){
+        try {
+            // Atualiza motivo/turno nas linhas de cancelamento_adm
+            List<CancelamentoAdm> cancelamentosAtualizados = prepararListaCancelamentoHorario(motivo, turno);
+            preservarCriadoEmOriginal(cancelamentosAtualizados);
+            cancelamentoDAO.atualizarEmLote(cancelamentosAtualizados);
+
+            linhasCancelamentoAdmRecuperadoBanco = cancelamentoDAO.recuperarTodosCancelamentoAdm(idSemestreAtual);
+
+            // Pega os cadms (com id real do banco) que correspondem às datas selecionadas
+            List<CancelamentoAdm> listCadmSelecionados = linhasCancelamentoAdmRecuperadoBanco.stream()
+                    .filter(c -> mapaBotaoPressionadoEstilo.containsKey(c.getData()))
+                    .toList();
+
+            // Horários atualmente salvos no banco para esses cadms
+            List<CancelamentoAdmHorario> listCadmHAtual =
+                    cancelamentoAdmHDAO.listarHorariosDeCancelamentos(listCadmSelecionados);
+
+            // Horários que DEVERIAM estar selecionados (estado atual da UI)
+            List<HorarioCurso> listHorarioCursoDesejado =
+                    hcDao.listarHorarioCursoPorHoraInicio(idSemestreAtual, listCheckHorariosSelecionados);
+            Set<Integer> idsDesejados = listHorarioCursoDesejado.stream()
+                    .map(HorarioCurso::getId_horario_curso)
+                    .collect(Collectors.toSet());
+
+            List<CancelamentoAdmHorario> listaParaInserir = new ArrayList<>();
+            List<CancelamentoAdmHorario> listaParaRemover = new ArrayList<>();
+
+            // Para cada cadm, calcula o diff entre o que está no banco e o que deveria estar
+            for (CancelamentoAdm cadm : listCadmSelecionados){
+                Integer idCadm = cadm.getId_cancelamento_adm();
+
+                Set<Integer> idsAtuais = listCadmHAtual.stream()
+                        .filter(cah -> idCadm.equals(cah.getCancelamento_adm_id()))
+                        .map(CancelamentoAdmHorario::getHorario_curso_id)
+                        .collect(Collectors.toSet());
+
+                // Está em "desejado" mas não em "atual" -> precisa INSERIR
+                for (Integer idHorario : idsDesejados){
+                    if (!idsAtuais.contains(idHorario)){
+                        CancelamentoAdmHorario novo = new CancelamentoAdmHorario();
+                        novo.setCancelamento_adm_id(idCadm);
+                        novo.setHorario_curso_id(idHorario);
+                        listaParaInserir.add(novo);
+                    }
+                }
+
+                // Está em "atual" mas não em "desejado" -> precisa REMOVER
+                for (Integer idHorario : idsAtuais){
+                    if (!idsDesejados.contains(idHorario)){
+                        CancelamentoAdmHorario remover = new CancelamentoAdmHorario();
+                        remover.setCancelamento_adm_id(idCadm);
+                        remover.setHorario_curso_id(idHorario);
+                        listaParaRemover.add(remover);
+                    }
+                }
+            }
+
+            if (!listaParaInserir.isEmpty()){
+                cancelamentoAdmHDAO.salvarEmLote(listaParaInserir);
+            }
+            if (!listaParaRemover.isEmpty()){
+                cancelamentoAdmHDAO.excluirEmLote(listaParaRemover);
+            }
+
+        } catch (SQLException e){
+            e.printStackTrace();
+        }
+    }
+
+    public void excluirFeriadoBanco(String motivo){
+        try{
+            List<DataBloqueada> datasSelecionadas = prepararListaDataBloqueada(motivo);
+            databDao.excluirEmLote(datasSelecionadas);
+            linhasDataBloqueadaRecuperadaBanco = databDao.listarDataBloqueadaPorSemestre(idSemestreAtual);
+
+        } catch (SQLException e){
+            e.printStackTrace();
+        }
+    }
+
+    public void excluirCancelamentoDiaInteiroBanco(String motivo){
+        List<CancelamentoAdm> cancelamentosSelecionados = prepararListaCancelamentoDiaInteiro(motivo);
+        try{
+            cancelamentoDAO.excluirEmLote(cancelamentosSelecionados);
+            linhasCancelamentoAdmRecuperadoBanco = cancelamentoDAO.recuperarTodosCancelamentoAdm(idSemestreAtual);
+
+        } catch (SQLException e){
+            e.printStackTrace();
+        }
+    }
+
+    public void configurarDadosConfigCancelamento(){
+        cbTurno.setItems(FXCollections.observableArrayList("Dia inteiro", "manha", "noite", "Ambos turnos"));
+        cbTurno.setValue("Dia inteiro");
+        checkFeriado.setSelected(false);
+    }
+
+    public void verificarPodeAbrirConfigCancelamento(){
+        if (!mapaBotaoPressionadoEstilo.isEmpty()){
+            boxConfigCancelamento.setManaged(true);
+            boxConfigCancelamento.setVisible(true);
+        } else {
+            boxConfigCancelamento.setManaged(false);
+            boxConfigCancelamento.setVisible(false);
+        }
+    }
+
+    public void resetarDadosConfigCancelamento(){
+        linhasDataBloqueadaRecuperadaBanco = databDao.listarDataBloqueadaPorSemestre(idSemestreAtual);
+        linhasCancelamentoAdmRecuperadoBanco = cancelamentoDAO.recuperarTodosCancelamentoAdm(idSemestreAtual);
+        atualizarListaCancelamentosLog();
+
+        tipoOrigemCancelamento = null;
+        checkFeriado.setSelected(false);
+        cbTurno.setDisable(false);
+        resetarDadosInterfaceConfigCancelamento();
+        tfMotivoCancelamento.setText("");
+        btnCancelar.setText("Cancelar Datas");
+        btnCancelar.setOnAction(event -> handleCancelarDatas());
+    }
+
+    public void resetarDadosInterfaceConfigCancelamento(){
+
+        listCheckHorariosSelecionados.clear();
+
+        flowHorarios.getChildren().clear();
+        painelHorarios.setManaged(false);
+        painelHorarios.setVisible(false);
+        cbTurno.setValue("Dia inteiro");
+    }
+
+    public void preencherDadosConfigCancelamentoFeriado(String motivo){
+        tfMotivoCancelamento.setText(motivo);
+        checkFeriado.setSelected(true);
+        handleFeriados();
+        tipoOrigemCancelamento = TipoCancelamento.FERIADO;
+        btnCancelar.setText("Editar feriado");
+        btnCancelar.setOnAction(event -> handleSalvarEdicaoCancelamento());
+    }
+
+
+    public void preencherDadosConfigCancelamentoDiaInteiro(String motivo){
+        tfMotivoCancelamento.setText(motivo);
+        checkFeriado.setSelected(false);
+        cbTurno.setValue("Dia inteiro");
+        tipoOrigemCancelamento = TipoCancelamento.DIA_INTEIRO;
+        btnCancelar.setText("Editar cancelamento");
+        btnCancelar.setOnAction(event -> handleSalvarEdicaoCancelamento());
+    }
+
+    public void preencherDadosConfigCancelamentoComHorarios(String motivo, String turno){
+        tfMotivoCancelamento.setText(motivo);
+        checkFeriado.setSelected(false);
+
+        String valorCombo = (turno == null) ? "Ambos turnos" : turno;
+        cbTurno.setValue(valorCombo);
+
+        painelHorarios.setManaged(true);
+        painelHorarios.setVisible(true);
+        gerarCheckboxHorarios(valorCombo);
+
+        tipoOrigemCancelamento = TipoCancelamento.HORARIO;
+        btnCancelar.setText("Editar cancelamento");
+        btnCancelar.setOnAction(event -> handleSalvarEdicaoCancelamento());
+    }
+
+    public void atualizarGridBtnDia(){
+        for (Button btnDia: listaBtnDia){
+            LocalDate dataDesteBotao = LocalDate.of
+                    (anoSelecionado, mesSelecionadoTipoMonth, Integer.parseInt(btnDia.getText()));
+            if (mapaBotaoPressionadoEstilo.containsKey(dataDesteBotao)){
+                btnDia.setStyle(mapaBotaoPressionadoEstilo.get(dataDesteBotao));
+            }
+        }
+    }
+
+    public void bloquearBtnDiasNaoComuns(){
+        if (!mapaBotaoPressionadoEstilo.isEmpty()) {
+            for (Button btnDia : listaBtnDia) {
+                LocalDate dataDesteBotao = LocalDate.of
+                        (anoSelecionado, mesSelecionadoTipoMonth, Integer.parseInt(btnDia.getText()));
+                btnDia.setDisable(!mapaBotaoPressionadoEstilo.containsKey(dataDesteBotao));
+            }
+        } else{
+            for (Button btnDia : listaBtnDia) {
+                btnDia.setDisable(false);
+            }
+            resetarDadosConfigCancelamento();
+        }
+        atualizarGridBtnDia();
+    }
+
+    public void bloquearBtnDiasNaoAmarelos(){
+        if (!mapaBotaoPressionadoEstilo.isEmpty()){
+            for (Button btnDia: listaBtnDia){
+                String estilo = btnDia.getStyle();
+
+                if (estilo.contains("FFFF00") || estilo.contains("D3D3D3")){
+                    btnDia.setDisable(false);
+                } else{
+                    btnDia.setDisable(true);
+                }
+            }
+        } else {
+            for (Button btnDia : listaBtnDia) {
+                btnDia.setDisable(false);
+            }
+            resetarDadosConfigCancelamento();
+        }
+        atualizarGridBtnDia();
+    }
+
+    public void selecionarBotoesFeriadoMotivoIgual(LocalDate dataBtnPressionado){
+        System.out.println("ENTROU EM 'selecionarBotoesFeriadoMotivoIgual'");
+        try{
+            String motivo = databDao.recuperarMotivoData(dataBtnPressionado, idSemestreAtual);
+            List<LocalDate> datasMotivoIgual = databDao.listarDatasMotivoComumSL(idSemestreAtual, motivo);
+
+            for (LocalDate data: datasMotivoIgual){
+                mapaBotaoPressionadoEstilo.put(data, laranjaBorda);
+            }
+
+            preencherDadosConfigCancelamentoFeriado(motivo);
+        } catch (SQLException e){
+            e.printStackTrace();
+        }
+    }
+
+    private void selecionarBotoesCancelamentoMotivoHorariosIgual(CancelamentoAdm cadmPrimeiroSelecionado){
+        String turno = cadmPrimeiroSelecionado.getTurno();
+        String motivo = cadmPrimeiroSelecionado.getMotivo();
+        Integer id = cadmPrimeiroSelecionado.getId_cancelamento_adm();
+
+        List<CancelamentoAdm> listCAdmFiltroInicial = linhasCancelamentoAdmRecuperadoBanco.stream()
+                .filter(lambdaCadm -> Objects.equals(turno, lambdaCadm.getTurno()))
+                .filter(lambdaCadm -> motivo.equals(lambdaCadm.getMotivo()))
+                .toList();
+
+        System.out.println("\n\nLIST FILTRO INICIAL: ");
+        for (CancelamentoAdm c : listCAdmFiltroInicial){
+            System.out.println("DATA: "+c.getData());
+        }
+
+        List<CancelamentoAdmHorario> listCadmH = cancelamentoAdmHDAO.
+                listarHorariosDeCancelamentos(listCAdmFiltroInicial);
+
+        Set<Integer> idsHorarioCursoPrimeiroSelecionado = listCadmH.stream()
+                .filter(lambdaCadmH -> id.equals(lambdaCadmH.getCancelamento_adm_id()))
+                .map(CancelamentoAdmHorario::getHorario_curso_id)
+                .collect(Collectors.toSet());
+
+        System.out.println("\n\nLIST IDS HORARIO BOTAO INICIAL: ");
+        for (Integer c : idsHorarioCursoPrimeiroSelecionado){
+            System.out.println("ID: "+c);
+        }
+
+        Set<Integer> idsCancelamentosCompartilhados = listCadmH.stream()
+                .collect(Collectors.groupingBy(
+                        CancelamentoAdmHorario::getCancelamento_adm_id,
+                        Collectors.mapping(CancelamentoAdmHorario::getHorario_curso_id, Collectors.toSet())
+                ))
+                .entrySet().stream()
+                .filter(e -> e.getValue().equals(idsHorarioCursoPrimeiroSelecionado))
+                .map(Map.Entry::getKey)
+                .collect(Collectors.toSet());
+
+        System.out.println("\n\nLIST IDS CADM: ");
+        for (Integer c : idsCancelamentosCompartilhados){
+            System.out.println("ID: "+c);
+        }
+
+        List<CancelamentoAdm> listCAdmFiltroFinal = listCAdmFiltroInicial.stream()
+                .filter(ca -> idsCancelamentosCompartilhados.contains(ca.getId_cancelamento_adm()))
+                .toList();
+
+        System.out.println("\n\nLIST FINAL: ");
+        for (CancelamentoAdm c : listCAdmFiltroFinal){
+            System.out.println("DATA: "+c.getData());
+        }
+
+        Set<LocalDate> datasSelecionadasFinais = listCAdmFiltroFinal.stream()
+                .map(CancelamentoAdm::getData)
+                .collect(Collectors.toSet());
+
+        for (LocalDate data : datasSelecionadasFinais) {
+            mapaBotaoPressionadoEstilo.put(data, vermelhoBorda);
+        }
+
+        List<HorarioCurso> listHorarioCurso = hcDao.
+                listarHorarioCursoPorIds(idsHorarioCursoPrimeiroSelecionado.stream().toList());
+
+        listCheckHorariosSelecionados.clear();
+        listCheckHorariosSelecionados = new ArrayList<>(listHorarioCurso.stream()
+                .map(HorarioCurso::getHora_inicio)
+                .toList());
+
+        preencherDadosConfigCancelamentoComHorarios(motivo, turno);
+
+    }
+
+    public void selecionarBotoesCancelamentoMotivoIgual(LocalDate dataBtnPressionado){
+        System.out.println("\n\nENTROU EM 'selecionarBotoesCancelamentoMotivoIgual'");
+        try{
+            CancelamentoAdm cadm = cancelamentoDAO.recuperarCancelamentoAdm(dataBtnPressionado, idSemestreAtual);
+            List<LocalDate> datasFiltradas;
+
+
+            String motivo = cadm.getMotivo();
+            if (cadm.getDia_inteiro() != true){
+                selecionarBotoesCancelamentoMotivoHorariosIgual(cadm);
+            } else {
+                System.out.println("MOTIVO DO botao "+ dataBtnPressionado+": "+motivo);
+                datasFiltradas = linhasCancelamentoAdmRecuperadoBanco.stream()
+                        .filter(lambdaCadm -> motivo.equals(lambdaCadm.getMotivo()))
+                        .map(CancelamentoAdm::getData)
+                        .toList();
+
+                for (LocalDate data : datasFiltradas) {
+                    mapaBotaoPressionadoEstilo.put(data, vermelhoBorda);
+                }
+
+                preencherDadosConfigCancelamentoDiaInteiro(motivo);
+            }
+
+        } catch (SQLException e){
+            e.printStackTrace();
+        }
+    }
+
+    private void alternarEstiloBotao(Button btn, LocalDate data, String estiloAntes, String estiloDepois) {
+        if (btn.getStyle().equals(estiloAntes)) {
+            btn.setStyle(estiloDepois);
+            mapaBotaoPressionadoEstilo.put(data, estiloDepois);
+        } else {
+            btn.setStyle(estiloAntes);
+            mapaBotaoPressionadoEstilo.remove(data);
+        }
+    }
+
+    private void processarCliqueBotao(Button btnDia, LocalDate dataDesteBotao) {
+        String estilo = btnDia.getStyle();
+        boolean mapaVazioAntesDoClique = mapaBotaoPressionadoEstilo.isEmpty();
+
+        if (mapaVazioAntesDoClique) {
+            corBotaoSelecionado = estilo;
+            btnDeletar.setManaged(true);
+            btnDeletar.setVisible(true);
+        }
+
+        if (estilo.contains("FFA500")) {
+            if (mapaVazioAntesDoClique) {
+                selecionarBotoesFeriadoMotivoIgual(dataDesteBotao);
+            }
+            alternarEstiloBotao(btnDia, dataDesteBotao, laranjaCheio, laranjaBorda);
+            bloquearBtnDiasNaoComuns();
+        }
+
+        else if (estilo.contains("FF0000")) {
+            if (mapaVazioAntesDoClique) {
+                selecionarBotoesCancelamentoMotivoIgual(dataDesteBotao);
+            }
+            alternarEstiloBotao(btnDia, dataDesteBotao, vermelhoCheio, vermelhoBorda);
+            bloquearBtnDiasNaoComuns();
+        }
+
+        else if (estilo.contains("D3D3D3") || estilo.contains("FFFF00")) {
+            alternarEstiloBotao(btnDia, dataDesteBotao, corDefault, amareloCheio);
+            bloquearBtnDiasNaoAmarelos();
+        }
+
+        verificarPodeAbrirConfigCancelamento();
+    }
+
+    public void verificarEstadoBotoesClick(Month mes) {
+        for (Button btnDia : listaBtnDia) {
+            LocalDate dataDesteBotao = LocalDate.of(anoSelecionado, mes, Integer.parseInt(btnDia.getText()));
+
+            btnDia.setOnAction(event -> processarCliqueBotao(btnDia, dataDesteBotao));
+
+            if (corBotaoSelecionado != null) {
+                if (corBotaoSelecionado.contains("FFA500") || corBotaoSelecionado.contains("FF0000")) {
+                    bloquearBtnDiasNaoComuns();
+                } else if (corBotaoSelecionado.contains("D3D3D3") || corBotaoSelecionado.contains("FFFF00")) {
+                    bloquearBtnDiasNaoAmarelos();
+                }
+            }
+        }
+        atualizarGridBtnDia();
+    }
+
+    public void alterarCorBotoesUsandoValoresBanco(Month mes){
+        for (Button btnDia: listaBtnDia){
+            LocalDate dataDesteBotao = LocalDate.of
+                    (anoSelecionado, mes, Integer.parseInt(btnDia.getText()));
+
+            boolean possuiDataBloqueada = linhasDataBloqueadaRecuperadaBanco.stream()
+                    .anyMatch(lambdaDataB -> dataDesteBotao.equals(lambdaDataB.getData()));
+            boolean possuiDataCancelamentoAdm = linhasCancelamentoAdmRecuperadoBanco.stream()
+                    .anyMatch(lambdaCadm -> dataDesteBotao.equals(lambdaCadm.getData()));
+
+
+            if (possuiDataBloqueada){
+                if (!mapaBotaoPressionadoEstilo.containsKey(dataDesteBotao))
+                    btnDia.setStyle(laranjaCheio);
+                else {
+                    btnDia.setStyle(laranjaBorda);
+                }
+            } else if (possuiDataCancelamentoAdm){
+                if (!mapaBotaoPressionadoEstilo.containsKey(dataDesteBotao))
+                    btnDia.setStyle(vermelhoCheio);
+                else {
+                    btnDia.setStyle(vermelhoBorda);
+                }
+            } else {
+                btnDia.setStyle(corDefault);
+            }
+        }
+    }
 
     public List<String> listarNomesDosMeses(LocalDate inicio, LocalDate fim) {
-        listaMeses = new ArrayList<>();
+        List<String> listaMeses = new ArrayList<>();
 
         LocalDate atual = inicio.withDayOfMonth(1);
 
@@ -286,424 +915,415 @@ public class AdmCalendarioBloqueiosController {
         return listaMeses;
     }
 
-    public void carregarMesesCancelamento(int ano, int anoSemestre){
-        try {
-            idSemestreAtual = slDao.getIdSemestreLetivo(ano, anoSemestre);
-            slAtual = slDao.listarSLPorId(idSemestreAtual);
+    public void carregarMesesCbMes(){
+        if (slAtual != null){
+            LocalDate dataInicioSemestre = slAtual.getData_inicio();
+            LocalDate dataFimSemestre = slAtual.getData_fim();
 
-            LocalDate dataInicio = slAtual.getData_inicio();
-            LocalDate dataFim = slAtual.getData_fim();
             ObservableList opcoesMeses = FXCollections.observableArrayList
-                    (listarNomesDosMeses(dataInicio, dataFim));
+                    (listarNomesDosMeses(dataInicioSemestre, dataFimSemestre));
             cbMes.setItems(opcoesMeses);
-        } catch (SQLException e){
-            e.printStackTrace();
         }
     }
 
-    public static Month converterNomeParaMonth(String nome) {
-        for (Month m : Month.values()) {
-            String nomePt = m.getDisplayName(TextStyle.FULL, new Locale("pt", "BR"));
-            if (nomePt.equalsIgnoreCase(nome)) {
-                return m;
+    public void gerarBotoesDia(Month mes){
+        listaBtnDia.clear();
+        gridDias.getChildren().clear();
+
+        LocalDate dataInicial = LocalDate.of(anoSelecionado, mes, 1);
+        int qtdDiasMes = YearMonth.of(anoSelecionado, mes).lengthOfMonth();
+        int posCol = 0;
+        int posLinha = 0;
+
+        if (mes == slAtual.getData_inicio().getMonth()){
+            dataInicial = slAtual.getData_inicio();
+        } else if (mes == slAtual.getData_fim().getMonth()){
+            qtdDiasMes = slAtual.getData_fim().getDayOfMonth();
+        }
+
+        for (int nrDia = dataInicial.getDayOfMonth(); nrDia <= qtdDiasMes; nrDia++){
+            if (posCol > 5) {
+                posLinha++;
+                posCol = 0;
+            }
+
+            Button btnDia = new Button(String.valueOf(nrDia));
+
+            gridDias.add(btnDia, posCol, posLinha);
+            listaBtnDia.add(btnDia);
+            posCol+=1;
+        }
+    }
+
+    // ------- CHECKBOXES
+
+    private void atualizarCbTurnoConformeSelecaoHorarios(){
+        Set<LocalTime> selecionados = new HashSet<>(listCheckHorariosSelecionados);
+
+        boolean temManha = mapaTurnoListTHT.get("manha").stream()
+                .map(TemplateHorarioTurno::getHora_inicio).anyMatch(selecionados::contains);
+        boolean temNoite = mapaTurnoListTHT.get("noite").stream()
+                .map(TemplateHorarioTurno::getHora_inicio).anyMatch(selecionados::contains);
+
+        String turnoAtual = cbTurno.getValue();
+
+        if (temManha && temNoite && !"Ambos turnos".equals(turnoAtual)){
+            // passou a usar os dois turnos -> exibe combo e os dois painéis juntos
+            cbTurno.setValue("Ambos turnos");
+            gerarCheckboxHorarios("Ambos turnos");
+        } else if (!(temManha && temNoite) && "Ambos turnos".equals(turnoAtual)){
+            // desmarcou até restar só um turno -> volta pro turno único
+            String turnoRestante = temManha ? "manha" : (temNoite ? "noite" : null);
+            if (turnoRestante != null){
+                cbTurno.setValue(turnoRestante);
+                gerarCheckboxHorarios(turnoRestante);
             }
         }
-        throw new IllegalArgumentException("Mês inválido: " + nome);
     }
 
-    public void configurarComboboxCbTurno(){
-        ObservableList<String> opcoesTurno = FXCollections.observableArrayList("Dia inteiro", "manha", "noite");
-        cbTurno.setItems(opcoesTurno);
-        cbTurno.setValue("Dia inteiro");
+    private void adicionarCheckboxesDoTurno(String turno){
+        for (TemplateHorarioTurno tht : mapaTurnoListTHT.get(turno)){
+            CheckBox checkBoxHorario = new CheckBox();
+            checkBoxHorario.setText(tht.getHora_inicio() + " - " + tht.getHora_fim());
+            checkBoxHorario.setSelected(listCheckHorariosSelecionados.contains(tht.getHora_inicio()));
 
-        if (corBotaoSelecionada.equals("FFA500")){
-            checkFeriado.setSelected(true);
-            cbTurno.setDisable(true);
-        }
-    }
-
-
-    public void configurarComboboxCbTurnoFeriado(String motivo){
-        ObservableList<String> opcoesTurno = FXCollections.observableArrayList("Dia inteiro", "manha", "noite");
-        cbTurno.setItems(opcoesTurno);
-        cbTurno.setValue("Dia inteiro");
-
-        if (corBotaoSelecionada.equals("FFA500")){
-            checkFeriado.setSelected(true);
-            cbTurno.setDisable(true);
-            btnCancelar.setText("Editar feriado");
-            tfMotivoCancelamento.setText(motivo);
-
-            List<DataBloqueada> listaDb = new ArrayList<>();
-
-
-            btnCancelar.setOnAction(event -> {
-                for (LocalDate data: listaDiaBotaoPressionado){
-                    DataBloqueada db = new DataBloqueada();
-                    db.setAdmId(logado.getId_usuario());
-                    db.setMotivo(tfMotivoCancelamento.getText());
-                    db.setData(data);
-                    db.setSemestreLetivoId(idSemestreAtual);
-                    listaDb.add(db);
-                    System.out.println("\n=====================");
-                    System.out.println("COMBO INFORMAÇÕES: ");
-                    System.out.println(logado.getId_usuario());
-                    System.out.println(tfMotivoCancelamento.getText());
-                    System.out.println(data);
-                    System.out.println(idSemestreAtual);
+            checkBoxHorario.setOnAction(event -> {
+                if (listCheckHorariosSelecionados.contains(tht.getHora_inicio())){
+                    listCheckHorariosSelecionados.remove(tht.getHora_inicio());
+                } else {
+                    listCheckHorariosSelecionados.add(tht.getHora_inicio());
                 }
-                try{
-                    databDao.atualizarEmLote(listaDb);
-                } catch (SQLException e){
-                    e.printStackTrace();
-                }
+                atualizarCbTurnoConformeSelecaoHorarios();
             });
+
+            flowHorarios.getChildren().add(checkBoxHorario);
         }
     }
 
-    public void recuperarCancelamentos(){
-        List<LocalDate> datasBloqueadasRecuperadas = databDao.listarDatasBloqueadasPorSemestre(idSemestreAtual);
-        List<CancelamentoAdm> datasCanceladasRecuperadas = cancelamentoDAO.listarPorSemestre(idSemestreAtual);
+    private void gerarCheckboxHorarios(String turno){
+        flowHorarios.getChildren().clear();
 
-        for (LocalDate data: datasBloqueadasRecuperadas){
-            mapaEstadoBotaoDia.put(data, "-fx-border-color: transparent; -fx-background-color: #FFA500;");
-        }
-
-        for (CancelamentoAdm cadm: datasCanceladasRecuperadas){
-            LocalDate data = cadm.getData();
-            if (!mapaEstadoBotaoDia.containsKey(data)){
-                mapaEstadoBotaoDia.put(data, "-fx-border-color: transparent; -fx-background-color: #FF0000;");
-            }
-        }
-    }
-
-    public void refletirMudancaNosBotoesRelacionadosFeriado(LocalDate dataPrimeiro){
-        for (LocalDate data : listaDiaBotaoPressionado){
-            for (Button btn : listaBtnDia) {
-                if (btn.getText().equals(String.valueOf(data.getDayOfMonth()))){
-                    if (data != dataPrimeiro) {
-                        System.out.println("ativou o botao: " + data);
-                        btn.setStyle("-fx-border-color: #FFA500; " +
-                                "-fx-background-color: -fx-control-inner-background;");
-                        mapaEstadoBotaoDia.put(data, btn.getStyle());
-                    }
-                }
-            }
-        }
-        reacaoEmCadeiaBtns = true;
-    }
-
-    public void preencherCamposConfiguracaoCancelamento(LocalDate dataSelecionada){
-        configurarComboboxCbTurno();
-        List<LocalDate> datasMotivoIgual = new ArrayList<>();
-        if (!corBotaoSelecionada.equals("D3D3D3") && !corBotaoSelecionada.equals("FFFF00")){
-            if (reacaoEmCadeiaBtns == false) {
-                try {
-                    if (corBotaoSelecionada.equals("FFA500")) {
-                        String motivo = databDao.recuperarMotivoData(dataSelecionada);
-                        tfMotivoCancelamento.setText(motivo);
-                        List<LocalDate> resultados = databDao.listarDatasMotivoComumSL(idSemestreAtual, motivo);
-
-                        if (resultados != null) {
-                            datasMotivoIgual.addAll(resultados);
-                        }
-                    }
-                } catch (SQLException e) {
-                    e.printStackTrace();
-                }
-
-                for (LocalDate data : datasMotivoIgual) {
-                    if (!listaDiaBotaoPressionado.contains(data)) {
-                        listaDiaBotaoPressionado.add(data);
-                    }
-                }
-                refletirMudancaNosBotoesRelacionadosFeriado(dataSelecionada);
-                configurarComboboxCbTurnoFeriado(tfMotivoCancelamento.getText());
-            }
-
-            listaDiaBotaoPressionado.forEach(System.out::println);
-        }
-    }
-
-    public void atualizarEstadoBotaoDia(Button btnDia, LocalDate dataDesteBotao){
-        if (mapaEstadoBotaoDia.containsKey(dataDesteBotao)){
-            switch (mapaEstadoBotaoDia.get(dataDesteBotao)){
-                case "-fx-border-color: transparent; -fx-background-color: #FFFF00;" -> {
-                    btnDia.setStyle("-fx-border-color: transparent; -fx-background-color: #D3D3D3;");
-                    mapaEstadoBotaoDia.remove(dataDesteBotao);
-                    listaDiaBotaoPressionado.remove(dataDesteBotao);
-                }
-                case "-fx-border-color: transparent; -fx-background-color: #FF0000;" -> {
-                    btnDia.setStyle("-fx-border-color: #FF0000; -fx-background-color: -fx-control-inner-background;");
-                    mapaEstadoBotaoDia.put(dataDesteBotao, btnDia.getStyle());
-                    listaDiaBotaoPressionado.add(dataDesteBotao);
-                }
-                case "-fx-border-color: #FF0000; -fx-background-color: -fx-control-inner-background;" -> {
-                    btnDia.setStyle("-fx-border-color: transparent; -fx-background-color: #FF0000;");
-                    mapaEstadoBotaoDia.put(dataDesteBotao, btnDia.getStyle());
-                    listaDiaBotaoPressionado.remove(dataDesteBotao);
-                }
-                case "-fx-border-color: transparent; -fx-background-color: #FFA500;" -> {
-                    btnDia.setStyle("-fx-border-color: #FFA500; -fx-background-color: -fx-control-inner-background;");
-                    mapaEstadoBotaoDia.put(dataDesteBotao, btnDia.getStyle());
-                    listaDiaBotaoPressionado.add(dataDesteBotao);
-                }
-                case "-fx-border-color: #FFA500; -fx-background-color: -fx-control-inner-background;" -> {
-                    btnDia.setStyle("-fx-border-color: transparent; -fx-background-color: #FFA500;");
-                    mapaEstadoBotaoDia.put(dataDesteBotao, btnDia.getStyle());
-                    listaDiaBotaoPressionado.remove(dataDesteBotao);
-                }
-            }
-        } else{
-            btnDia.setStyle("-fx-border-color: transparent; -fx-background-color: #FFFF00;");
-            mapaEstadoBotaoDia.put(dataDesteBotao, btnDia.getStyle());
-            listaDiaBotaoPressionado.add(dataDesteBotao);
-        }
-
-        if (listaDiaBotaoPressionado.isEmpty()){
-            boxConfigCancelamento.setManaged(false);
-            boxConfigCancelamento.setVisible(false);
+        if ("Ambos turnos".equals(turno)){
+            adicionarCheckboxesDoTurno("manha");
+            adicionarCheckboxesDoTurno("noite");
         } else {
-            boxConfigCancelamento.setManaged(true);
-            boxConfigCancelamento.setVisible(true);
-            preencherCamposConfiguracaoCancelamento(dataDesteBotao);
+            adicionarCheckboxesDoTurno(turno);
         }
     }
 
-    public void handleCancelariaFeriados(String motivo){
-        List<DataBloqueada> listaDatasBloqueadas = new ArrayList<>();
-        try{
-            for (LocalDate data: listaDiaBotaoPressionado){
-                DataBloqueada datab = new DataBloqueada();
-                datab.setData(data);
-                datab.setAdmId(logado.getId_usuario());
-                datab.setMotivo(motivo);
-                datab.setRecorrente(true);
-                datab.setSemestreLetivoId(idSemestreAtual);
-                listaDatasBloqueadas.add(datab);
+    private void recuperarHorariosTurnos(){
+        List<TemplateHorarioTurno> listaTHT = thtDao.listarTodosHorariosTurnos();
+        List<TemplateHorarioTurno> listaTurnoManha = listaTHT.stream()
+                .filter(lambdaTHT -> "manha".equals(lambdaTHT.getTurno()))
+                .toList();
+        List<TemplateHorarioTurno> listaTurnoNoite = listaTHT.stream()
+                .filter(lambdaTHT -> "noite".equals(lambdaTHT.getTurno()))
+                .toList();
+
+        mapaTurnoListTHT.put("manha", listaTurnoManha);
+        mapaTurnoListTHT.put("noite", listaTurnoNoite);
+    }
+
+    // ------- LIDAR COM O TIPO DO CANCELAMENTO: FERIADO, CANCELAMENTO, CHORARIO
+
+    private TipoCancelamento obterTipoCancelamentoAtualUI(){
+        if (checkFeriado.isSelected()){
+            return TipoCancelamento.FERIADO;
+        } else if ("Dia inteiro".equals(cbTurno.getValue())){
+            return TipoCancelamento.DIA_INTEIRO;
+        } else {
+            return TipoCancelamento.HORARIO;
+        }
+    }
+
+    private void removerCancelamentoPorTipo(TipoCancelamento origem, String motivo) throws SQLException {
+        switch (origem){
+            case FERIADO -> {
+                linhasDataBloqueadaRecuperadaBanco = databDao.listarDataBloqueadaPorSemestre(idSemestreAtual);
+                databDao.excluirEmLote(prepararListaDataBloqueada(motivo));
+                linhasDataBloqueadaRecuperadaBanco = databDao.listarDataBloqueadaPorSemestre(idSemestreAtual);
             }
+            case DIA_INTEIRO -> {
+                linhasCancelamentoAdmRecuperadoBanco = cancelamentoDAO.recuperarTodosCancelamentoAdm(idSemestreAtual);
+                cancelamentoDAO.excluirEmLote(prepararListaCancelamentoDiaInteiro(motivo));
+                linhasCancelamentoAdmRecuperadoBanco = cancelamentoDAO.recuperarTodosCancelamentoAdm(idSemestreAtual);
+            }
+            case HORARIO -> {
+                linhasCancelamentoAdmRecuperadoBanco = cancelamentoDAO.recuperarTodosCancelamentoAdm(idSemestreAtual);
 
-            databDao.salvarEmLote(listaDatasBloqueadas);
-            mapaEstadoBotaoDia.clear();
-            listaDiaBotaoPressionado.clear();
+                List<CancelamentoAdm> cadmOrigem = linhasCancelamentoAdmRecuperadoBanco.stream()
+                        .filter(c -> mapaBotaoPressionadoEstilo.containsKey(c.getData()))
+                        .toList();
 
+                List<CancelamentoAdmHorario> horariosOrigem =
+                        cancelamentoAdmHDAO.listarHorariosDeCancelamentos(cadmOrigem);
+                if (!horariosOrigem.isEmpty()){
+                    cancelamentoAdmHDAO.excluirEmLote(horariosOrigem);
+                }
+
+                cancelamentoDAO.excluirEmLote(cadmOrigem);
+                linhasCancelamentoAdmRecuperadoBanco = cancelamentoDAO.recuperarTodosCancelamentoAdm(idSemestreAtual);
+            }
+        }
+    }
+
+    private void migrarTipoCancelamento(TipoCancelamento origem, TipoCancelamento destino, String motivo){
+        try {
+            removerCancelamentoPorTipo(origem, motivo);
+
+            switch (destino){
+                case FERIADO -> adicionarFeriadosBanco(motivo);
+                case DIA_INTEIRO -> adicionarCancelamentosDiaInteiroBanco(motivo);
+                case HORARIO -> {
+                    String turno = "Ambos turnos".equals(cbTurno.getValue()) ? null : cbTurno.getValue();
+                    adicionarCancelamentoHorariosBanco(motivo, turno);
+                }
+            }
         } catch (SQLException e){
             e.printStackTrace();
         }
     }
 
-    public void handleCancelarAdm(String motivo){
-        List<CancelamentoAdm> listaCancelamentoAdm = new ArrayList<>();
-        try{
-            for (LocalDate data: listaDiaBotaoPressionado){
-                CancelamentoAdm cadm = new CancelamentoAdm();
-                cadm.setAdm_id(logado.getId_usuario());
-                cadm.setSemestre_letivo_id(idSemestreAtual);
-                cadm.setData(data);
-                if (!cbTurno.getValue().equals("Dia inteiro")){
-                    cadm.setTurno(cbTurno.getValue());
-                    cadm.setDia_inteiro(false);
-                } else{
-                    cadm.setDia_inteiro(true);
-                    cadm.setTurno(null);
-                }
-                cadm.setMotivo(motivo);
-                cadm.setCriado_em(LocalDate.now());
+    // ------- ALERTAS
 
-                System.out.println(cadm.getTurno());
-                listaCancelamentoAdm.add(cadm);
+    private boolean validarMotivoPreenchido() {
+        if (tfMotivoCancelamento.getText() == null || tfMotivoCancelamento.getText().trim().isEmpty()) {
+            Alert alert = new Alert(Alert.AlertType.WARNING);
+            alert.setTitle("Motivo obrigatório");
+            alert.setHeaderText(null);
+            alert.setContentText("Informe o motivo do cancelamento antes de continuar.");
+            alert.showAndWait();
+            return false;
+        }
+        return true;
+    }
+
+    private boolean validarSelecaoTurno() {
+        boolean ehCancelamentoPorTurno = !checkFeriado.isSelected()
+                && !"Dia inteiro".equals(cbTurno.getValue());
+
+        if (ehCancelamentoPorTurno && listCheckHorariosSelecionados.isEmpty()) {
+            Alert alert = new Alert(Alert.AlertType.WARNING);
+            alert.setTitle("Horário obrigatório");
+            alert.setHeaderText(null);
+            alert.setContentText("Selecione ao menos um horário (checkbox) do turno antes de continuar.");
+            alert.showAndWait();
+            return false;
+        }
+        return true;
+    }
+
+    // ------- LISTVIEW LOG CANCELAMENTOS:
+
+    // ------- LOG DE ALTERACOES (listCancelamentos) -------
+
+    private void atualizarListaCancelamentosLog(){
+        DateTimeFormatter fmtData = DateTimeFormatter.ofPattern("dd/MM/yyyy");
+        List<String> linhasLog = new ArrayList<>();
+
+        // ---- FERIADOS ----
+        for (DataBloqueada db : linhasDataBloqueadaRecuperadaBanco){
+            linhasLog.add("[FERIADO] " + db.getData().format(fmtData) + " — " + db.getMotivo());
+        }
+
+        // ---- CANCELAMENTOS POR HORARIO: pré-carrega os horários específicos ----
+        List<CancelamentoAdm> cadmsPorTurno = linhasCancelamentoAdmRecuperadoBanco.stream()
+                .filter(c -> !Boolean.TRUE.equals(c.getDia_inteiro()))
+                .toList();
+
+        Map<Integer, List<Integer>> mapaCadmIdParaHorarioCursoIds = new HashMap<>();
+        Map<Integer, String> mapaHorarioCursoIdParaTexto = new HashMap<>();
+
+        if (!cadmsPorTurno.isEmpty()){
+            List<CancelamentoAdmHorario> horarios =
+                    cancelamentoAdmHDAO.listarHorariosDeCancelamentos(cadmsPorTurno);
+
+            for (CancelamentoAdmHorario h : horarios){
+                mapaCadmIdParaHorarioCursoIds
+                        .computeIfAbsent(h.getCancelamento_adm_id(), k -> new ArrayList<>())
+                        .add(h.getHorario_curso_id());
             }
 
-            cancelamentoDAO.salvarEmLote(listaCancelamentoAdm);
-            mapaEstadoBotaoDia.clear();
-            listaDiaBotaoPressionado.clear();
+            List<Integer> idsHorarioCurso = horarios.stream()
+                    .map(CancelamentoAdmHorario::getHorario_curso_id)
+                    .distinct()
+                    .toList();
 
-            if (!listaHorariosSelecionados.isEmpty()) {
-                List<CancelamentoAdmHorario> listaCadmHorario = new ArrayList<>();
+            if (!idsHorarioCurso.isEmpty()){
+                for (HorarioCurso hc : hcDao.listarHorarioCursoPorIds(idsHorarioCurso)){
+                    mapaHorarioCursoIdParaTexto.put(hc.getId_horario_curso(),
+                            hc.getHora_inicio() + "–" + hc.getHora_fim());
+                }
+            }
+        }
 
-                for (CancelamentoAdm cadm: listaCancelamentoAdm) {
-                    Integer cadm_id = cancelamentoDAO.recuperarIdCancelamento(cadm);
-                    for (TemplateHorarioTurno tht : listaHorariosSelecionados) {
-                        List<Integer> horarioCursoIds = recuperarIdsCursoHorario(
-                                tht.getHora_inicio(), tht.getHora_fim());
-                        for (Integer id : horarioCursoIds) {
-                            CancelamentoAdmHorario cadmH = new CancelamentoAdmHorario();
-                            cadmH.setCancelamento_adm_id(cadm_id);
-                            cadmH.setHorario_curso_id(id);
-                            listaCadmHorario.add(cadmH);
-                        }
+        // ---- CANCELAMENTOS (dia inteiro + por turno) ----
+        for (CancelamentoAdm cadm : linhasCancelamentoAdmRecuperadoBanco){
+            boolean diaInteiro = Boolean.TRUE.equals(cadm.getDia_inteiro());
+            StringBuilder sb = new StringBuilder();
+
+            if (diaInteiro){
+                sb.append("[CANCELAMENTO - DIA INTEIRO] ");
+            } else {
+                String turno = cadm.getTurno() != null ? cadm.getTurno().toUpperCase() : "TURNO";
+                sb.append("[CANCELAMENTO - ").append(turno).append("] ");
+            }
+
+            sb.append(cadm.getData().format(fmtData)).append(" — ").append(cadm.getMotivo());
+
+            if (!diaInteiro){
+                List<Integer> idsHorario = mapaCadmIdParaHorarioCursoIds.get(cadm.getId_cancelamento_adm());
+                if (idsHorario != null && !idsHorario.isEmpty()){
+                    String horariosTexto = idsHorario.stream()
+                            .map(mapaHorarioCursoIdParaTexto::get)
+                            .filter(Objects::nonNull)
+                            .sorted()
+                            .collect(Collectors.joining(", "));
+                    if (!horariosTexto.isEmpty()){
+                        sb.append(" (").append(horariosTexto).append(")");
                     }
                 }
-
-                cancelamentoHDAO.salvarEmLote(listaCadmHorario);
             }
-        } catch (SQLException e){
-            e.printStackTrace();
+
+            if (cadm.getCriado_em() != null){
+                sb.append(" | criado em ").append(fmtData.format(cadm.getCriado_em()));
+            }
+            if (cadm.getDeletado_em() != null){
+                sb.append(" | EXCLUÍDO em ").append(fmtData.format(cadm.getDeletado_em()));
+            }
+
+            linhasLog.add(sb.toString());
         }
+
+        listaCancelamentosFX.setAll(linhasLog);
+        listCancelamentos.setItems(listaCancelamentosFX);
     }
 
-    public List<Integer> recuperarIdsCursoHorario(LocalTime hc, LocalTime hf){
-        try{
-            return hcDao.recuperarIdsHoraInicioFim(hc, hf);
-        } catch (SQLException e){
-            e.printStackTrace();
+    @FXML
+    public void handleSalvarEdicaoCancelamento(){
+        if (!validarMotivoPreenchido()) {
+            return;
         }
-        return null;
+        if (!validarSelecaoTurno()) {
+            return;
+        }
+
+        String motivo = tfMotivoCancelamento.getText();
+        TipoCancelamento tipoDestino = obterTipoCancelamentoAtualUI();
+
+        if (tipoDestino == tipoOrigemCancelamento){
+            switch (tipoOrigemCancelamento){
+                case FERIADO -> atualizarValoresFeriadoBanco(motivo);
+                case DIA_INTEIRO -> atualizarValoresCancelamentoDiaInteiroBanco(motivo);
+                case HORARIO -> {
+                    String turno = "Ambos turnos".equals(cbTurno.getValue()) ? null : cbTurno.getValue();
+                    atualizarValoresCancelamentoComHorarios(motivo, turno);
+                }
+            }
+        } else {
+            migrarTipoCancelamento(tipoOrigemCancelamento, tipoDestino, motivo);
+        }
+
+        resetarDadosConfigCancelamento();
+        handleDesfazerSelecao();
+    }
+
+    @FXML
+    public void handleCancelamentoSelecaoMes(){
+        String mesSelecionadoCbMes = cbMes.getValue();
+
+        DateTimeFormatter formatador = DateTimeFormatter.ofPattern("MMMM")
+                .withLocale(Locale.of("pt", "BR"));
+        mesSelecionadoTipoMonth = Month.from(formatador.parse(mesSelecionadoCbMes.toLowerCase()));
+
+        gerarBotoesDia(mesSelecionadoTipoMonth);
+        alterarCorBotoesUsandoValoresBanco(mesSelecionadoTipoMonth);
+        verificarEstadoBotoesClick(mesSelecionadoTipoMonth);
     }
 
     @FXML
     public void handleDesfazerSelecao(){
-
+        mapaBotaoPressionadoEstilo.clear();
+        bloquearBtnDiasNaoComuns();
+        verificarPodeAbrirConfigCancelamento();
+        alterarCorBotoesUsandoValoresBanco(mesSelecionadoTipoMonth);
+        resetarDadosInterfaceConfigCancelamento();
     }
 
     @FXML
     public void handleFeriados(){
         if (checkFeriado.isSelected()){
-            cbTurno.setValue("Dia inteiro");
             cbTurno.setDisable(true);
-            painelHorarios.setManaged(false);
-            painelHorarios.setVisible(false);
-            listaHorariosSelecionados.clear();
+            cbTurno.setValue("Dia inteiro");
         } else {
             cbTurno.setDisable(false);
-            painelHorarios.setManaged(false);
-            painelHorarios.setVisible(false);
         }
     }
 
     @FXML
     public void handleSelecaoTurno(){
-        if (cbTurno.getValue() == null) return;
         flowHorarios.getChildren().clear();
-
-        painelHorarios.setManaged(true);
-        painelHorarios.setVisible(true);
+        painelHorarios.setManaged(false);
+        painelHorarios.setVisible(false);
 
         if (!cbTurno.getValue().equals("Dia inteiro")){
-            try{
-                List<TemplateHorarioTurno> listaHorarios = thtDao.listarPorTurno(cbTurno.getValue());
-                for (TemplateHorarioTurno tht: listaHorarios){
-                    CheckBox horario = new CheckBox();
+            painelHorarios.setManaged(true);
+            painelHorarios.setVisible(true);
 
-                    String hora_inicio = String.valueOf(tht.getHora_inicio());
-                    String hora_fim = String.valueOf(tht.getHora_fim());
-
-                    horario.setText(hora_inicio + " - "+ hora_fim);
-                    flowHorarios.getChildren().add(horario);
-
-                    horario.setOnAction(e -> {
-                        if (horario.isSelected()) {
-                            listaHorariosSelecionados.add(tht);
-                        } else if (!horario.isSelected() && listaHorarios.contains(tht)){
-                            listaHorarios.remove(tht);
-                        }
-                    });
-                }
-            } catch (SQLException e){
-                e.printStackTrace();
-            }
-        }
-    }
-
-    @FXML
-    public void handleCancelamentoSelecaoMes(){
-        if (cbMes.getValue() == null) return;
-        gridDias.getChildren().clear();
-        listaBtnDia.clear();
-        if (mapaEstadoBotaoDia.isEmpty()) recuperarCancelamentos();
-
-        Month mesEnum = converterNomeParaMonth(cbMes.getValue());
-        int anoRef = slAtual.getData_inicio().getYear();
-
-        LocalDate dataInicioReal = slAtual.getData_inicio();
-        LocalDate atual;
-
-        if (mesEnum == dataInicioReal.getMonth()) {
-            atual = dataInicioReal;
-        } else {
-            atual = LocalDate.of(anoRef, mesEnum, 1);
-        }
-
-        LocalDate dataFinalReal = slAtual.getData_fim();
-        LocalDate ultimoDiaDoMes = atual.withDayOfMonth(atual.lengthOfMonth());
-
-        LocalDate dataLimiteLoop;
-        if (dataFinalReal.getMonth() == mesEnum) {
-            dataLimiteLoop = dataFinalReal;
-        } else {
-            dataLimiteLoop = ultimoDiaDoMes;
-        }
-
-        int pos_linha = 0;
-        int pos_coluna = 0;
-
-        while (!atual.isAfter(dataLimiteLoop)) {
-            if (pos_coluna > 5) {
-                pos_linha += 1;
-                pos_coluna = 0;
-            }
-
-            String numeroData = String.valueOf(atual.getDayOfMonth());
-            Button btnDia = new Button(numeroData);
-
-            String estiloInicial = mapaEstadoBotaoDia.getOrDefault(atual, "-fx-border-color: transparent; -fx-background-color: #D3D3D3;");
-            btnDia.setStyle(estiloInicial);
-
-            LocalDate dataDesteBotao = LocalDate.of(anoRef, mesEnum, Integer.parseInt(btnDia.getText()));
-
-            btnDia.setOnAction(e -> {
-                String estiloAtual = btnDia.getStyle();
-
-                if (corBotaoSelecionada == null){
-                    if (estiloAtual.contains("#")) {
-                        int inicio = estiloAtual.indexOf("#") + 1;
-                        int fim = estiloAtual.indexOf(";", inicio);
-                        corBotaoSelecionada = estiloAtual.substring(inicio, fim);
-                    }
-                    atualizarEstadoBotaoDia(btnDia, dataDesteBotao);
-                } else {
-                    boolean ehMesmaCor = estiloAtual.contains(corBotaoSelecionada);
-                    boolean ehDesmarcarAmarelo = corBotaoSelecionada.equals("D3D3D3") && estiloAtual.contains("FFFF00");
-                    if (ehMesmaCor || ehDesmarcarAmarelo) {
-                        atualizarEstadoBotaoDia(btnDia, dataDesteBotao);
-                    }
-
-                    if (listaDiaBotaoPressionado.isEmpty()) {
-                        corBotaoSelecionada = null;
-                        reacaoEmCadeiaBtns = false;
-                        btnCancelar.setText("Cancelar Datas");
-
-                    }
-                }
-            });
-
-            btnDia.setStyle(mapaEstadoBotaoDia.getOrDefault(atual, estiloInicial));
-
-            btnDia.setId("btn-" + mesEnum.name() + "-" + numeroData);
-
-            listaBtnDia.add(btnDia);
-            gridDias.add(btnDia, pos_coluna, pos_linha);
-
-            pos_coluna++;
-            atual = atual.plusDays(1);
+            gerarCheckboxHorarios(cbTurno.getValue());
         }
     }
 
     @FXML
     public void handleCancelarDatas() {
-        String motivo = tfMotivoCancelamento.getText();
-        if (checkFeriado.isSelected()){
-            handleCancelariaFeriados(motivo);
-        } else {
-            handleCancelarAdm(motivo);
+        if (!validarMotivoPreenchido()) {
+            return;
+        }
+        if (!validarSelecaoTurno()) {
+            return;
         }
 
-    }
+        if (checkFeriado.isSelected()){
+            adicionarFeriadosBanco(tfMotivoCancelamento.getText());
+        } else if (cbTurno.getValue().equals("Dia inteiro")){
+            adicionarCancelamentosDiaInteiroBanco(tfMotivoCancelamento.getText());
+        } else if (!listCheckHorariosSelecionados.isEmpty()){
+            String turnoParaSalvar = "Ambos turnos".equals(cbTurno.getValue()) ? null : cbTurno.getValue();
+            adicionarCancelamentoHorariosBanco(tfMotivoCancelamento.getText(), turnoParaSalvar);
+        } else {
+            // popup: precisa selecionar ao menos um checkbox
+        }
 
+        resetarDadosConfigCancelamento();
+        handleDesfazerSelecao();
+    }
     @FXML
     public void handleDeletarCancelamento() {
+        if (!validarMotivoPreenchido()) {
+            return;
+        }
+        if (!validarSelecaoTurno()) {
+            return;
+        }
 
+        try {
+            if (checkFeriado.isSelected()){
+                excluirFeriadoBanco(tfMotivoCancelamento.getText());
+            } else if (cbTurno.getValue().equals("Dia inteiro")){
+                excluirCancelamentoDiaInteiroBanco(tfMotivoCancelamento.getText());
+            } else {
+                removerCancelamentoPorTipo(TipoCancelamento.HORARIO, tfMotivoCancelamento.getText());
+            }
+        } catch (SQLException e){
+            e.printStackTrace();
+        }
+
+        resetarDadosConfigCancelamento();
+        handleDesfazerSelecao();
     }
+
+
+    // --- METODOS UTILITARIOS GENERICOS ---
 
     private void exibirFeedback(Label label, String mensagem, boolean isErro) {
         label.setText(mensagem);
