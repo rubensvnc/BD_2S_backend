@@ -6,19 +6,19 @@
 
 <BorderPane xmlns="http://javafx.com/javafx/21"
             xmlns:fx="http://javafx.com/fxml/1"
-            fx:controller="org.example.demo3.controller.AdmCoordenadoresAdmsController">
+            fx:controller="org.example.demo3.controller.AdmCoordenadoresAdmsController"
+            stylesheets="@style.css">
 
     <top>
         <Label text="Coordenadores e Administradores"
-               style="-fx-font-size: 16px; -fx-font-weight: bold; -fx-padding: 12 16;"/>
+               styleClass="page-title"
+               style="-fx-padding: 12 16;"/>
     </top>
 
     <center>
         <TabPane tabClosingPolicy="UNAVAILABLE">
 
-            <!-- ═══════════════════════════════════════════
-                 ABA 1 — COORDENADORES  (cobre seção 6.6)
-            ════════════════════════════════════════════ -->
+            <!-- ── ABA 1: COORDENADORES ── -->
             <Tab text="👤 Coordenadores">
                 <SplitPane dividerPositions="0.56">
 
@@ -29,7 +29,7 @@
                             <Label text="Coordenadores Cadastrados"
                                    style="-fx-font-weight: bold;" HBox.hgrow="ALWAYS"/>
                             <Button text="+ Novo" onAction="#handleNovoCoordenador"
-                                    style="-fx-background-color: #27ae60; -fx-text-fill: white;"/>
+                                    styleClass="btn-primary"/>
                         </HBox>
                         <TableView fx:id="tabelaCoordenadores"
                                    onMouseClicked="#handleSelecionarCoordenador"
@@ -70,7 +70,6 @@
                         </VBox>
                         <VBox spacing="4">
                             <Label text="Curso *"/>
-                            <!-- Lista apenas cursos sem coordenador vigente (exceto em modo edição) -->
                             <ComboBox fx:id="cbCoordCurso" maxWidth="Infinity"
                                       promptText="Selecione o curso"/>
                             <Label fx:id="errCoordCurso" styleClass="error-label"
@@ -78,9 +77,10 @@
                         </VBox>
 
                         <HBox spacing="8" alignment="CENTER_RIGHT">
-                            <Button text="Limpar" onAction="#handleLimparFormCoord"/>
+                            <Button text="Limpar" onAction="#handleLimparFormCoord"
+                                    styleClass="btn-ghost"/>
                             <Button text="Salvar" onAction="#handleSalvarCoordenador"
-                                    style="-fx-background-color: #2980b9; -fx-text-fill: white;"/>
+                                    styleClass="btn-primary"/>
                         </HBox>
                         <Label fx:id="lblFeedbackCoord"
                                visible="false" managed="false" styleClass="feedback-label"/>
@@ -88,9 +88,7 @@
                 </SplitPane>
             </Tab>
 
-            <!-- ═══════════════════════════════════════════
-                 ABA 2 — ADMINISTRADORES  (cobre seção 6.7)
-            ════════════════════════════════════════════ -->
+            <!-- ── ABA 2: ADMINISTRADORES ── -->
             <Tab text="🔐 Administradores">
                 <SplitPane dividerPositions="0.56">
 
@@ -101,7 +99,7 @@
                             <Label text="Administradores do Sistema"
                                    style="-fx-font-weight: bold;" HBox.hgrow="ALWAYS"/>
                             <Button text="+ Novo ADM" onAction="#handleNovoAdm"
-                                    style="-fx-background-color: #27ae60; -fx-text-fill: white;"/>
+                                    styleClass="btn-primary"/>
                         </HBox>
                         <TableView fx:id="tabelaAdms"
                                    onMouseClicked="#handleSelecionarAdm"
@@ -141,11 +139,11 @@
                         </VBox>
 
                         <HBox spacing="8" alignment="CENTER_RIGHT">
-                            <Button text="Limpar" onAction="#handleLimparFormAdm"/>
+                            <Button text="Limpar" onAction="#handleLimparFormAdm"
+                                    styleClass="btn-ghost"/>
                             <Button text="Salvar" onAction="#handleSalvarAdm"
-                                    style="-fx-background-color: #2980b9; -fx-text-fill: white;"/>
+                                    styleClass="btn-primary"/>
                         </HBox>
-                        <!-- Botão excluir desabilitado para o próprio ADM logado (via binding no controller) -->
                         <Label fx:id="lblFeedbackAdm"
                                visible="false" managed="false" styleClass="feedback-label"/>
                     </VBox>

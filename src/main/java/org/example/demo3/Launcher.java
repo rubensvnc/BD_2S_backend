@@ -19,7 +19,7 @@ public class Launcher extends Application {
         FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource("/login.fxml"));
 
         // Define a cena com as dimensões apropriadas para comportar as tabelas
-        Scene scene = new Scene(fxmlLoader.load(), 1440, 820);
+        Scene scene = new Scene(fxmlLoader.load(), 1440, 620);
 
         stage.setTitle("SwiftPlan - Dashboard Professor");
         stage.setScene(scene);

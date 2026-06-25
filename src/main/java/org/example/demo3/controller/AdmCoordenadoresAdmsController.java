@@ -66,16 +66,10 @@ public class AdmCoordenadoresAdmsController {
     private final ObservableList<Usuario> listaCoordenadoresFX = FXCollections.observableArrayList();
     private final ObservableList<Usuario> listaAdmsFX          = FXCollections.observableArrayList();
 
-    /**
-     * id do coordenador → nome do curso.
-     * Alimenta a coluna "Curso" sem precisar alterar a entidade Usuario.
-     */
+
     private final Map<Integer, String> mapaCoordParaCurso  = new HashMap<>();
 
-    /**
-     * nome do curso → id_curso.
-     * Usado ao salvar para recuperar o ID a partir do nome escolhido no ComboBox.
-     */
+
     private final Map<String, Integer> mapaNomeCursoParaId = new HashMap<>();
 
     private Usuario coordenadorSelecionado;
@@ -140,11 +134,7 @@ public class AdmCoordenadoresAdmsController {
         );
     }
 
-    /**
-     * Habilita o botão de salvar coordenador se:
-     *  - modo edição e senha em branco (não vai alterar a senha), OU
-     *  - senha digitada tem >= SENHA_MIN caracteres.
-     */
+
     private void atualizarEstadoBtnCoord() {
         if (btnSalvarCoord == null) return;
         String senha = pfCoordSenha.getText();
@@ -154,7 +144,7 @@ public class AdmCoordenadoresAdmsController {
         btnSalvarCoord.setDisable(!senhaOk);
     }
 
-    /** Mesma lógica para administradores. */
+
     private void atualizarEstadoBtnAdm() {
         if (btnSalvarAdm == null) return;
         String senha = pfAdmSenha.getText();
@@ -229,13 +219,6 @@ public class AdmCoordenadoresAdmsController {
 
     // =========================================================================
     //  CARREGAMENTO DE DADOS
-    //
-    //  Problema anterior: mapaTipos usava put() simples, então um usuário com
-    //  dois registros em usuario_tipo (ex: COORD + PROF) tinha seu tipo
-    //  sobrescrito pelo último lido — fazendo coordenadores "sumírem" da tabela.
-    //
-    //  Solução: buscar coordenadores e adms diretamente por tipo via SQL,
-    //  sem depender de um mapa que pode ser sobrescrito.
     // =========================================================================
 
     private void atualizarTabelas() {
@@ -276,11 +259,7 @@ public class AdmCoordenadoresAdmsController {
         }
     }
 
-    /**
-     * Busca todos os usuários ativos de um determinado tipo diretamente no banco.
-     * Evita qualquer problema de sobrescrita de mapa ao lidar com usuários
-     * que possuem múltiplos registros em usuario_tipo.
-     */
+
     private List<Usuario> listarUsuariosPorTipo(String tipo) throws SQLException {
         List<Usuario> lista = new ArrayList<>();
         String sql = """
@@ -310,14 +289,7 @@ public class AdmCoordenadoresAdmsController {
         return lista;
     }
 
-    /**
-     * Popula o ComboBox apenas com cursos que ainda NÃO possuem coordenador.
-     * Se um coordenador está sendo editado, inclui o curso já vinculado a ele
-     * para que possa ser mantido ou trocado.
-     *
-     * @param cursoAtualDoCoord nome do curso já vinculado ao coordenador em edição
-     *                          (null para novo cadastro).
-     */
+
     private void recarregarComboBoxCurso(String cursoAtualDoCoord) {
         try {
             mapaNomeCursoParaId.clear();
@@ -661,10 +633,7 @@ public class AdmCoordenadoresAdmsController {
     //  UTILITÁRIOS PRIVADOS
     // =========================================================================
 
-    /**
-     * Verifica no banco se o curso já possui um coordenador vinculado.
-     * Proteção extra para o caso de o ComboBox ser burlado.
-     */
+
     private boolean cursoJaPossuiCoordenador(int idCurso) {
         try {
             for (Curso c : cursoDAO.listarCursos()) {
@@ -676,7 +645,7 @@ public class AdmCoordenadoresAdmsController {
         return false;
     }
 
-    /** Vincula um coordenador a um curso via UPDATE direto no banco. */
+
     private void vincularCoordAoCurso(int coordId, int idCurso) throws Exception {
         String sql = "UPDATE curso SET coordenador_id = ? WHERE id_curso = ?";
         try (Connection conn = DatabaseConnection.getConnection();

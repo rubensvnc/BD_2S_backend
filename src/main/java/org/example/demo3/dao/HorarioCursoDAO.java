@@ -2,10 +2,14 @@ package org.example.demo3.dao;
 
 import org.example.demo3.DatabaseConnection;
 import org.example.demo3.dto.AdmCursoExibicao;
+import org.example.demo3.entity.CancelamentoAdm;
+import org.example.demo3.entity.CancelamentoAdmHorario;
 import org.example.demo3.entity.HorarioCurso;
 import org.example.demo3.entity.TemplateHorarioTurno;
 
 import java.sql.*;
+import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -108,33 +112,162 @@ public class HorarioCursoDAO {
         }
     }
 
-    public void inserirTemplateHorarioCurso(List<TemplateHorarioTurno> thtLista,
-                                            Integer cursoId, Integer slId) throws SQLException{
+    public List<HorarioCurso> listarHorarioCursoIdsCAH(List<CancelamentoAdmHorario> listCAH){
 
-        try (Connection connection = DatabaseConnection.getConnection()) {for (TemplateHorarioTurno tht: thtLista) {
+        String sql = """
+            SELECT hc.* FROM horario_curso hc
+             INNER JOIN cancelamento_adm_horario cah
+             ON cah.horario_curso_id = hc.id_horario_curso
+             WHERE cah.id_cancelamento_adm_horario = ?
+        """;
 
+        List<HorarioCurso> listaHC = new ArrayList<>();
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
 
-            String sql = """
-                        INSERT INTO horario_curso (
-                    curso_id, semestre_letivo_id, tipo, numero_ordem, hora_inicio, hora_fim)
-                                    VALUES (?, ?, ?, ?, ?, ?);
-    
-                       """;
-try (PreparedStatement ps = connection.prepareStatement(sql)) {
-
-                ps.setInt(1, cursoId);
-                ps.setInt(2, slId);
-                ps.setString(3, tht.getTipo());
-                ps.setInt(4, tht.getNumero_ordem());
-                ps.setObject(5, tht.getHora_inicio());
-                ps.setObject(6, tht.getHora_fim());
-                ps.executeUpdate();
+            for (CancelamentoAdmHorario cAH: listCAH){
+                ps.setInt(1, cAH.getId_cancelamento_adm_horario());
+                try (ResultSet rs = ps.executeQuery()) {
+                    while (rs.next()) {
+                        HorarioCurso hc = new HorarioCurso(
+                                rs.getInt("hc.id_horario_curso"),
+                                rs.getInt("hc.curso_id"),
+                                rs.getInt("hc.semestre_letivo_id"),
+                                rs.getString("hc.tipo"),
+                                rs.getInt("hc.numero_ordem"),
+                                rs.getObject("hc.hora_inicio", LocalTime.class),
+                                rs.getObject("hc.hora_fim", LocalTime.class)
+                        );
+                        listaHC.add(hc);
+                    }
+                } catch (SQLException e){
+                    e.printStackTrace();
+                }
             }
-        }
+
 
         } catch (SQLException e){
             e.printStackTrace();
+        }
+        return listaHC;
+    }
 
+    public List<HorarioCurso> listarHorarioCursoPorIds(List<Integer> listIdsHorarioCurso){
+        String sql = """
+            SELECT hc.* FROM horario_curso hc
+             WHERE id_horario_curso = ?
+        """;
+
+        List<HorarioCurso> listHc = new ArrayList<>();
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            for (Integer id : listIdsHorarioCurso){
+                stmt.setInt(1, id);
+
+                ResultSet rs = stmt.executeQuery();
+                while (rs.next()) {
+                    HorarioCurso hc = new HorarioCurso(
+                            rs.getInt("hc.id_horario_curso"),
+                            rs.getInt("hc.curso_id"),
+                            rs.getInt("hc.semestre_letivo_id"),
+                            rs.getString("hc.tipo"),
+                            rs.getInt("hc.numero_ordem"),
+                            rs.getObject("hc.hora_inicio", LocalTime.class),
+                            rs.getObject("hc.hora_fim", LocalTime.class)
+                    );
+                    listHc.add(hc);
+                }
+            }
+
+        } catch (SQLException e) {
+            System.err.println("\n\nErro ao listar horario_curso 'listarHorarioCursoPorIds': " + e.getMessage());
+        }
+        return listHc;
+    }
+
+    public List<Integer> recuperarIdsHoraInicioFim(LocalTime hi, LocalTime hf) throws SQLException{
+
+        String sql = """
+            SELECT DISTINCT id_horario_curso FROM horario_curso 
+            WHERE hora_inicio = ? and hora_fim = ?;
+        """;
+
+        List<Integer> listaIds = new ArrayList<>();
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setObject(1, hi);
+            ps.setObject(2, hf);
+
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    listaIds.add(rs.getInt("id_horario_curso"));
+                }
+            }
+        }
+        return listaIds;
+    }
+
+    public List<HorarioCurso> listarHorarioCursoPorHoraInicio(Integer sl, List<LocalTime> listHi){
+
+        String sql = """
+            SELECT hc.*
+             FROM horario_curso hc
+             INNER JOIN curso c ON hc.curso_id = c.id_curso
+             WHERE hc.semestre_letivo_id = ?
+             AND hc.hora_inicio = ?
+             AND c.deletado_em IS NULL;
+        """;
+
+        List<HorarioCurso> listaHorarioCurso = new ArrayList<>();
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            ps.setInt(1, sl);
+            for (LocalTime hi: listHi){
+                ps.setObject(2, hi);
+
+                ResultSet rs = ps.executeQuery();
+                while (rs.next()) {
+                    HorarioCurso hc = new HorarioCurso(
+                            rs.getInt("hc.id_horario_curso"),
+                            rs.getInt("hc.curso_id"),
+                            rs.getInt("hc.semestre_letivo_id"),
+                            rs.getString("hc.tipo"),
+                            rs.getInt("hc.numero_ordem"),
+                            rs.getObject("hc.hora_inicio", LocalTime.class),
+                            rs.getObject("hc.hora_fim", LocalTime.class)
+                    );
+
+                    listaHorarioCurso.add(hc);
+                }
+            }
+
+        } catch (SQLException e){
+            System.err.println("Erro ao listar Horarios 'listarHorarioCursoPorHoraInicio': "+e.getMessage());
+        }
+        return listaHorarioCurso;
+    }
+
+    public void inserirTemplateHorarioCurso(List<TemplateHorarioTurno> thtLista,
+                                            Integer cursoId, Integer slId) throws SQLException {
+        String sql = """
+        INSERT INTO horario_curso (curso_id, semestre_letivo_id, tipo, numero_ordem, hora_inicio, hora_fim)
+        VALUES (?, ?, ?, ?, ?, ?)
+        """;
+
+        try (Connection connection = DatabaseConnection.getConnection()) {
+            for (TemplateHorarioTurno tht : thtLista) {
+                try (PreparedStatement ps = connection.prepareStatement(sql)) {
+                    ps.setInt(1, cursoId);
+                    ps.setInt(2, slId);
+                    ps.setString(3, tht.getTipo());
+                    ps.setInt(4, tht.getNumero_ordem());
+                    ps.setObject(5, tht.getHora_inicio());
+                    ps.setObject(6, tht.getHora_fim());
+                    ps.executeUpdate();
+                }
+            }
         }
     }
 
@@ -283,6 +416,54 @@ try (PreparedStatement ps = connection.prepareStatement(sql)) {
 
         } catch (SQLException e) {
             e.printStackTrace();
+        }
+    }
+
+
+    public void removerHorariosCursoSLEmCascata(int cursoId, int slId) throws SQLException {
+        String[] sqls = {
+                // 1. Remove slots vinculados a esses horários
+                """
+        DELETE sp FROM slot_planejamento sp
+        INNER JOIN horario_curso hc ON hc.id_horario_curso = sp.horario_curso_id
+        WHERE hc.curso_id = ? AND hc.semestre_letivo_id = ?
+        """,
+
+                // 2. Remove cancelamentos de horários específicos vinculados
+                """
+        DELETE cah FROM cancelamento_adm_horario cah
+        INNER JOIN horario_curso hc ON hc.id_horario_curso = cah.horario_curso_id
+        WHERE hc.curso_id = ? AND hc.semestre_letivo_id = ?
+        """,
+
+                // 3. Remove atribuições de horário vinculadas
+                """
+        DELETE ah FROM atribuicao_horario ah
+        INNER JOIN horario_curso hc ON hc.id_horario_curso = ah.horario_curso_id
+        WHERE hc.curso_id = ? AND hc.semestre_letivo_id = ?
+        """,
+
+                // 4. Por último, remove os horários em si
+                "DELETE FROM horario_curso WHERE curso_id = ? AND semestre_letivo_id = ?"
+        };
+
+        try (Connection conn = DatabaseConnection.getConnection()) {
+            conn.setAutoCommit(false);
+            try {
+                for (String sql : sqls) {
+                    try (PreparedStatement ps = conn.prepareStatement(sql)) {
+                        ps.setInt(1, cursoId);
+                        ps.setInt(2, slId);
+                        ps.executeUpdate();
+                    }
+                }
+                conn.commit();
+            } catch (SQLException e) {
+                conn.rollback();
+                throw e;
+            } finally {
+                conn.setAutoCommit(true);
+            }
         }
     }
 }

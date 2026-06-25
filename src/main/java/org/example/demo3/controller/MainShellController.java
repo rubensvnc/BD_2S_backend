@@ -84,8 +84,6 @@ public class MainShellController {
         configurarResetInicial();
         configurarValoresPreProgramados();
         processarDadosAnos();
-        estilizarMenuLateral();
-        estilizarToolBar();
     }
 
     private void configurarPreValoresAnos(){
@@ -186,6 +184,29 @@ public class MainShellController {
             carregarConteudo("/adm_cursos_horarios.fxml");
             exibirSecao(secaoAdm);
             configurarVisibilidadeFiltros(false);
+        }
+    }
+
+    @FXML
+    void navBloqueios() {
+        try {
+            FXMLLoader loader = new FXMLLoader(
+                    getClass().getResource("/adm_calendario_bloqueios.fxml"));
+
+            Parent novoConteudo = loader.load();
+
+            calendarioAtivoController = loader.getController();
+
+            areaConteudo.getChildren().clear();
+            areaConteudo.getChildren().add(novoConteudo);
+
+            planejamentoAtivoController = null;
+            coordPainelAtivoController = null;
+
+            calendarioAtivoController.abrirAbaBloqueios();
+
+        } catch (IOException e) {
+            e.printStackTrace();
         }
     }
 
@@ -481,147 +502,6 @@ public class MainShellController {
             calendarioAtivoController = null;
         } catch (IOException e) {
             e.printStackTrace();
-        }
-    }
-
-    // =========================================================================
-//  ESTILIZAÇÃO DO MENU LATERAL
-//  Reestiliza os botões do menuLateral para garantir boa legibilidade
-//  sobre o fundo escuro (#34495e), independente do CSS externo.
-// =========================================================================
-    private void estilizarMenuLateral() {
-        if (menuLateral == null) return;
-
-        for (javafx.scene.Node secaoNode : menuLateral.getChildren()) {
-            if (!(secaoNode instanceof VBox secao)) continue;
-
-            for (javafx.scene.Node filho : secao.getChildren()) {
-
-                // ── Labels de categoria (ex: "ADMINISTRADOR", "PROFESSOR") ──────
-                if (filho instanceof Label lbl) {
-                    lbl.setStyle(
-                            "-fx-text-fill: #95a5a6;"  +
-                                    "-fx-font-size: 10px;"     +
-                                    "-fx-font-weight: bold;"   +
-                                    "-fx-padding: 6 0 2 4;"
-                    );
-                }
-
-                // ── Botões de navegação ──────────────────────────────────────────
-                if (filho instanceof Button btn) {
-                    String baseStyle =
-                            "-fx-background-color: transparent;"  +
-                                    "-fx-text-fill: #ecf0f1;"             +
-                                    "-fx-font-size: 13px;"                +
-                                    "-fx-alignment: CENTER-LEFT;"         +
-                                    "-fx-padding: 8 12;"                  +
-                                    "-fx-cursor: hand;"                   +
-                                    "-fx-background-radius: 6;";
-
-                    btn.setStyle(baseStyle);
-
-                    // Hover: clareia o fundo ao passar o mouse
-                    btn.setOnMouseEntered(e ->
-                            btn.setStyle(baseStyle.replace(
-                                    "-fx-background-color: transparent;",
-                                    "-fx-background-color: #3d566e;"
-                            ))
-                    );
-
-                    // Retorna ao estilo base ao sair
-                    btn.setOnMouseExited(e -> btn.setStyle(baseStyle));
-                }
-            }
-        }
-    }
-    private void estilizarToolBar() {
-
-        // ── Estilo base compartilhado ──────────────────────────────────────────
-        String estiloLabel =
-                "-fx-text-fill: #ecf0f1;"  +
-                        "-fx-font-size: 12px;"     +
-                        "-fx-font-weight: bold;";
-
-        String estiloComboBox =
-                "-fx-background-color: #3d566e;"  +
-                        "-fx-text-fill: #ecf0f1;"         +
-                        "-fx-border-color: #5d7a8a;"      +
-                        "-fx-border-radius: 4;"           +
-                        "-fx-background-radius: 4;"       +
-                        "-fx-cursor: hand;";
-
-        String estiloToggleBase =
-                "-fx-background-color: #3d566e;"  +
-                        "-fx-text-fill: #ecf0f1;"         +
-                        "-fx-border-color: #5d7a8a;"      +
-                        "-fx-border-radius: 4;"           +
-                        "-fx-background-radius: 4;"       +
-                        "-fx-cursor: hand;"               +
-                        "-fx-font-size: 12px;";
-
-        String estiloToggleSelecionado =
-                "-fx-background-color: #2980b9;"  +
-                        "-fx-text-fill: #ffffff;"         +
-                        "-fx-border-color: #1a6fa0;"      +
-                        "-fx-border-radius: 4;"           +
-                        "-fx-background-radius: 4;"       +
-                        "-fx-cursor: hand;"               +
-                        "-fx-font-size: 12px;";
-
-        // ── Todos os Labels da ToolBar (incluindo "Ano:" sem fx:id) ───────────
-        for (javafx.scene.Node node : menuLateral.getParent().getChildrenUnmodifiable()) {
-            if (node instanceof javafx.scene.layout.VBox vbox) {
-                for (javafx.scene.Node filho : vbox.getChildrenUnmodifiable()) {
-                    if (filho instanceof ToolBar toolbar) {
-                        for (javafx.scene.Node item : toolbar.getItems()) {
-                            if (item instanceof Label lbl) {
-                                lbl.setStyle(estiloLabel);
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-        // ── ComboBoxes de filtro ───────────────────────────────────────────────
-        for (ComboBox<?> cb : new ComboBox[]{cbCurso, cbSemestreCurso, cbDisciplina}) {
-            if (cb != null) cb.setStyle(estiloComboBox);
-        }
-
-        // ── cbAno: texto interno também precisa ser branco ─────────────────────
-        if (cbAno != null) {
-            cbAno.setStyle(estiloComboBox);
-            cbAno.setButtonCell(new ListCell<String>() {
-                @Override
-                protected void updateItem(String item, boolean empty) {
-                    super.updateItem(item, empty);
-                    setText(empty || item == null ? null : item);
-                    setStyle("-fx-text-fill: #ecf0f1; -fx-background-color: transparent;");
-                }
-            });
-        }
-
-        // ── ToggleButtons de semestre ──────────────────────────────────────────
-        for (ToggleButton tb : new ToggleButton[]{tbSem1, tbSem2}) {
-            if (tb == null) continue;
-
-            tb.setStyle(tb.isSelected() ? estiloToggleSelecionado : estiloToggleBase);
-
-            tb.selectedProperty().addListener((obs, antigo, selecionado) ->
-                    tb.setStyle(selecionado ? estiloToggleSelecionado : estiloToggleBase)
-            );
-
-            tb.setOnMouseEntered(e -> {
-                if (!tb.isSelected())
-                    tb.setStyle(estiloToggleBase.replace(
-                            "-fx-background-color: #3d566e;",
-                            "-fx-background-color: #4a6a82;"
-                    ));
-            });
-
-            tb.setOnMouseExited(e ->
-                    tb.setStyle(tb.isSelected() ? estiloToggleSelecionado : estiloToggleBase)
-            );
         }
     }
 
