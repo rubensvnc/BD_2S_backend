@@ -103,11 +103,6 @@ public class AdmCalendarioBloqueiosController {
 
     @FXML
     public void initialize() {
-        //REMOVER DEPOIS:
-        logado.setId_usuario(1);
-        logado.setAno(2026);
-        logado.setAnoSemestre(1);
-
 
         anoSelecionado = logado.getAno();
         anoSemestreSelecionado = logado.getAnoSemestre();
